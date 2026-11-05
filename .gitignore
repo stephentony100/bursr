@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+dist/
+target/
+*.wasm
+.env
+.env.*
+!.env.example
+*.db
+*.db-journal
+.near-credentials/
+.DS_Store
+coverage/
+.vercel/

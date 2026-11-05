@@ -1,0 +1,21 @@
+// Bursar data model. Money is stored as integer strings in smallest units.
+// M0 holds only the security/audit log; business tables arrive in M1.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+/// Every refusal, rule change and payment attempt, in order. Never edited.
+model AuditEvent {
+  id        String   @id @default(cuid())
+  at        DateTime @default(now())
+  kind      String
+  actor     String
+  message   String
+  data      String?
+}
