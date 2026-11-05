@@ -1,5 +1,5 @@
-// Bursar data model. Money is stored as integer strings in smallest units.
-// M0 holds only the security/audit log; business tables arrive in M1.
+// Bursar data model. Money is stored as integer strings in smallest units;
+// structured fields are JSON text validated with zod on every read.
 
 generator client {
   provider = "prisma-client"
@@ -10,12 +10,71 @@ datasource db {
   provider = "sqlite"
 }
 
+/// The one business this install runs for.
+model Business {
+  id             String   @id @default("main")
+  name           String
+  ownerAccountId String
+  /// Rules (lib/domain.ts RulesSchema) as JSON.
+  rules          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Payee {
+  id              String    @id @default(cuid())
+  name            String
+  category        String
+  /// Payout (token, address, memo) as JSON. Only the owner changes it.
+  payout          String
+  /// PriceItem[] as JSON.
+  prices          String    @default("[]")
+  /// { amountUsd, every } | null as JSON.
+  recurring       String    @default("null")
+  addedAt         DateTime  @default(now())
+  /// Set when the owner changes payout details; starts the 48h hold.
+  payoutChangedAt DateTime?
+  removedAt       DateTime?
+}
+
+/// The agent's account and the policy the owner last signed.
+model AgentAccount {
+  id              String    @id @default("main")
+  backend         String
+  /// Agent API agent id (live) or "dry-run".
+  agentId         String
+  /// The policy currently in force, as JSON (Agent API Policy type).
+  policy          String
+  policyRevision  Int       @default(0)
+  /// When the weekly cap was turned on; its 7-day periods count from here.
+  budgetStartedAt DateTime  @default(now())
+  /// Dry-run only: simulated balances per asset id, as JSON { assetId: "amount" }.
+  simBalances     String    @default("{}")
+  signedAt        DateTime  @default(now())
+}
+
+/// Every money action the agent asked the account for, allowed or refused.
+model AccountAction {
+  id             String   @id @default(cuid())
+  idempotencyKey String   @unique
+  at             DateTime @default(now())
+  kind           String
+  /// The request as JSON (amounts as strings).
+  request        String
+  outcome        String
+  code           String?
+  message        String?
+  usdMicros      String   @default("0")
+  /// Live: Agent API correlation id.
+  correlationId  String?
+}
+
 /// Every refusal, rule change and payment attempt, in order. Never edited.
 model AuditEvent {
-  id        String   @id @default(cuid())
-  at        DateTime @default(now())
-  kind      String
-  actor     String
-  message   String
-  data      String?
+  id      String   @id @default(cuid())
+  at      DateTime @default(now())
+  kind    String
+  actor   String
+  message String
+  data    String?
 }

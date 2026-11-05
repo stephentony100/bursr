@@ -13,9 +13,11 @@ const EnvSchema = z.object({
   BURSAR_MODE: z.enum(["dry-run", "live"]).default("dry-run"),
   NEXT_PUBLIC_APP_URL: z.string().default("http://localhost:3000"),
   DATABASE_URL: z.string().default("file:./dev.db"),
+  BURSAR_SESSION_SECRET: optional,
 
-  NEAR_NETWORK: z.enum(["testnet", "mainnet"]).default("testnet"),
-  NEAR_RPC_URL: optional,
+  // The Agent API and NEAR Intents exist only on mainnet, so the owner signs in with a mainnet account.
+  NEAR_NETWORK: z.enum(["testnet", "mainnet"]).default("mainnet"),
+  NEAR_RPC_URL: optional.transform((v) => v ?? "https://rpc.mainnet.near.org"),
 
   // Live backend only; dry-run always uses the local policy simulator.
   AGENT_ACCOUNT_BACKEND: z.enum(["agent-api", "vault"]).default("agent-api"),
