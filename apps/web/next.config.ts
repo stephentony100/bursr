@@ -1,9 +1,7 @@
 import path from "node:path";
-import { loadEnvConfig } from "@next/env";
 import type { NextConfig } from "next";
 
-// One .env at the repo root serves the app, scripts and Prisma.
-loadEnvConfig(path.resolve(import.meta.dirname, "../.."));
+// The .env at the repo root is loaded by lib/env.ts (see the note there).
 
 // Cache Components is off: every Bursar page shows live data from the local
 // database, so pages render per request (see `connection()` in each page).

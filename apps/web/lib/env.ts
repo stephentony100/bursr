@@ -1,4 +1,23 @@
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { config } from "dotenv";
 import { z } from "zod";
+
+// The one .env lives at the repo root. Next.js only reads apps/web/.env*, and
+// @next/env caches its first load, so load the root file here, once, for every
+// server-side reader (pages, actions, scripts). Variables already set win.
+let rootEnvLoaded = false;
+function loadRootEnv() {
+  if (rootEnvLoaded) return;
+  rootEnvLoaded = true;
+  for (const dir of [process.cwd(), path.resolve(process.cwd(), ".."), path.resolve(process.cwd(), "../..")]) {
+    const file = path.join(dir, ".env");
+    if (existsSync(file) && existsSync(path.join(dir, "AGENTS.md"))) {
+      config({ path: file, quiet: true });
+      return;
+    }
+  }
+}
 
 // Every environment variable the app reads is declared here and listed in the
 // root .env.example. Everything has a dry-run-safe default, so the app runs
@@ -54,8 +73,9 @@ function clean(source: Record<string, string | undefined>): Record<string, strin
   return out;
 }
 
-export function readEnv(source: Record<string, string | undefined> = process.env): Env {
-  return EnvSchema.parse(clean(source));
+export function readEnv(source?: Record<string, string | undefined>): Env {
+  if (!source) loadRootEnv();
+  return EnvSchema.parse(clean(source ?? process.env));
 }
 
 export const isDryRun = (env: Env = readEnv()) => env.BURSAR_MODE === "dry-run";
