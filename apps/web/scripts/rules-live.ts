@@ -9,7 +9,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { AgentApiError, createAgentApi, createIdempotencyKey, type Policy } from "@near-intents-agent-api/sdk";
 import { db } from "../lib/db";
-import { demoEvmAddress, demoTronAddress } from "../lib/demo-addresses";
+import { demoEvmAddress, demoNearImplicit, demoSolanaAddress, demoTronAddress } from "../lib/demo-addresses";
 import { readEnv } from "../lib/env";
 import { getAccountRecord } from "../lib/store";
 
@@ -40,15 +40,17 @@ async function main() {
   // A token the policy allows, so only the rule under test can refuse.
   const allowed = policy.assets === "any" ? null : policy.assets;
   const tokens = await api.getTokens();
-  const usdtTron = tokens.find((t) => t.symbol === "USDT" && t.blockchain === "tron" && (!allowed || allowed.includes(t.asset_id)));
-  const usdcBase = tokens.find((t) => t.symbol === "USDC" && t.blockchain === "base" && (!allowed || allowed.includes(t.asset_id)));
-  const target = usdtTron
-    ? { asset: usdtTron.asset_id, chain: "tron", recipient: demoTronAddress("rules-live-stranger") }
-    : usdcBase
-      ? { asset: usdcBase.asset_id, chain: "base", recipient: demoEvmAddress("rules-live-stranger") }
-      : null;
-  if (!target) throw new Error("The policy allows neither USDT on Tron nor USDC on Base; add one to the rules to run this test.");
-  const oneDollar = "1000000";
+  const usable = tokens.filter((t) => (!allowed || allowed.includes(t.asset_id)) && ["near", "tron", "base", "sol"].includes(t.blockchain));
+  const pick = usable.find((t) => t.symbol === "USDC" || t.symbol === "USDT");
+  if (!pick) throw new Error("The policy allows no USDC/USDT on NEAR, Tron, Base or Solana.");
+  const strangers: Record<string, string> = {
+    near: demoNearImplicit("rules-live-stranger"),
+    tron: demoTronAddress("rules-live-stranger"),
+    base: demoEvmAddress("rules-live-stranger"),
+    sol: demoSolanaAddress("rules-live-stranger"),
+  };
+  const target = { asset: pick.asset_id, chain: pick.blockchain, recipient: strangers[pick.blockchain] };
+  const oneDollar = (10n ** BigInt(pick.decimals)).toString();
 
   // 1. Dry preview to an address not on the owner's list.
   const preview = await agent.withdraw(agentId, { ...target, amount: oneDollar, dry: true });
