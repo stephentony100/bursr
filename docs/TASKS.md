@@ -27,9 +27,9 @@ Each milestone ends at a checkpoint: `/ship-check`, report, wait for OK.
 
 ## M2 — Invoices and checks (7–8 Nov)
 
-- [ ] Upload PDF/image/text; Reader extraction with zod; "needs owner" path
-- [ ] All checks in PRD §5.4, one file + tests each (positive and negative)
-- [ ] Fixtures: sample restaurant, 6 invoices including look-alike, duplicate, changed bank details, overpriced
+- [x] Upload image/text; Reader extraction with zod; "needs owner" path (PDF: not read yet, the owner is asked for a photo; see DECISIONS)
+- [x] All checks in PRD §5.4, one file + tests each (positive and negative)
+- [x] Fixtures: sample restaurant, 6 invoices including look-alike, duplicate, changed bank details, overpriced
 
 **Done when:** running the fixtures produces exactly the expected holds/blocks with the expected reasons.
 

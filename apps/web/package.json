@@ -17,7 +17,9 @@
     "smoke:nearai": "tsx scripts/smoke-nearai.ts",
     "smoke:agent-api": "tsx scripts/smoke-agent-api.ts",
     "postinstall": "prisma generate",
-    "rules:live": "tsx scripts/rules-live.ts"
+    "rules:live": "tsx scripts/rules-live.ts",
+    "readings:record": "tsx scripts/record-readings.ts",
+    "invoices:draw": "tsx scripts/make-sample-invoices.ts"
   },
   "dependencies": {
     "@hot-labs/near-connect": "^0.12.0",

@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { agentAccount, type ActionRequest } from "@/lib/agent-account";
 import { db } from "@/lib/db";
-import { loadSampleBusiness } from "@/lib/demo-loader";
+import { loadSampleBusiness, loadSampleInvoices } from "@/lib/demo-loader";
+import { ingestInvoice } from "@/lib/invoices";
 import { demoEvmAddress, demoNearImplicit, demoTronAddress } from "@/lib/demo-addresses";
 import { PayeeCategory, type Payout, type PriceItem } from "@/lib/domain";
 import { readEnv } from "@/lib/env";
@@ -196,4 +197,47 @@ export async function testRule(_prev: RuleTestResult, f: FormData): Promise<Rule
   } catch (e) {
     return { tried, allowed: false, message: e instanceof Error ? e.message : "The account could not be reached." };
   }
+}
+
+const MAX_UPLOAD = 4 * 1024 * 1024;
+const ALLOWED_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "text/plain"]);
+
+/** An invoice photo or pasted text goes through the Reader and every check. */
+export async function uploadInvoiceAction(_prev: FormResult, f: FormData): Promise<FormResult> {
+  return run(async () => {
+    await requireOwner();
+    const file = f.get("file");
+    const pasted = text(f, "pasted");
+    let input: { name: string; mediaType: string; bytes: Buffer };
+    if (file instanceof File && file.size > 0) {
+      if (file.size > MAX_UPLOAD) throw new Error("That file is over 4 MB. Send a smaller photo.");
+      if (!ALLOWED_TYPES.has(file.type)) throw new Error("Bursar reads photos (PNG, JPG, WebP) and pasted text. For a PDF, send a photo or screenshot of it.");
+      input = { name: file.name, mediaType: file.type, bytes: Buffer.from(await file.arrayBuffer()) };
+    } else if (pasted) {
+      input = { name: "pasted text", mediaType: "text/plain", bytes: Buffer.from(pasted.slice(0, 20_000), "utf8") };
+    } else {
+      throw new Error("Choose a photo of the invoice or paste its text.");
+    }
+    const v = await ingestInvoice(db(), input);
+    const label = v.supplierName ? `${v.supplierName} #${v.invoiceNumber}` : input.name;
+    const words: Record<string, string> = {
+      ready: "is ready to pay",
+      flag: "is ready to pay, with a warning",
+      defer: "moves to next week",
+      hold: "is on hold for you to check",
+      block: "is blocked",
+      needs_owner: "needs you",
+    };
+    return `${label} ${words[v.status] ?? v.status}.`;
+  });
+}
+
+export async function loadSampleInvoicesAction(): Promise<FormResult> {
+  return run(async () => {
+    if (readEnv().BURSAR_MODE !== "dry-run") throw new Error("Sample invoices are for practice mode only.");
+    await requireOwner();
+    await db().invoice.deleteMany();
+    await loadSampleInvoices(db());
+    return "The six sample invoices were read and checked again.";
+  });
 }

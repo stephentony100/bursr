@@ -20,7 +20,8 @@
     "smoke:nearai": "npm run smoke:nearai -w apps/web",
     "smoke:agent-api": "npm run smoke:agent-api -w apps/web",
     "rules:live": "npm run rules:live -w apps/web",
-    "db:push": "npm run db:push -w apps/web"
+    "db:push": "npm run db:push -w apps/web",
+    "readings:record": "npm run readings:record -w apps/web"
   },
   "allowScripts": {
     "@prisma/engines": true,

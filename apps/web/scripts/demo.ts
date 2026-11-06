@@ -12,7 +12,7 @@ async function main() {
   const { name, payees, invoices } = await loadSampleBusiness(db());
   console.log(`Loaded "${name}" (dry-run, demo money only).`);
   for (const p of payees) console.log(`  payee    ${p.name.padEnd(28)} ${p.payout.token.symbol} on ${chainName(p.payout.token.chain)}`);
-  for (const i of [...invoices].reverse()) {
+  for (const i of invoices) {
     const why = i.results.filter((r) => r.status !== "pass").map((r) => r.check).join(", ");
     console.log(`  invoice  ${`${i.supplierName} #${i.invoiceNumber}`.padEnd(34)} ${i.status.toUpperCase().padEnd(6)} ${why}`);
   }

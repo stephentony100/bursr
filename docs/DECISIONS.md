@@ -28,6 +28,12 @@ Record each decision with date, reason and the doc line relied on.
 | 2026-11-06 | Payout addresses are format-checked per network (Tron base58check, EVM 0x+40 hex, NEAR account id, Solana 32-byte base58) | Catches typos before the owner signs an address into the allowlist |
 | 2026-11-06 | Grant token (`ngt_…`) is shown once to the owner to put in `.env`, never stored in the database | AGENTS.md rule 7 (secrets only in `.env`); SDK: "the token stays on your backend" |
 | 2026-11-06 | Next.js `cacheComponents` turned off; pages call `connection()` before database reads | Every page shows live local data; Next docs: "Queries from synchronous database drivers like `better-sqlite3` complete during prerendering… call `connection()`" |
+| 2026-11-06 | Invoice statuses: `ready`, `flag` (payable, AI warning shown), `defer` (next week), `hold` (owner checks), `block` (never paid as is), `needs_owner` (unreadable, unsure field, non-USD). The worst check result wins | PRD §5.4; "never auto-block on AI alone" → urgency is only ever a flag |
+| 2026-11-06 | Look-alike = same "skeleton" after mapping confusables (0→o, 1/i→l, 5→s, rn→m, vv→w, cl→d, spacing) or 1–2 edits away from a payee's name, but not the same name | Catches "Ek0 Fresh Foods", "Mama Put Farrns"; a different supplier such as "Eko Hotels" passes |
+| 2026-11-06 | Agreed-price tolerance 5% per item, compared in integer micro-dollars | "Line prices above the agreed price list by more than the tolerance" (PRD §5.4) |
+| 2026-11-06 | Invoices in other currencies go to "needs owner"; no exchange rates | AGENTS.md rule 5: never invent amounts. Naira support needs a rate source the owner trusts |
+| 2026-11-06 | Reader inputs: PNG/JPG/WebP photos and pasted text; PDFs are refused with "send a photo or screenshot" | NEAR AI Cloud's `/v1/files` is retired and PDF input is not documented (C2); no PDF rasteriser in the stack yet |
+| 2026-11-06 | Practice mode recognises the six sample invoices by sha256 (`fixtures/invoices/index.json`) and uses a recorded NEAR AI reading if present, else the hand-typed one, and labels which | Judges need no key; the UI never claims AI read something it did not |
 
 ## Answers to the M0 open questions (checked 5 Nov 2026)
 
