@@ -67,6 +67,13 @@ Record each decision with date, reason and the doc line relied on.
 - **D1** Mainnet USDC (Circle native): `17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1` (https://developers.circle.com/stablecoins/usdc-contract-addresses; `ft_metadata` → symbol USDC, decimals 6). Testnet: `3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af`. **Skill vs docs:** the near-api-js skill's `USDC` preset points at `a0b8…eb48.factory.bridge.near`, which on-chain is "Bridged USDC" (USDC.e) — do not use it.
 - **D2** Storage: `storage_balance_bounds` → min = max = `1250000000000000000000` yocto (0.00125 NEAR). "Before calling `ft_transfer`, register the receiver with the token contract" (docs.near.org/integrations/fungible-tokens). For Agent API `withdraw` to chain `near`, check in M3 whether the API registers the receiver.
 
+## Observed on the live account (6 Nov 2026)
+
+- `agent_create` signed by HOT Wallet (nep366) and relayed by the Agent API: policy `APPLIED`, revision 1, tx `CYwUmJKvrCTyptM26Fp7SG2P3fa1QqZtVYGTDjwtD93C`, weekly budget period started at creation ("resets_at": 2026-11-13T13:34:56Z, i.e. 7 days from that moment, as documented).
+- Adding a payee = `policy_update` changing only destinations → applied as revision 2.
+- Unfunded agent: a live `withdraw` to an unlisted address → `403 policy_destination_denied`, layer `policy`, before any balance check. Dry previews list rule warnings plus `insufficient_balance`.
+- Evidence: `fixtures/live/rules-live-2026-11-06.json`.
+
 ## Still open
 
 - [x] Human: Agent API demo key in `.env` (checked 5 Nov: quota 100 agents/day); OK to create one unfunded mainnet agent owned by `stephentony.near` (HOT Wallet) for the M1 rule-rejection test

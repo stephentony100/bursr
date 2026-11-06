@@ -19,7 +19,7 @@ Each milestone ends at a checkpoint: `/ship-check`, report, wait for OK.
 
 ## M1 — Owner, rules, payees (6–7 Nov)
 
-- [ ] Owner sign-in; rules form; create agent account; sign policy (or deploy vault + function-call key on testnet)
+- [x] Owner sign-in; rules form; create agent account; sign policy (or deploy vault + function-call key on testnet)
 - [x] Payees: add/edit, payout details, agreed price list, recurring staff pay; payout change = owner only + 48h hold flag
 - [x] Kill switch (freeze/unfreeze)
 

@@ -1,0 +1,167 @@
+{
+  "at": "2026-11-06T16:19:04.737Z",
+  "agentId": "b51a22df90ed4516f318d926d383484489bba21f6c61dcdac80e376f58c9906a",
+  "policyRevision": 2,
+  "policy": {
+    "frozen": false,
+    "actions": [
+      "swap",
+      "withdraw"
+    ],
+    "confidential": true,
+    "owner_approval": false,
+    "assets": [
+      "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1"
+    ],
+    "limits": {
+      "per_transaction": {
+        "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1": "10000000"
+      }
+    },
+    "max_actions_per_hour": 30,
+    "destinations": {
+      "mode": "only",
+      "list": [
+        {
+          "action": "withdraw",
+          "chain": "near",
+          "address": "stephentony.near",
+          "memo": null
+        }
+      ]
+    },
+    "budget": {
+      "daily_usd": null,
+      "weekly_usd": "20",
+      "monthly_usd": null
+    },
+    "timelock_ms": 0
+  },
+  "steps": [
+    {
+      "name": "Preview: pay $1 to an address that is not on the owner's list",
+      "expect": "warning policy_destination_denied",
+      "got": "policy_destination_denied, insufficient_balance",
+      "pass": true,
+      "detail": {
+        "dry": true,
+        "type": "withdraw",
+        "quote": {
+          "would_succeed": false,
+          "reason": "storage_not_registered",
+          "message": "Receiver 'f532e11602975087609c1ba90fbb4f7ac38a8ed689440a15b645492e4d24093c' has no storage on '17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1'. Call POST /wallet/v1/storage-deposit first.",
+          "policy_check": {
+            "within_limits": true,
+            "address_allowed": true
+          }
+        },
+        "spend": {
+          "amount_usd": "0.999525",
+          "budget": {
+            "daily": {
+              "limit_usd": null,
+              "spent_usd": null,
+              "remaining_usd": null,
+              "resets_at": null
+            },
+            "weekly": {
+              "limit_usd": "20.00",
+              "spent_usd": "0.000000",
+              "remaining_usd": "20.000000",
+              "resets_at": "2026-11-13T13:34:56.753Z"
+            },
+            "monthly": {
+              "limit_usd": null,
+              "spent_usd": null,
+              "remaining_usd": null,
+              "resets_at": null
+            }
+          }
+        },
+        "owner_approval": false,
+        "fee": null,
+        "warnings": [
+          {
+            "code": "policy_destination_denied",
+            "detail": "The owner's destination rule does not allow this recipient or chain; the real request would be refused."
+          },
+          {
+            "code": "insufficient_balance",
+            "detail": "The balance this request spends from holds less than its amount (available_amount, atomic units); submitted now, the real request would be refused. A timelocked request is checked again when it releases.",
+            "available_amount": "0"
+          }
+        ],
+        "idempotencyKey": "622ed5d7-e73b-4fa1-8b3f-dacd970211ef"
+      }
+    },
+    {
+      "name": "Live request: pay $1 to an unlisted address",
+      "expect": "403 policy_destination_denied",
+      "got": "403 policy_destination_denied (layer policy)",
+      "pass": true,
+      "detail": {
+        "status": 403,
+        "code": "policy_destination_denied",
+        "layer": "policy",
+        "title": "Policy destination denied",
+        "detail": "The account's destination rule does not allow this address. Ask the owner to add it to the policy destinations; every grant follows it at once, with no new grant.",
+        "requestId": "89287dbf-53e2-4526-b6ea-551e1d3f95d6"
+      }
+    },
+    {
+      "name": "Preview: pay a listed payee one unit above the per-payment cap",
+      "expect": "warning policy_transaction_limit_exceeded",
+      "got": "policy_transaction_limit_exceeded, insufficient_balance",
+      "pass": true,
+      "detail": {
+        "dry": true,
+        "type": "withdraw",
+        "quote": {
+          "would_succeed": false,
+          "reason": "policy_denied",
+          "message": "Per-transaction limit exceeded for nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1: 10000001 > 10000000",
+          "policy_check": {
+            "within_limits": false
+          }
+        },
+        "spend": {
+          "amount_usd": "9.995251",
+          "budget": {
+            "daily": {
+              "limit_usd": null,
+              "spent_usd": null,
+              "remaining_usd": null,
+              "resets_at": null
+            },
+            "weekly": {
+              "limit_usd": "20.00",
+              "spent_usd": "0.000000",
+              "remaining_usd": "20.000000",
+              "resets_at": "2026-11-13T13:34:56.753Z"
+            },
+            "monthly": {
+              "limit_usd": null,
+              "spent_usd": null,
+              "remaining_usd": null,
+              "resets_at": null
+            }
+          }
+        },
+        "owner_approval": false,
+        "fee": null,
+        "warnings": [
+          {
+            "code": "policy_transaction_limit_exceeded",
+            "detail": "This amount is above the owner's per-transaction limit for the asset it spends; the real request would be refused."
+          },
+          {
+            "code": "insufficient_balance",
+            "detail": "The balance this request spends from holds less than its amount (available_amount, atomic units); submitted now, the real request would be refused. A timelocked request is checked again when it releases.",
+            "available_amount": "0"
+          }
+        ],
+        "idempotencyKey": "b0ffff4b-5365-4d3c-bd5c-90207b5878a5"
+      }
+    }
+  ]
+}

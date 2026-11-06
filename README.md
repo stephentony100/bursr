@@ -46,6 +46,18 @@ Live mode uses a real NEAR Intents Agent API account. There is no testnet for it
 4. **Let Bursar pay inside these rules** → your wallet signs a grant; put the shown `AGENT_API_GRANT_TOKEN` line in `.env` and restart.
 5. `npm run rules:live` → asks the live account for payments the rules forbid (an unlisted address; one unit over the per-payment cap) and saves its answers in `fixtures/live/`. Run it on an unfunded account: refused requests create no operation and move nothing.
 
+## Live run
+
+**6 Nov 2026: the rules are enforced by the live account.** Owner `stephentony.near` (HOT Wallet) created agent account `b51a22df90ed4516f318d926d383484489bba21f6c61dcdac80e376f58c9906a` on NEAR mainnet through the Agent API. Its policy was applied on-chain in transaction [`CYwUmJKvrCTyptM26Fp7SG2P3fa1QqZtVYGTDjwtD93C`](https://nearblocks.io/txns/CYwUmJKvrCTyptM26Fp7SG2P3fa1QqZtVYGTDjwtD93C): $20 a week, $10 a payment, USDC on NEAR only, one payee (`stephentony.near`). The account holds no funds. `npm run rules:live` then asked it for payments the rules forbid:
+
+| Request | The account answered |
+| --- | --- |
+| Preview: $1 to an address not on the list | warning `policy_destination_denied` |
+| Real request: $1 to an address not on the list | **403 `policy_destination_denied`** (layer `policy`); no operation created |
+| Preview: $10.000001 to the listed payee (cap $10) | warning `policy_transaction_limit_exceeded` |
+
+Full responses: `fixtures/live/rules-live-2026-11-06.json`. Bursar's code did not decide any of these; the Agent API did.
+
 ## How NEAR is used
 
 | Step | NEAR piece | What it does here |
