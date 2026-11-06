@@ -19,6 +19,15 @@ Record each decision with date, reason and the doc line relied on.
 | 2026-11-05 | Duplicate-payment protection stays in the app (duplicate check + idempotency keys) | The Agent API policy cannot stop a second payment to an allowed payee (A6) |
 | 2026-11-05 | Dry-run duplicate check = same supplier + same invoice number, or same supplier + same total within 14 days (not "same amount from anyone") | Avoids holding normal repeat orders from different suppliers; recurring staff pay is exempt |
 | 2026-11-05 | Pinned Prisma 7.10.1 (npm `latest` tag is `8.0.0-rc.30`, a release candidate) | Stable over RC for a judged demo |
+| 2026-11-06 | Policy Bursar asks the owner to sign: `actions: ["swap","withdraw"]` (no `transfer`), `confidential: true`, `destinations: only` = one `withdraw` entry per payee (EVM addresses lowercased), `budget.weekly_usd` = weekly limit, `limits.per_transaction` = per-payment cap for every allowed asset, `max_actions_per_hour: 30`, no `native` | Smallest set of powers that pays payees. "`only` matches the **exact** entry, memo included"; native methods skip destinations and budget (A6) |
+| 2026-11-06 | Dry-run simulator copies the documented semantics: weekly budget in fixed 7-day periods from when the cap was turned on; refusal codes `wallet_frozen`, `policy_action_denied`, `policy_asset_denied`, `policy_transaction_limit_exceeded`, `policy_destination_denied`, `spend_budget_exceeded`, `insufficient_balance` | …/policies-and-limits: "weekly_usd 7 days, repeating from that moment"; "Periods are fixed, not rolling". Live provider refusals arrive as `policy_denied` ("A refusal from the provider's rules is policy_denied"); dry previews use the specific codes |
+| 2026-11-06 | Owner signs with HOT Wallet through `@hot-labs/near-connect` 0.12.0 | The connector's wallet manifest lists `hot-wallet` with `signMessage: true` and `signDelegateActions: true`; Agent API owner requests need nep366 (`agent_create`, freeze, wallet-rule policy updates) or nep413 (grants, off-chain policy updates). The Agent API payload `{receiverId, actions:[{type:"FunctionCall", params}]}` matches near-connect's `FunctionCallAction`, so it is passed as returned |
+| 2026-11-06 | Live sign-in = NEP-413 message verified with near-api-js `verifyMessage`, then an HMAC-signed httpOnly cookie | `verifyMessage` checks the signature and that "Public key … does not have FullAccess permission" fails, matching the Agent API owner rule "public_key must be an ed25519 full-access key" |
+| 2026-11-06 | Live mode defaults to `NEAR_NETWORK=mainnet`, separate `DATABASE_URL` (e.g. `live.db`) from the demo | The Agent API is mainnet-only (A1); keeps demo data and the real account apart |
+| 2026-11-06 | `npm run demo` never runs `prisma db push --force-reset`; it clears demo rows itself and refuses a database owned by a real account | Prisma blocks force-reset when run by an AI agent without consent; clearing only demo data is safer anyway |
+| 2026-11-06 | Payout addresses are format-checked per network (Tron base58check, EVM 0x+40 hex, NEAR account id, Solana 32-byte base58) | Catches typos before the owner signs an address into the allowlist |
+| 2026-11-06 | Grant token (`ngt_…`) is shown once to the owner to put in `.env`, never stored in the database | AGENTS.md rule 7 (secrets only in `.env`); SDK: "the token stays on your backend" |
+| 2026-11-06 | Next.js `cacheComponents` turned off; pages call `connection()` before database reads | Every page shows live local data; Next docs: "Queries from synchronous database drivers like `better-sqlite3` complete during prerendering… call `connection()`" |
 
 ## Answers to the M0 open questions (checked 5 Nov 2026)
 
@@ -60,9 +69,9 @@ Record each decision with date, reason and the doc line relied on.
 
 ## Still open
 
-- [ ] Human: get an Agent API demo key (self-service) and decide whether Bursar may create one mainnet agent (sponsored, unfunded) for the M1 rule-rejection test
-- [ ] Human: NEAR AI Cloud API key / credits (the $10 builder credit is undocumented)
-- [ ] Human: owner NEAR mainnet account for live mode (full-access key signs via wallet)
+- [x] Human: Agent API demo key in `.env` (checked 5 Nov: quota 100 agents/day); OK to create one unfunded mainnet agent owned by `stephentony.near` (HOT Wallet) for the M1 rule-rejection test
+- [ ] Human: NEAR AI Cloud credits (key is in `.env`; calls return 402 "No spending limit configured" until credits are added)
+- [x] Human: owner account `stephentony.near` (one FullAccess key on chain, 6 Nov; balance ~0 NEAR, fine because owner signing is gasless)
 - [ ] Telegram: bot token handling; web approvals remain the default for judges (P1)
 - [ ] Final name (Bursar is a working name)
 - [ ] M3: does Agent API `withdraw` to a NEAR account handle USDC storage registration?

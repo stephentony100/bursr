@@ -1,6 +1,7 @@
 import type { Policy } from "@near-intents-agent-api/sdk";
 import { isDeepStrictEqual } from "node:util";
 import { normaliseAddress, PayoutSchema, PriceItemSchema, RulesSchema, type Payee, type Payout, type PriceItem, type Rules } from "./domain";
+import { addressProblem } from "./address";
 import type { PrismaClient } from "./generated/prisma/client";
 import { isOwnerSession, type OwnerSession } from "./owner";
 import { buildPolicy } from "./policy";
@@ -120,6 +121,8 @@ function cleanPayout(rules: Rules, payout: Payout): Payout {
   if (!rules.payoutTokens.some((t) => t.assetId === p.token.assetId)) {
     throw new Error(`${p.token.symbol} on ${p.token.chain} is not one of the tokens the rules allow.`);
   }
+  const problem = addressProblem(p.token.chain, p.address);
+  if (problem) throw new Error(problem);
   return { ...p, address: normaliseAddress(p.address), memo: p.memo?.trim() || null };
 }
 

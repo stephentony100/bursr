@@ -1,0 +1,117 @@
+// npm run rules:live: proves the owner's rules are enforced by the agent
+// account itself (the NEAR Intents Agent API on mainnet), not by Bursar.
+// It asks the live account for payments the rules forbid and records what the
+// account answers. Use an UNFUNDED agent: even if a rule were missing, there is
+// nothing to move. Needs AGENT_API_KEY, AGENT_API_GRANT_TOKEN and the agent
+// (created on the Setup page in live mode, or AGENT_API_AGENT_ID).
+import "./load-env";
+import { mkdirSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { AgentApiError, createAgentApi, createIdempotencyKey, type Policy } from "@near-intents-agent-api/sdk";
+import { db } from "../lib/db";
+import { demoEvmAddress, demoTronAddress } from "../lib/demo-addresses";
+import { readEnv } from "../lib/env";
+import { getAccountRecord } from "../lib/store";
+
+type Step = { name: string; expect: string; got: string; pass: boolean; detail: unknown };
+
+async function main() {
+  const env = readEnv();
+  const agentId = env.AGENT_API_AGENT_ID ?? (await getAccountRecord(db()))?.agentId;
+  if (!env.AGENT_API_KEY || !env.AGENT_API_GRANT_TOKEN || !agentId) {
+    throw new Error("Needs AGENT_API_KEY, AGENT_API_GRANT_TOKEN and an agent (Setup page in live mode, or AGENT_API_AGENT_ID).");
+  }
+  const api = createAgentApi({ apiKey: env.AGENT_API_KEY, baseUrl: env.AGENT_API_BASE_URL });
+  const agent = api.forGrant(env.AGENT_API_GRANT_TOKEN);
+
+  const view = await api.getPolicy(agentId);
+  const policy = view.policy as Policy | null;
+  if (!policy) throw new Error("The agent has no applied policy.");
+  const balances = await api.getBalances(agentId);
+  console.log(`Agent ${agentId}, policy revision ${view.revision}, frozen=${policy.frozen}`);
+  console.log(`Balances: ${JSON.stringify(balances.balances.map((b) => [b.asset_id, b.available_raw]))}`);
+
+  const steps: Step[] = [];
+  const record = (s: Step) => {
+    steps.push(s);
+    console.log(`${s.pass ? "PASS" : "FAIL"}  ${s.name}\n      expected ${s.expect}, got ${s.got}`);
+  };
+
+  // A token the policy allows, so only the rule under test can refuse.
+  const allowed = policy.assets === "any" ? null : policy.assets;
+  const tokens = await api.getTokens();
+  const usdtTron = tokens.find((t) => t.symbol === "USDT" && t.blockchain === "tron" && (!allowed || allowed.includes(t.asset_id)));
+  const usdcBase = tokens.find((t) => t.symbol === "USDC" && t.blockchain === "base" && (!allowed || allowed.includes(t.asset_id)));
+  const target = usdtTron
+    ? { asset: usdtTron.asset_id, chain: "tron", recipient: demoTronAddress("rules-live-stranger") }
+    : usdcBase
+      ? { asset: usdcBase.asset_id, chain: "base", recipient: demoEvmAddress("rules-live-stranger") }
+      : null;
+  if (!target) throw new Error("The policy allows neither USDT on Tron nor USDC on Base; add one to the rules to run this test.");
+  const oneDollar = "1000000";
+
+  // 1. Dry preview to an address not on the owner's list.
+  const preview = await agent.withdraw(agentId, { ...target, amount: oneDollar, dry: true });
+  const codes = (preview.warnings ?? []).map((w) => w.code);
+  record({
+    name: "Preview: pay $1 to an address that is not on the owner's list",
+    expect: "warning policy_destination_denied",
+    got: codes.join(", ") || "no warnings",
+    pass: codes.includes("policy_destination_denied"),
+    detail: preview,
+  });
+
+  // 2. A real request to that address. The account must refuse it.
+  try {
+    const r = await agent.withdraw(agentId, { ...target, amount: oneDollar }, { idempotencyKey: createIdempotencyKey() });
+    record({ name: "Live request: pay $1 to an unlisted address", expect: "refusal", got: `ACCEPTED ${r.correlation_id}`, pass: false, detail: r });
+  } catch (e) {
+    if (!(e instanceof AgentApiError)) throw e;
+    record({
+      name: "Live request: pay $1 to an unlisted address",
+      expect: "403 policy_destination_denied",
+      got: `${e.status} ${e.code} (layer ${e.layer})`,
+      pass: e.code === "policy_destination_denied",
+      detail: { status: e.status, code: e.code, layer: e.layer, title: e.title, detail: e.detail, requestId: e.requestId },
+    });
+  }
+
+  // 3. Above the per-payment cap, to a listed payee if there is one.
+  const listed = policy.destinations.list.find((d): d is { action: "withdraw"; chain: string; address: string; memo: string | null } => "chain" in d);
+  const listedAsset = listed && tokens.find((t) => t.blockchain === listed.chain && (!allowed || allowed.includes(t.asset_id)) && policy.limits.per_transaction?.[t.asset_id]);
+  if (listed && listedAsset) {
+    const cap = BigInt(policy.limits.per_transaction![listedAsset.asset_id]);
+    const over = await agent.withdraw(agentId, {
+      asset: listedAsset.asset_id,
+      amount: (cap + 1n).toString(),
+      chain: listed.chain,
+      recipient: listed.address,
+      ...(listed.memo ? { memo: listed.memo } : {}),
+      dry: true,
+    });
+    const c = (over.warnings ?? []).map((w) => w.code);
+    record({
+      name: `Preview: pay a listed payee one unit above the per-payment cap`,
+      expect: "warning policy_transaction_limit_exceeded",
+      got: c.join(", ") || "no warnings",
+      pass: c.includes("policy_transaction_limit_exceeded"),
+      detail: over,
+    });
+  } else {
+    console.log("SKIP  per-payment cap check: add a payee to the rules and sign them first.");
+  }
+
+  const out = path.resolve(process.cwd(), "../../fixtures/live");
+  mkdirSync(out, { recursive: true });
+  const file = path.join(out, `rules-live-${new Date().toISOString().slice(0, 10)}.json`);
+  writeFileSync(file, JSON.stringify({ at: new Date().toISOString(), agentId, policyRevision: view.revision, policy, steps }, null, 2));
+  console.log(`\nSaved ${path.relative(process.cwd(), file)}. Nothing was moved: refused requests create no operation.`);
+  if (steps.some((s) => !s.pass)) process.exit(1);
+}
+
+main()
+  .then(() => db().$disconnect())
+  .catch((e) => {
+    console.error("FAILED:", e instanceof AgentApiError ? `${e.status} ${e.code}: ${e.detail ?? e.title}` : e instanceof Error ? e.message : e);
+    process.exit(1);
+  });

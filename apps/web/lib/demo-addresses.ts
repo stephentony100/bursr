@@ -40,3 +40,13 @@ export function demoTronAddress(label: string): string {
 export function demoEvmAddress(label: string): string {
   return "0x" + body20(label).toString("hex");
 }
+
+/** NEAR implicit account (64 hex chars). */
+export function demoNearImplicit(label: string): string {
+  return sha256(`bursar-dry-run:${label}`).toString("hex");
+}
+
+/** Solana address: base58 of a 32-byte value. */
+export function demoSolanaAddress(label: string): string {
+  return base58(sha256(`bursar-dry-run:${label}`));
+}
