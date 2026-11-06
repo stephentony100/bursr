@@ -10,7 +10,7 @@ const LIB = import.meta.dirname;
 const OWNER_ONLY = ["owner-actions", "owner"];
 
 /** Agent-side modules: everything the AI and the payment loop run. */
-const AGENT_SIDE = ["agent-account", "agent-account.ts", "checks", "reader.ts", "reader-schema.ts", "plan.ts", "pay.ts", "oneclick.ts"];
+const AGENT_SIDE = ["agent-account", "agent-account.ts", "checks", "reader.ts", "reader-schema.ts", "invoices.ts", "plan.ts", "pay.ts", "oneclick.ts"];
 
 function files(p: string): string[] {
   const full = path.join(LIB, p);

@@ -69,6 +69,31 @@ model AccountAction {
   correlationId  String?
 }
 
+/// An invoice as received, what the Reader read, and what the checks decided.
+model Invoice {
+  id            String   @id @default(cuid())
+  receivedAt    DateTime @default(now())
+  fileName      String
+  mediaType     String
+  fileHash      String
+  file          Bytes
+  /// Who read it: "NEAR AI Cloud, <model>" or the practice-mode note.
+  readBy        String
+  chatId        String?
+  /// ExtractedInvoice as JSON, or null when it could not be read.
+  extracted     String?
+  supplierName  String   @default("")
+  invoiceNumber String   @default("")
+  totalUsd      String   @default("0")
+  payeeId       String?
+  /// ready | flag | defer | hold | block | needs_owner
+  status        String
+  /// CheckResult[] as JSON
+  results       String   @default("[]")
+  /// Why it needs the owner (unreadable, unsure fields, other currency).
+  needsOwner    String?
+}
+
 /// Every refusal, rule change and payment attempt, in order. Never edited.
 model AuditEvent {
   id      String   @id @default(cuid())

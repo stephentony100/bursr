@@ -15,6 +15,7 @@ export function createTestDb(): { db: PrismaClient; reset: () => Promise<void>; 
     db,
     reset: async () => {
       await db.$transaction([
+        db.invoice.deleteMany(),
         db.accountAction.deleteMany(),
         db.auditEvent.deleteMany(),
         db.payee.deleteMany(),
