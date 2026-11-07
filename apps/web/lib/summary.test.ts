@@ -25,7 +25,7 @@ describe("monthly summary", () => {
       "In November 2026 Bursar paid $658.00 in 5 payments: $450.00 to staff and $208.00 to suppliers. " +
         "The largest was Bisi Adeyemi (head chef) at $220.00. " +
         "6 invoices came in: 2 passed every check, 2 were blocked as possible fraud and 2 were held for you to check. " +
-        "The agent account refused 1 payment that broke your rules.",
+        "Your spending rules blocked 1 payment that broke your limits.",
     );
   });
 

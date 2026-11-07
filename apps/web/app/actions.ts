@@ -42,7 +42,7 @@ function dollars(f: FormData, k: string, label: string): string {
   try {
     return parseUnits(v, USD_DECIMALS).toString();
   } catch {
-    throw new Error(`${label}: enter an amount like 250 or 250.50`);
+    throw new Error(`${label}: please enter an amount like 250 or 250.50`);
   }
 }
 
@@ -59,7 +59,7 @@ async function run(fn: () => Promise<string>): Promise<FormResult> {
 export async function loadSample(): Promise<FormResult> {
   return run(async () => {
     await loadSampleBusiness(db());
-    return "Sample restaurant loaded.";
+    return "Welcome to Bukka Corner. Have a look around.";
   });
 }
 
@@ -71,9 +71,9 @@ export async function saveRules(_prev: FormResult, f: FormData): Promise<FormRes
     const allowed = new Set(f.getAll("payoutToken").map(String));
     const all = await payoutTokens();
     const chosen = all.filter((t) => allowed.has(t.assetId));
-    if (chosen.length === 0) throw new Error("Choose at least one way to pay people.");
+    if (chosen.length === 0) throw new Error("Pick at least one way to pay people.");
     const inUse = (await listPayees(db())).filter((p) => !allowed.has(p.payout.token.assetId));
-    if (inUse.length) throw new Error(`${inUse[0].name} is paid in a token you unticked. Change their payout first.`);
+    if (inUse.length) throw new Error(`${inUse[0].name} is paid that way, so it has to stay ticked. Change how they're paid first.`);
     await updateRules(db(), owner, {
       ...business.rules,
       weeklyCapUsd: dollars(f, "weeklyCap", "Weekly limit"),
@@ -82,16 +82,16 @@ export async function saveRules(_prev: FormResult, f: FormData): Promise<FormRes
       paydayWeekday: Number(text(f, "payday")),
       payoutTokens: chosen,
     });
-    return "Rules saved.";
+    return readEnv().BURSAR_MODE === "dry-run" ? "Saved. Your new limits apply straight away." : "Saved. Now confirm them with your wallet above so they take effect.";
   });
 }
 
 export async function toggleFreeze(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
-    if (readEnv().BURSAR_MODE !== "dry-run") throw new Error("In live mode, freeze from your wallet below.");
+    if (readEnv().BURSAR_MODE !== "dry-run") throw new Error("Pause payments from the wallet box above; it asks your wallet to confirm.");
     const freeze = text(f, "freeze") === "1";
     await setFrozen(db(), await requireOwner(), freeze);
-    return freeze ? "Payments frozen. Nothing can be paid until you unfreeze." : "Payments unfrozen.";
+    return freeze ? "All payments are paused. Nothing can go out until you turn them back on." : "Payments are back on.";
   });
 }
 
@@ -102,7 +102,7 @@ function parsePrices(raw: string): PriceItem[] {
     .filter(Boolean)
     .map((line) => {
       const m = /^(.+?)\s*[=:]\s*\$?\s*(\d+(?:\.\d{1,2})?)$/.exec(line);
-      if (!m) throw new Error(`Agreed prices: write each line like "Tomatoes (crate) = 18.00" (problem: "${line}")`);
+      if (!m) throw new Error(`Agreed prices: please write each line like "Tomatoes (crate) = 18.00". This line didn't fit: "${line}"`);
       return { item: m[1], unitPriceUsd: parseUnits(m[2], USD_DECIMALS).toString(), toleranceBps: 500 };
     });
 }
@@ -111,9 +111,9 @@ async function payoutFrom(f: FormData): Promise<Payout> {
   const business = await getBusiness(db());
   if (!business) throw new Error("Set up the business first.");
   const token = business.rules.payoutTokens.find((t) => t.assetId === text(f, "token"));
-  if (!token) throw new Error("Choose how they are paid.");
+  if (!token) throw new Error("Pick how they want to be paid.");
   const address = text(f, "address");
-  if (!address) throw new Error("Enter their payout address.");
+  if (!address) throw new Error("Add their wallet address.");
   return { token, address, memo: text(f, "memo") || null };
 }
 
@@ -126,7 +126,7 @@ function recurringFrom(f: FormData) {
 export async function addPayeeAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
     const name = text(f, "name");
-    if (!name) throw new Error("Enter the payee's name.");
+    if (!name) throw new Error("Add their name.");
     await addPayee(db(), await requireOwner(), {
       name,
       category: PayeeCategory.parse(text(f, "category")),
@@ -134,7 +134,7 @@ export async function addPayeeAction(_prev: FormResult, f: FormData): Promise<Fo
       prices: parsePrices(text(f, "prices")),
       recurring: recurringFrom(f),
     });
-    return `${name} added.`;
+    return `${name} added. You can now pay them.`;
   });
 }
 
@@ -147,7 +147,7 @@ export async function updatePayeeAction(_prev: FormResult, f: FormData): Promise
       prices: parsePrices(text(f, "prices")),
       recurring: recurringFrom(f),
     });
-    return "Details saved.";
+    return "Saved.";
   });
 }
 
@@ -164,7 +164,7 @@ export async function changePayoutAction(_prev: FormResult, f: FormData): Promis
 export async function removePayeeAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
     await removePayee(db(), await requireOwner(), text(f, "id"));
-    return "Payee removed.";
+    return "Removed. Bursar can no longer pay them.";
   });
 }
 
@@ -178,12 +178,12 @@ export type RuleTestResult = { tried: string; allowed: boolean; message: string 
 export async function testRule(_prev: RuleTestResult, f: FormData): Promise<RuleTestResult> {
   const business = await getBusiness(db());
   const payees = await listPayees(db());
-  if (!business) return { tried: "", allowed: false, message: "Load the sample restaurant or add a payee first." };
+  if (!business) return { tried: "", allowed: false, message: "Add someone you pay first." };
   // Prefer a supplier paid in the token the account holds, so only the rule under test decides
   // (paying in another token needs a swap first, which the payment run does).
   const inTreasury = payees.filter((p) => p.payout.token.assetId === business.rules.treasury.assetId);
   const payee = inTreasury.find((p) => p.category === "supplier") ?? inTreasury[0] ?? payees[0];
-  if (!payee) return { tried: "", allowed: false, message: "Load the sample restaurant or add a payee first." };
+  if (!payee) return { tried: "", allowed: false, message: "Add someone you pay first." };
   const token = payee.payout.token;
   const amountFor = (micros: bigint) => rescale(micros, USD_DECIMALS, token.decimals);
   const cap = BigInt(business.rules.perPaymentCapUsd);
@@ -195,22 +195,22 @@ export async function testRule(_prev: RuleTestResult, f: FormData): Promise<Rule
   if (scenario === "over_cap") {
     const over = cap + parseUnits("1", USD_DECIMALS);
     req = { ...base, amount: amountFor(over), recipient: payee.payout.address };
-    tried = `Pay ${payee.name} ${formatUsd(over)}, $1 over your largest single payment`;
+    tried = `pay ${payee.name} ${formatUsd(over)}, $1 more than your limit for a single payment`;
   } else if (scenario === "stranger") {
     const addr = token.chain === "tron" ? demoTronAddress("not-a-payee") : token.chain === "near" ? demoNearImplicit("not-a-payee") : demoEvmAddress("not-a-payee");
     req = { ...base, amount: amountFor(parseUnits("50", USD_DECIMALS)), recipient: addr };
-    tried = `Pay $50.00 to an address that is not on your payee list`;
+    tried = `pay $50.00 to a wallet that isn't one of the people you pay`;
   } else {
     req = { ...base, amount: amountFor(parseUnits("50", USD_DECIMALS)), recipient: payee.payout.address };
-    tried = `Pay ${payee.name} $50.00`;
+    tried = `pay ${payee.name} $50.00`;
   }
   try {
     const out = await (await agentAccount(db())).preview(req);
     return out.status === "refused"
       ? { tried, allowed: false, message: out.refusal.message }
-      : { tried, allowed: true, message: "The account would allow this payment." };
+      : { tried, allowed: true, message: "This would go through, just as it should." };
   } catch (e) {
-    return { tried, allowed: false, message: e instanceof Error ? e.message : "The account could not be reached." };
+    return { tried, allowed: false, message: e instanceof Error ? e.message : "Bursar couldn't reach your wallet just now. Please try again." };
   }
 }
 
@@ -225,23 +225,23 @@ export async function uploadInvoiceAction(_prev: FormResult, f: FormData): Promi
     const pasted = text(f, "pasted");
     let input: { name: string; mediaType: string; bytes: Buffer };
     if (file instanceof File && file.size > 0) {
-      if (file.size > MAX_UPLOAD) throw new Error("That file is over 4 MB. Send a smaller photo.");
-      if (!ALLOWED_TYPES.has(file.type)) throw new Error("Bursar reads photos (PNG, JPG, WebP) and pasted text. For a PDF, send a photo or screenshot of it.");
+      if (file.size > MAX_UPLOAD) throw new Error("That file is a bit big (over 4 MB). Please send a smaller photo.");
+      if (!ALLOWED_TYPES.has(file.type)) throw new Error("Bursar reads photos and screenshots (PNG, JPG, WebP) or pasted text. For a PDF, send a screenshot of it.");
       input = { name: file.name, mediaType: file.type, bytes: Buffer.from(await file.arrayBuffer()) };
     } else if (pasted) {
       input = { name: "pasted text", mediaType: "text/plain", bytes: Buffer.from(pasted.slice(0, 20_000), "utf8") };
     } else {
-      throw new Error("Choose a photo of the invoice or paste its text.");
+      throw new Error("Add a photo of the invoice or paste its text.");
     }
     const v = await ingestInvoice(db(), input);
     const label = v.supplierName ? `${v.supplierName} #${v.invoiceNumber}` : input.name;
     const words: Record<string, string> = {
-      ready: "is ready to pay",
-      flag: "is ready to pay, with a warning",
+      ready: "looks good and is ready to pay",
+      flag: "is ready to pay, but read the note",
       defer: "moves to next week",
-      hold: "is on hold for you to check",
-      block: "is blocked",
-      needs_owner: "needs you",
+      hold: "is on hold until you check it",
+      block: "is blocked. Don't pay it",
+      needs_owner: "needs your eyes",
     };
     return `${label} ${words[v.status] ?? v.status}.`;
   });
@@ -253,7 +253,7 @@ export async function loadSampleInvoicesAction(): Promise<FormResult> {
     await requireOwner();
     await db().invoice.deleteMany();
     await loadSampleInvoices(db());
-    return "The six sample invoices were read and checked again.";
+    return "The six sample invoices were checked again.";
   });
 }
 
@@ -264,21 +264,21 @@ export async function preparePlanAction(): Promise<FormResult> {
     await requireOwner();
     const plan = await prepareWeeklyPlan(db());
     const n = plan.items.filter((i) => i.placement === "in").length;
-    return `Plan ready: ${n} payment${n === 1 ? "" : "s"} to approve.`;
+    return `Ready: ${n} payment${n === 1 ? "" : "s"} waiting for your OK.`;
   });
 }
 
 export async function approveItemAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
     await approvePlanItem(db(), await requireOwner(), text(f, "itemId"));
-    return "Approved.";
+    return "OK'd.";
   });
 }
 
 export async function removeItemAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
     await removePlanItem(db(), await requireOwner(), text(f, "itemId"));
-    return "Removed from this plan.";
+    return "Taken out of this week's payments.";
   });
 }
 
@@ -290,7 +290,7 @@ export async function approvePlanAction(_prev: FormResult, f: FormData): Promise
     const results = await payApprovedPlan(db(), await agentAccount(db()), planId);
     const sent = Object.values(results).filter((s) => s === "sent").length;
     const failed = Object.values(results).filter((s) => s === "failed").length;
-    return `Plan approved. ${sent} payment${sent === 1 ? "" : "s"} sent${failed ? `, ${failed} failed (see the reasons below)` : ""}.`;
+    return `Done. ${sent} payment${sent === 1 ? "" : "s"} on the way${failed ? `, ${failed} not paid (see why below)` : ""}.`;
   });
 }
 
@@ -316,16 +316,16 @@ export async function forceOverCapAction(): Promise<RuleTestResult> {
     recipient: payee.payout.address,
     memo: payee.payout.memo,
   };
-  const tried = `Send ${formatUsd(over)} to ${payee.name} directly, skipping the plan and approval`;
+  const tried = `send ${formatUsd(over)} to ${payee.name}, skipping your approval`;
   try {
     const account = await agentAccount(db());
     const out = readEnv().BURSAR_MODE === "dry-run" ? await account.execute(req, `forced-${Date.now()}`) : await account.preview(req);
     revalidatePath("/", "layout");
     return out.status === "refused"
       ? { tried, allowed: false, message: out.refusal.message }
-      : { tried, allowed: true, message: "The account accepted it. Check the rules: this should not happen." };
+      : { tried, allowed: true, message: "It went through. Please check your spending rules: this should not happen." };
   } catch (e) {
-    return { tried, allowed: false, message: e instanceof Error ? e.message : "The account could not be reached." };
+    return { tried, allowed: false, message: e instanceof Error ? e.message : "Bursar couldn't reach your wallet just now. Please try again." };
   }
 }
 

@@ -21,11 +21,11 @@ interface Prepared {
 }
 
 const LABELS: Record<Kind, string> = {
-  agent_create: "Create the agent account with these rules",
-  policy_update: "Sign your updated rules",
-  agent_freeze: "Freeze all payments",
-  agent_unfreeze: "Unfreeze payments",
-  grant_issue: "Let Bursar pay inside these rules",
+  agent_create: "Set up my Bursar wallet with these limits",
+  policy_update: "Confirm my changes",
+  agent_freeze: "Pause all payments",
+  agent_unfreeze: "Turn payments back on",
+  grant_issue: "Let Bursar make payments inside my limits",
 };
 
 export function WalletPanel(props: {
@@ -108,7 +108,7 @@ export function WalletPanel(props: {
       setPrepared(null);
       if (result.status !== "SUCCESS") throw new Error(`Not applied: ${result.failureCode ?? result.status}`);
       if (result.grantToken) setGrantToken(result.grantToken);
-      setNotice("Done. The account now enforces this.");
+      setNotice("Done. Your wallet now enforces this.");
       router.refresh();
     });
 
@@ -122,13 +122,13 @@ export function WalletPanel(props: {
 
   return (
     <section className="rounded-xl border-2 border-indigo/30 bg-card p-6">
-      <h2 className="font-display text-xl font-semibold">Your wallet and the agent account</h2>
+      <h2 className="font-display text-xl font-semibold">Your Bursar wallet</h2>
 
       {!props.ownerAccountId ? (
         <div className="mt-3">
-          <p className="text-sm text-muted">Sign in with the NEAR wallet that owns this business (for example HOT Wallet). Signing in costs nothing.</p>
+          <p className="text-sm text-muted">Sign in with your wallet app (for example HOT Wallet) to set up or manage your business. Signing in is free.</p>
           <button onClick={signIn} disabled={busy} className="mt-3 rounded-md bg-indigo px-4 py-2 text-sm font-medium text-white disabled:opacity-60">
-            {busy ? "Waiting for your wallet…" : "Sign in with NEAR wallet"}
+            {busy ? "Check your wallet app…" : "Sign in"}
           </button>
         </div>
       ) : (
@@ -146,7 +146,7 @@ export function WalletPanel(props: {
                 Business name
                 <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full max-w-sm rounded-md border border-line px-3 py-2" />
               </label>
-              <p className="mt-1 text-muted">Starts with tiny limits ($20 a week, $10 a payment). You can change them before signing.</p>
+              <p className="mt-1 text-muted">You start with small limits ($20 a week, $10 a payment) and can raise them any time.</p>
               <button onClick={setup} disabled={busy || name.trim().length < 2} className="mt-3 rounded-md bg-ledger px-4 py-2 font-medium text-white disabled:opacity-60">
                 Set up my business
               </button>
@@ -156,8 +156,7 @@ export function WalletPanel(props: {
           {props.businessExists && (
             <>
               <p className="text-muted">
-                Agent account: {props.agentId ? <span className="num text-ink">{props.agentId}</span> : "not created yet"}
-                {props.agentId && (props.hasGrant ? " · Bursar may pay inside your rules" : " · Bursar cannot pay yet")}
+                {props.agentId ? (props.hasGrant ? "✓ Your wallet is set up and Bursar can pay inside your limits." : "Your wallet is set up. One more step lets Bursar make payments.") : "Next: set up your Bursar wallet. It's free; your wallet app just confirms it."}
               </p>
               <div className="flex flex-wrap gap-2">
                 {next && (
@@ -171,7 +170,7 @@ export function WalletPanel(props: {
                     disabled={busy}
                     className={`rounded-md px-4 py-2 font-medium disabled:opacity-60 ${props.frozen ? "bg-ledger text-white" : "bg-refuse text-white"}`}
                   >
-                    {props.frozen ? "Unfreeze payments…" : "Freeze all payments…"}
+                    {props.frozen ? "Turn payments back on…" : "Pause all payments…"}
                   </button>
                 )}
               </div>
@@ -180,18 +179,21 @@ export function WalletPanel(props: {
 
           {prepared && (
             <div className="rounded-md border border-line bg-paper p-4">
-              <p className="font-medium">You are about to sign: {LABELS[prepared.kind]}</p>
-              <p className="mt-1 text-muted">{prepared.summary}</p>
-              {prepared.policy !== undefined && (
-                <pre className="num mt-3 max-h-72 overflow-auto rounded bg-card p-3 text-xs">{JSON.stringify(prepared.policy, null, 2)}</pre>
-              )}
+              <p className="font-medium">{LABELS[prepared.kind]}</p>
+              <details className="mt-1">
+                <summary className="cursor-pointer text-muted">Technical details of what you&apos;re confirming</summary>
+                <p className="mt-1 text-muted">{prepared.summary}</p>
+                {prepared.policy !== undefined && (
+                  <pre className="num mt-2 max-h-72 overflow-auto rounded bg-card p-3 text-xs">{JSON.stringify(prepared.policy, null, 2)}</pre>
+                )}
+              </details>
               <p className="mt-2 text-muted">
-                Your wallet will ask you to sign. {prepared.intent.standard === "nep366" ? "The Agent API sends it to NEAR and pays the gas." : "It is a signed message; nothing is sent on-chain."}{" "}
-                Valid until {new Date(prepared.expiresAt).toLocaleTimeString()}.
+                Your wallet app will ask you to confirm. It costs you nothing. Please confirm before{" "}
+                {new Date(prepared.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.
               </p>
               <div className="mt-3 flex gap-2">
                 <button onClick={signAndSubmit} disabled={busy} className="rounded-md bg-indigo px-4 py-2 font-medium text-white disabled:opacity-60">
-                  {busy ? "Waiting for your wallet…" : "Sign with my wallet"}
+                  {busy ? "Check your wallet app…" : "Confirm in my wallet"}
                 </button>
                 <button onClick={() => setPrepared(null)} disabled={busy} className="rounded-md border border-line px-4 py-2">
                   Cancel
@@ -202,7 +204,7 @@ export function WalletPanel(props: {
 
           {grantToken && (
             <div className="rounded-md border border-hold bg-hold-soft p-4">
-              <p className="font-medium">Add this line to the .env file, then restart Bursar. It is shown only once.</p>
+              <p className="font-medium">Last step for whoever set up Bursar for you: add this line to the settings file (.env) and restart Bursar. It is shown only once, so copy it now.</p>
               <pre className="num mt-2 overflow-auto text-xs">AGENT_API_GRANT_TOKEN={grantToken}</pre>
             </div>
           )}

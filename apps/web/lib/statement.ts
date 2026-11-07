@@ -24,12 +24,12 @@ export interface StatementLine {
 }
 
 const STATUS_WORDS: Record<PlanItemView["payStatus"], string> = {
-  planned: "Not sent",
-  paying: "Sending",
+  planned: "Not sent yet",
+  paying: "Paying",
   sent: "Sent",
-  delivered: "Delivered",
-  failed: "Failed",
-  refunded: "Refunded",
+  delivered: "Paid",
+  failed: "Not paid",
+  refunded: "Returned to your wallet",
 };
 
 export async function statementLines(db: PrismaClient): Promise<StatementLine[]> {
@@ -53,8 +53,8 @@ export async function statementLines(db: PrismaClient): Promise<StatementLine[]>
         receivedAs: `${token.symbol} on ${chainName(token.chain)} to ${i.payout.address}`,
         status: STATUS_WORDS[i.payStatus],
         approval:
-          `Plan approved by ${plan.approvedBy ?? "?"} on ${plan.approvedAt?.toISOString().slice(0, 16).replace("T", " ") ?? "?"}` +
-          (i.ownTapAt ? `; own tap ${i.ownTapAt.toISOString().slice(0, 16).replace("T", " ")}` : ""),
+          `Approved by ${plan.approvedBy ?? "?"} on ${plan.approvedAt?.toISOString().slice(0, 16).replace("T", " ") ?? "?"}` +
+          (i.ownTapAt ? `; own OK ${i.ownTapAt.toISOString().slice(0, 16).replace("T", " ")}` : ""),
         planId: plan.id,
         references: i.references.join(" "),
         note: i.payReason ?? "",
@@ -64,7 +64,7 @@ export async function statementLines(db: PrismaClient): Promise<StatementLine[]>
   return lines;
 }
 
-const CSV_HEADERS = ["Date (UTC)", "Payee", "For", "Amount (USD)", "Sent from account", "Payee received", "Received as", "Status", "Approval", "Plan", "References", "Note"];
+const CSV_HEADERS = ["Date (UTC)", "Paid to", "For", "Amount (USD)", "Sent from Bursar wallet", "They received", "Where it went", "Status", "Approved", "Payment list", "References", "Note"];
 
 function cell(v: string): string {
   // Quote every cell; neutralise spreadsheet formulas (a value starting with = + - @).

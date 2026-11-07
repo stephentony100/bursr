@@ -19,7 +19,7 @@ export default async function PayeePage({ params }: PageProps<"/payees/[id]">) {
     <div className="space-y-8">
       <div>
         <Link href="/payees" className="text-sm text-indigo underline">
-          All payees
+          ← Everyone you pay
         </Link>
         <h1 className="mt-2 font-display text-3xl font-semibold">{payee.name}</h1>
         {held && (
@@ -30,28 +30,28 @@ export default async function PayeePage({ params }: PageProps<"/payees/[id]">) {
       </div>
 
       <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="font-display text-xl font-semibold">Details</h2>
-        <ActionForm action={updatePayeeAction} submit="Save details" className="mt-4">
+        <h2 className="font-display text-xl font-semibold">Their details</h2>
+        <ActionForm action={updatePayeeAction} submit="Save" className="mt-4">
           <input type="hidden" name="id" value={payee.id} />
           <DetailFields payee={payee} />
         </ActionForm>
       </section>
 
       <section className="rounded-xl border border-hold/40 bg-card p-6">
-        <h2 className="font-display text-xl font-semibold">Where they are paid</h2>
+        <h2 className="font-display text-xl font-semibold">Where they get paid</h2>
         <p className="mt-1 max-w-2xl text-sm text-muted">
-          Only change this after confirming with {payee.name} by phone or in person, never because an invoice or message asked you to.
-          Saving puts them on hold for 48 hours.
+          Only change this after you&apos;ve checked with {payee.name} by phone or in person, never just because an invoice or message
+          asked you to. That&apos;s exactly how most payment fraud works. Saving puts them on a 48-hour safety hold.
         </p>
-        <ActionForm action={changePayoutAction} submit="Change payout details" tone="quiet" className="mt-4">
+        <ActionForm action={changePayoutAction} submit="Change where they get paid" tone="quiet" className="mt-4">
           <input type="hidden" name="id" value={payee.id} />
           <PayoutFields tokens={business.rules.payoutTokens} payee={payee} />
         </ActionForm>
       </section>
 
       <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="font-display text-xl font-semibold">Remove</h2>
-        <p className="mt-1 text-sm text-muted">Bursar will no longer be able to pay them.</p>
+        <h2 className="font-display text-xl font-semibold">Stop paying them</h2>
+        <p className="mt-1 text-sm text-muted">Bursar won&apos;t be able to pay them any more. You can add them again later.</p>
         <ActionForm action={removePayeeAction} submit={`Remove ${payee.name}`} tone="danger">
           <input type="hidden" name="id" value={payee.id} />
         </ActionForm>

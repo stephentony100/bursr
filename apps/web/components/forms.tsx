@@ -31,7 +31,7 @@ export function ActionForm({
       {children}
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button type="submit" disabled={pending} className={`rounded-md px-4 py-2 text-sm font-medium disabled:opacity-60 ${btn}`}>
-          {pending ? "Working…" : submit}
+          {pending ? "One moment…" : submit}
         </button>
         {result && (
           <p role="status" className={`text-sm ${result.ok ? "text-ledger" : "text-refuse"}`}>
@@ -45,8 +45,8 @@ export function ActionForm({
 
 const SCENARIOS = [
   { id: "normal", label: "A normal payment" },
-  { id: "over_cap", label: "Over the single-payment limit" },
-  { id: "stranger", label: "To someone not on the list" },
+  { id: "over_cap", label: "One that's too big" },
+  { id: "stranger", label: "To a stranger" },
 ];
 
 /** Asks the agent account what it would do with a payment. Moves nothing. */
@@ -72,9 +72,9 @@ export function RuleTester({ action }: { action: (prev: RuleTestResult, f: FormD
           role="status"
           className={`mt-4 rounded-md border-l-4 px-4 py-3 text-sm ${result.allowed ? "border-ledger bg-ledger-soft" : "border-refuse bg-refuse-soft"}`}
         >
-          <p className="text-muted">Tried: {result.tried}</p>
+          <p className="text-muted">We tried: {result.tried}</p>
           <p className="mt-1 font-medium">
-            {result.allowed ? "Allowed. " : "Refused by the account. "}
+            {result.allowed ? "✓ Allowed. " : "🛡 Blocked by your spending rules. "}
             {result.message}
           </p>
         </div>
@@ -108,14 +108,14 @@ export function ForceTester({ action }: { action: () => Promise<RuleTestResult> 
     <div>
       <form action={formAction}>
         <button disabled={pending} className="rounded-md border-2 border-refuse/60 bg-card px-4 py-2 text-sm font-medium text-refuse hover:bg-refuse-soft disabled:opacity-60">
-          {pending ? "Trying…" : "Try to force a payment above your limit"}
+          {pending ? "Trying…" : "Try to sneak a big payment past your limits"}
         </button>
       </form>
       {result && result.tried && (
         <div role="status" className={`mt-4 rounded-md border-l-4 px-4 py-3 text-sm ${result.allowed ? "border-hold bg-hold-soft" : "border-refuse bg-refuse-soft"}`}>
-          <p className="text-muted">Tried: {result.tried}</p>
+          <p className="text-muted">We tried: {result.tried}</p>
           <p className="mt-1 font-medium">
-            {result.allowed ? "" : "Refused by the account. "}
+            {result.allowed ? "" : "🛡 Blocked by your spending rules. "}
             {result.message}
           </p>
         </div>

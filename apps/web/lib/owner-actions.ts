@@ -189,8 +189,8 @@ export async function removePayee(db: PrismaClient, owner: OwnerSession, id: str
 
 async function draftItem(db: PrismaClient, itemId: string) {
   const item = await db.planItem.findUnique({ where: { id: itemId }, include: { plan: true } });
-  if (!item) throw new Error("That payment is no longer in the plan.");
-  if (item.plan.status !== "draft") throw new Error("This plan was already approved.");
+  if (!item) throw new Error("That payment isn't in this week's list any more.");
+  if (item.plan.status !== "draft") throw new Error("You've already approved this week's payments.");
   return item;
 }
 
@@ -198,7 +198,7 @@ async function draftItem(db: PrismaClient, itemId: string) {
 export async function approvePlanItem(db: PrismaClient, owner: OwnerSession, itemId: string) {
   await assertOwner(db, owner);
   const item = await draftItem(db, itemId);
-  if (item.placement !== "in" || !item.needsOwnTap) throw new Error("This payment does not need its own approval.");
+  if (item.placement !== "in" || !item.needsOwnTap) throw new Error("This payment doesn't need its own OK.");
   await db.planItem.update({ where: { id: itemId }, data: { ownTapAt: new Date() } });
   await audit(db, owner, "plan_item_approved", `You OK'd ${item.payeeName}: ${item.forWhat}`, { itemId });
 }
@@ -206,8 +206,8 @@ export async function approvePlanItem(db: PrismaClient, owner: OwnerSession, ite
 export async function removePlanItem(db: PrismaClient, owner: OwnerSession, itemId: string) {
   await assertOwner(db, owner);
   const item = await draftItem(db, itemId);
-  if (item.placement !== "in") throw new Error("Only payments in the plan can be removed.");
-  if (item.kind === "fee") throw new Error("Bursar's fee is part of your rules; change it there.");
+  if (item.placement !== "in") throw new Error("Only payments in this week's list can be taken out.");
+  if (item.kind === "fee") throw new Error("Bursar's fee is part of your spending rules.");
   await db.planItem.update({ where: { id: itemId }, data: { placement: "removed", reason: "Removed by the owner." } });
   await audit(db, owner, "plan_item_removed", `You took ${item.payeeName} (${item.forWhat}) out of this week's payments`, { itemId });
   await recomputeFee(db, item.planId);
@@ -232,12 +232,12 @@ export async function approvePlan(db: PrismaClient, owner: OwnerSession, planId:
   await assertOwner(db, owner);
   const plan = await db.plan.findUnique({ where: { id: planId }, include: { items: true } });
   if (!plan) throw new Error("Plan not found.");
-  if (plan.status !== "draft") throw new Error("This plan was already approved.");
+  if (plan.status !== "draft") throw new Error("You've already approved this week's payments.");
   const inPlan = plan.items.filter((i) => i.placement === "in");
-  if (inPlan.length === 0) throw new Error("There is nothing to pay in this plan.");
+  if (inPlan.length === 0) throw new Error("There's nothing to pay this week.");
   const waiting = inPlan.filter((i) => i.needsOwnTap && !i.ownTapAt);
   if (waiting.length) {
-    throw new Error(`Approve or remove these first: ${waiting.map((i) => `${i.forWhat} to ${i.payeeName}`).join("; ")}.`);
+    throw new Error(`First give your own OK to (or take out): ${waiting.map((i) => `${i.payeeName}, ${i.forWhat}`).join("; ")}.`);
   }
   await db.plan.update({ where: { id: planId }, data: { status: "approved", approvedAt: new Date(), approvedBy: owner.accountId } });
   await audit(db, owner, "plan_approved", `You approved this week's payments (${inPlan.length})`, { planId });

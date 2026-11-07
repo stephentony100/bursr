@@ -94,7 +94,7 @@ describe("weekly plan → approval → payment (practice mode)", () => {
     const plan = await prepareWeeklyPlan(t.db, new Date(), fakeQuote);
     const ikeja = plan.items.find((i) => i.payeeName === "Ikeja Gas & Charcoal")!;
     expect(ikeja.needsOwnTap).toBe(true);
-    await expect(approvePlan(t.db, owner, plan.id)).rejects.toThrow(/Approve or remove these first/);
+    await expect(approvePlan(t.db, owner, plan.id)).rejects.toThrow(/First give your own OK/);
     await approvePlanItem(t.db, owner, ikeja.id);
     await approvePlan(t.db, owner, plan.id);
     expect((await getPlan(t.db, plan.id))!.status).toBe("approved");

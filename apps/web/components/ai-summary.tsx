@@ -9,7 +9,7 @@ export function AiSummaryButton({ action }: { action: () => Promise<AiSummary> }
     <div className="mt-3">
       <form action={run}>
         <button disabled={pending} className="rounded-md border border-line bg-card px-3 py-1.5 text-sm hover:bg-paper disabled:opacity-60">
-          {pending ? "Writing…" : "Have NEAR AI write it in friendlier words"}
+          {pending ? "Writing…" : "Write it as a friendly note"}
         </button>
       </form>
       {result &&
@@ -17,7 +17,7 @@ export function AiSummaryButton({ action }: { action: () => Promise<AiSummary> }
           <blockquote className="mt-3 border-l-4 border-indigo/40 pl-4 text-sm">
             {result.text}
             <footer className="mt-1 text-xs text-muted">
-              Written privately by {result.model} on NEAR AI Cloud. Every figure was checked against your records.
+              Written privately by Bursar&apos;s AI. Every number was checked against your records before showing it to you.
             </footer>
           </blockquote>
         ) : (

@@ -75,7 +75,7 @@ export function prepareForChecks(id: string, extracted: ExtractedInvoice, receiv
       amountsKnown: true,
     };
     return { invoice, needsOwner: reasons.length ? reasons.join(" ") : null };
-  } catch (e) {
+  } catch {
     reasons.push("Bursar couldn't read one of the amounts clearly. Please check the invoice yourself.");
     return { invoice: unknownAmounts, needsOwner: reasons.join(" ") };
   }

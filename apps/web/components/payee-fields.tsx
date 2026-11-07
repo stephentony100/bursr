@@ -17,17 +17,17 @@ export function DetailFields({ payee }: { payee?: Payee }) {
         <select name="category" defaultValue={payee?.category ?? "supplier"} className={input}>
           <option value="supplier">Supplier</option>
           <option value="staff">Staff</option>
-          <option value="software">Software</option>
+          <option value="software">Subscription or service</option>
         </select>
       </label>
       <label className="block text-sm font-medium sm:col-span-2">
-        Agreed prices <span className="font-normal text-muted">(optional, one per line, in dollars)</span>
+        Prices you agreed <span className="font-normal text-muted">(optional, one per line, in dollars)</span>
         <textarea name="prices" defaultValue={prices} rows={3} placeholder="Tomatoes (crate) = 18.00" className={`${input} num`} />
-        <span className="mt-1 block font-normal text-muted">Invoices more than 5% above these are held for you to check.</span>
+        <span className="mt-1 block font-normal text-muted">If an invoice charges more than 5% above these, Bursar holds it for you to check.</span>
       </label>
       <div className="grid grid-cols-2 gap-3 sm:col-span-2 sm:max-w-md">
         <label className="block text-sm font-medium">
-          Regular pay <span className="font-normal text-muted">(optional)</span>
+          Regular pay, like wages <span className="font-normal text-muted">(optional)</span>
           <span className="mt-1 flex items-center rounded-md border border-line bg-card">
             <span className="pl-3 text-muted">$</span>
             <input
@@ -54,7 +54,7 @@ export function PayoutFields({ tokens, payee }: { tokens: PayoutToken[]; payee?:
   return (
     <div className="grid gap-4 sm:grid-cols-[14rem_1fr]">
       <label className="block text-sm font-medium">
-        Paid in
+        How they want to be paid
         <select name="token" defaultValue={payee?.payout.token.assetId} required className={input}>
           {tokens.map((t) => (
             <option key={t.assetId} value={t.assetId}>
@@ -64,11 +64,11 @@ export function PayoutFields({ tokens, payee }: { tokens: PayoutToken[]; payee?:
         </select>
       </label>
       <label className="block text-sm font-medium">
-        Their address on that network
+        Their wallet address
         <input name="address" defaultValue={payee?.payout.address} required spellCheck={false} className={`${input} num text-sm`} />
       </label>
       <label className="block text-sm font-medium sm:col-start-2">
-        Memo <span className="font-normal text-muted">(only if their exchange asks for one)</span>
+        Memo <span className="font-normal text-muted">(leave empty unless they gave you one)</span>
         <input name="memo" defaultValue={payee?.payout.memo ?? ""} className={`${input} num text-sm`} />
       </label>
     </div>

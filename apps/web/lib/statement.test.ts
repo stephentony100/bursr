@@ -35,7 +35,7 @@ describe("statement", () => {
     expect(farm.forWhat).toBe("Invoice #MPF-0412");
     expect(farm.received).toBe("118");
     expect(farm.receivedAs).toMatch(/^USDC on NEAR to [0-9a-f]{64}$/);
-    expect(farm.approval).toMatch(/^Plan approved by demo-owner\.near on /);
+    expect(farm.approval).toMatch(/^Approved by demo-owner\.near on /);
     expect(farm.references).toMatch(/^sim_/);
     expect(farm.status).toBe("Sent");
   });
@@ -44,7 +44,7 @@ describe("statement", () => {
     const csv = statementCsv(lines);
     const rows = csv.trim().split("\r\n");
     expect(rows).toHaveLength(7);
-    expect(rows[0]).toBe('"Date (UTC)","Payee","For","Amount (USD)","Sent from account","Payee received","Received as","Status","Approval","Plan","References","Note"');
+    expect(rows[0]).toBe('"Date (UTC)","Paid to","For","Amount (USD)","Sent from Bursar wallet","They received","Where it went","Status","Approved","Payment list","References","Note"');
     expect(csv).toContain('"Mama Put Farms Ltd","Invoice #MPF-0412","118.00"');
   });
 

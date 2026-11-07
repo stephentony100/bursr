@@ -39,7 +39,7 @@ export async function createLinkCode(db: PrismaClient, owner: OwnerSession, now 
 /** Bot: `/link CODE` from a chat. Returns a reply for the chat. */
 export async function linkChat(db: PrismaClient, chatId: number, code: string, now = Date.now()): Promise<string> {
   const pending = await getSetting<{ code: string; accountId: string; expires: number; wrong: number }>(db, PENDING);
-  const again = "Get a new one on Bursar → Rules & account → Connect Telegram.";
+  const again = "Get a new one in Bursar → Spending rules → Connect my Telegram.";
   if (!pending || pending.expires < now) return `That code is wrong or expired. ${again}`;
   if (pending.code !== code.trim().toUpperCase()) {
     if ((pending.wrong ?? 0) + 1 >= MAX_LINK_ATTEMPTS) {
@@ -51,7 +51,7 @@ export async function linkChat(db: PrismaClient, chatId: number, code: string, n
   }
   await setSetting(db, LINKED, { chatId, accountId: pending.accountId, at: new Date(now).toISOString() });
   await db.setting.delete({ where: { key: PENDING } });
-  return `Connected. This chat now acts for ${pending.accountId}. Send /plan to see this week's plan.`;
+  return `You're connected. I'll message you here when an invoice needs your eyes. Send /plan any time to see this week's payments.`;
 }
 
 export async function linkedChat(db: PrismaClient): Promise<{ chatId: number; accountId: string } | null> {
@@ -71,10 +71,10 @@ export function planText(plan: PlanView): string {
   const out = plan.items.filter((i) => i.placement === "held" || i.placement === "deferred");
   const total = inPlan.reduce((a, i) => a + i.amountUsd, 0n);
   const lines = [
-    plan.status === "draft" ? `This week's plan: ${formatUsd(total)} in ${inPlan.length} payments` : `Plan (${plan.status}): ${formatUsd(total)}`,
-    ...inPlan.map((i) => `• ${i.payeeName}: ${formatUsd(i.amountUsd)} (${i.forWhat})${i.needsOwnTap && !i.ownTapAt ? " ⚠ needs your own tap in the web app" : ""}${plan.status !== "draft" ? ` — ${i.payStatus}` : ""}`),
+    plan.status === "draft" ? `This week's payments: ${formatUsd(total)} to ${inPlan.length} people, waiting for your OK` : `This week's payments (${plan.status === "done" ? "all done" : "approved"}): ${formatUsd(total)}`,
+    ...inPlan.map((i) => `• ${i.payeeName}: ${formatUsd(i.amountUsd)} (${i.forWhat})${i.needsOwnTap && !i.ownTapAt ? " ⚠ needs your own OK in the app first" : ""}${plan.status !== "draft" ? ` — ${i.payStatus}` : ""}`),
   ];
-  if (out.length) lines.push("", `Not in this plan (${out.length}):`, ...out.map((i) => `• ${i.payeeName}: ${i.reason}`));
+  if (out.length) lines.push("", `Not paid this week (${out.length}):`, ...out.map((i) => `• ${i.payeeName}: ${i.reason}`));
   return lines.join("\n");
 }
 
@@ -90,13 +90,13 @@ export async function pendingAlerts(db: PrismaClient): Promise<Alert[]> {
   for (const i of invoices) {
     const results = JSON.parse(i.results) as { status: string; reason: string }[];
     const reason = [...results.filter((r) => r.status === "block" || r.status === "hold").map((r) => r.reason), i.needsOwner].filter(Boolean)[0] ?? "Needs your attention.";
-    const word = i.status === "block" ? "🚫 Blocked" : "⏸ On hold";
+    const word = i.status === "block" ? "🚫 Stopped, don't pay" : "⏸ On hold";
     alerts.push({ key: `invoice:${i.id}`, text: `${word}: ${i.supplierName || i.fileName} #${i.invoiceNumber || "?"} (${formatUsd(BigInt(i.totalUsd))}).\n${reason}` });
   }
   const failed = await db.planItem.findMany({ where: { payStatus: "failed" } });
   for (const p of failed) alerts.push({ key: `failed:${p.id}`, text: `❌ Not paid: ${p.payeeName}, ${p.forWhat}.\n${p.payReason ?? ""}` });
   const refused = await db.auditEvent.findMany({ where: { kind: "account_refused" }, orderBy: { at: "asc" } });
-  for (const r of refused) alerts.push({ key: `refused:${r.id}`, text: `🛡 The agent account refused a payment: ${r.message}` });
+  for (const r of refused) alerts.push({ key: `refused:${r.id}`, text: `🛡 Your spending rules blocked a payment: ${r.message}` });
 
   const sent = new Set((await db.telegramMessage.findMany({ where: { key: { in: alerts.map((a) => a.key) } }, select: { key: true } })).map((m) => m.key));
   return alerts.filter((a) => !sent.has(a.key));

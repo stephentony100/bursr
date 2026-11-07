@@ -36,10 +36,10 @@ export default async function SetupPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="font-display text-3xl font-semibold">Rules &amp; account</h1>
+        <h1 className="font-display text-3xl font-semibold">Spending rules</h1>
         <p className="mt-2 max-w-2xl text-muted">
-          Your rules are written into the agent&apos;s account. The account itself refuses any payment that breaks them. Bursar&apos;s AI
-          can only ask; it can&apos;t change your rules or your payee list.
+          You set the limits once. They&apos;re locked into your Bursar wallet itself, so any payment that breaks them is stopped there,
+          no matter what. Bursar&apos;s AI can only ask to pay; it can never change your limits or who you pay.
         </p>
       </div>
 
@@ -57,12 +57,12 @@ export default async function SetupPage() {
 
       {r && (
         <section className="rounded-xl border border-line bg-card p-6">
-          <h2 className="font-display text-xl font-semibold">Spending rules</h2>
-          <ActionForm action={saveRules} submit={dryRun ? "Save rules" : "Save rules (then sign them with your wallet)"}>
+          <h2 className="font-display text-xl font-semibold">Your limits</h2>
+          <ActionForm action={saveRules} submit={dryRun ? "Save my limits" : "Save my limits (then confirm with your wallet)"}>
             <div className="mt-4 grid gap-5 sm:grid-cols-3">
-              <Money name="weeklyCap" label="Weekly limit" hint="The most that can leave in any 7 days." value={usd(r.weeklyCapUsd)} />
-              <Money name="perPaymentCap" label="Largest single payment" hint="Anything bigger is refused." value={usd(r.perPaymentCapUsd)} />
-              <Money name="approvalThreshold" label="Ask me first above" hint="Bigger payments need your own tap." value={usd(r.approvalThresholdUsd)} />
+              <Money name="weeklyCap" label="Weekly limit" hint="The most that can go out in any 7 days." value={usd(r.weeklyCapUsd)} />
+              <Money name="perPaymentCap" label="Largest single payment" hint="Anything bigger is stopped, always." value={usd(r.perPaymentCapUsd)} />
+              <Money name="approvalThreshold" label="Ask me first above" hint="Bigger payments wait for your own OK." value={usd(r.approvalThresholdUsd)} />
             </div>
             <label className="mt-5 block text-sm font-medium">
               Payday
@@ -78,16 +78,17 @@ export default async function SetupPage() {
               <span className="font-medium">Bursar&apos;s fee: </span>
               {r.fee ? (
                 <>
-                  {(r.fee.bps / 100).toFixed(2).replace(/\.?0+$/, "")}% of each plan, paid in {r.fee.payout.token.symbol} to{" "}
-                  <span className="num text-xs">{r.fee.payout.address}</span>. It is on your signed payee list like anyone else, so it can only go there.
+                  {(r.fee.bps / 100).toFixed(2).replace(/\.?0+$/, "")}% of each week&apos;s payments, shown as its own line before you approve. Like
+                  everyone you pay, it can only go to one fixed address ({" "}
+                  <span className="num text-xs">{r.fee.payout.address}</span>), so it can never be raised or sent anywhere else.
                 </>
               ) : (
                 "none."
               )}
             </p>
             <fieldset className="mt-5">
-              <legend className="text-sm font-medium">Ways you can pay people</legend>
-              <p className="text-sm text-muted">You pay from {r.treasury.symbol} on {chainName(r.treasury.chain)}. Payees can receive any of these.</p>
+              <legend className="text-sm font-medium">How people can get paid</legend>
+              <p className="text-sm text-muted">Your Bursar wallet holds digital dollars ({r.treasury.symbol}). Each person can choose to receive any of these, on the network they already use.</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {tokens.map((t) => (
                   <label key={t.assetId} className="flex items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm has-[:checked]:border-ledger has-[:checked]:bg-ledger-soft">
@@ -103,12 +104,12 @@ export default async function SetupPage() {
 
       {r && dryRun && status && (
         <section className="rounded-xl border border-line bg-card p-6">
-          <h2 className="font-display text-xl font-semibold">Freeze all payments</h2>
+          <h2 className="font-display text-xl font-semibold">Emergency stop</h2>
           <p className="mt-1 text-sm text-muted">
-            One switch stops every payment until you turn it back on.{" "}
-            {status.frozen ? <strong className="text-refuse">Payments are frozen now.</strong> : "Payments are allowed now."}
+            Something feels wrong? One tap stops every payment until you turn them back on.{" "}
+            {status.frozen ? <strong className="text-refuse">All payments are paused right now.</strong> : "Payments are on right now."}
           </p>
-          <ActionForm action={toggleFreeze} submit={status.frozen ? "Unfreeze payments" : "Freeze all payments"} tone={status.frozen ? "primary" : "danger"}>
+          <ActionForm action={toggleFreeze} submit={status.frozen ? "Turn payments back on" : "Pause all payments"} tone={status.frozen ? "primary" : "danger"}>
             <input type="hidden" name="freeze" value={status.frozen ? "0" : "1"} />
           </ActionForm>
         </section>
@@ -118,25 +119,25 @@ export default async function SetupPage() {
         <section className="rounded-xl border border-line bg-card p-6">
           <h2 className="font-display text-xl font-semibold">Telegram</h2>
           <p className="mt-1 max-w-2xl text-sm text-muted">
-            Get alerts about blocked or held invoices and approve the weekly plan from Telegram.{" "}
-            {telegram ? <strong className="text-ledger">Connected for {telegram.accountId}.</strong> : "Not connected yet."} Run{" "}
-            <code className="num">npm run bot</code> to start the bot.
+            Get a message the moment Bursar stops a suspicious invoice, and approve the week&apos;s payments from your phone.{" "}
+            {telegram ? <strong className="text-ledger">Connected.</strong> : "Not connected yet."}
           </p>
-          <ActionForm action={telegramLinkAction} submit={telegram ? "Connect a different chat" : "Connect Telegram"} tone="quiet" />
+          <ActionForm action={telegramLinkAction} submit={telegram ? "Connect a different chat" : "Connect my Telegram"} tone="quiet" />
         </section>
       )}
 
       {r && status && (
         <section className="rounded-xl border border-line bg-card p-6">
-          <h2 className="font-display text-xl font-semibold">Test the rules</h2>
+          <h2 className="font-display text-xl font-semibold">See your limits in action</h2>
           <p className="mt-1 max-w-2xl text-sm text-muted">
-            Ask the account what it would do with a payment. Nothing is paid. {dryRun ? "In practice mode the account is simulated with the same rules the real one uses." : "The answer comes from the live account."}
+            Pick a payment and Bursar asks your wallet whether it would let it through. Nothing is actually paid.{" "}
+            {dryRun ? "In the demo, the wallet follows the same rules with practice money." : "The answer comes from your real wallet."}
           </p>
           <div className="mt-4">
             <RuleTester action={testRule} />
           </div>
           <details className="mt-6 text-sm">
-            <summary className="cursor-pointer text-muted">What the account enforces (revision {status.policyRevision})</summary>
+            <summary className="cursor-pointer text-muted">Technical details: the exact rules your wallet enforces (version {status.policyRevision})</summary>
             <pre className="num mt-2 max-h-80 overflow-auto rounded-md bg-paper p-3 text-xs">{JSON.stringify(status.policy, null, 2)}</pre>
           </details>
         </section>

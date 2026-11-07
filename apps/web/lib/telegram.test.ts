@@ -31,7 +31,7 @@ describe("Telegram", () => {
     const code = await createLinkCode(t.db, owner, Date.now());
     expect(await linkChat(t.db, 111, "WRONG")).toMatch(/wrong or expired/);
     expect(await linkChat(t.db, 111, code, Date.now() + 11 * 60_000)).toMatch(/wrong or expired/);
-    expect(await linkChat(t.db, 111, code.toLowerCase())).toMatch(/^Connected/);
+    expect(await linkChat(t.db, 111, code.toLowerCase())).toMatch(/^You're connected/);
     expect(await linkChat(t.db, 222, code)).toMatch(/wrong or expired/); // used up
   });
 
@@ -54,14 +54,14 @@ describe("Telegram", () => {
 
   it("the plan message lists payments and what is held, in plain words", async () => {
     const text = planText(await prepareWeeklyPlan(t.db, new Date(), fakeQuote));
-    expect(text).toMatch(/^This week's plan: \$661\.29 in 6 payments/);
-    expect(text).toContain("Not in this plan (4):");
+    expect(text).toMatch(/^This week's payments: \$661\.29 to 6 people/);
+    expect(text).toContain("Not paid this week (4):");
     expect(text).toContain("Name looks like Eko Fresh Foods but is not Eko Fresh Foods");
   });
 
   it("each alert is sent once (idempotent by key)", async () => {
     const first = await pendingAlerts(t.db);
-    expect(first.map((a) => a.text.split(":")[0])).toEqual(["🚫 Blocked", "⏸ On hold", "🚫 Blocked", "⏸ On hold"]);
+    expect(first.map((a) => a.text.split(":")[0])).toEqual(["🚫 Stopped, don't pay", "⏸ On hold", "🚫 Stopped, don't pay", "⏸ On hold"]);
     for (const a of first) await markSent(t.db, a.key);
     await markSent(t.db, first[0].key); // a retry is harmless
     expect(await pendingAlerts(t.db)).toEqual([]);

@@ -32,7 +32,7 @@ export async function monthFacts(db: PrismaClient, now = new Date()): Promise<Mo
   const inMonth = (d: Date) => d >= from && d < to;
 
   const lines = (await statementLines(db)).filter((l) => inMonth(l.date));
-  const paid = lines.filter((l) => l.status !== "Failed");
+  const paid = lines.filter((l) => l.status !== "Not paid");
   const payees = await db.payee.findMany({ select: { name: true, category: true } });
   const category = new Map(payees.map((p) => [p.name, p.category]));
   const sum = (xs: { amountUsd: bigint }[]) => xs.reduce((a, x) => a + x.amountUsd, 0n);
@@ -73,8 +73,8 @@ export function plainSummary(f: MonthFacts): string {
   parts.push(
     `${plural(f.invoices, "invoice")} came in: ${f.invoicesReady} passed every check, ${f.invoicesBlocked} ${f.invoicesBlocked === 1 ? "was" : "were"} blocked as possible fraud and ${f.invoicesHeld} ${f.invoicesHeld === 1 ? "was" : "were"} held for you to check.`,
   );
-  if (f.refusedByAccount) parts.push(`The agent account refused ${plural(f.refusedByAccount, "payment")} that broke your rules.`);
-  if (f.failedPayments) parts.push(`${plural(f.failedPayments, "payment")} could not be sent; the statement says why.`);
+  if (f.refusedByAccount) parts.push(`Your spending rules blocked ${plural(f.refusedByAccount, "payment")} that broke your limits.`);
+  if (f.failedPayments) parts.push(`${plural(f.failedPayments, "payment")} could not be sent; your records say why.`);
   return parts.join(" ");
 }
 

@@ -12,12 +12,12 @@ import { getBusiness } from "@/lib/store";
 import { chainName } from "@/lib/tokens";
 
 const PAY_STATUS: Record<PlanItemView["payStatus"], { label: string; tone: string }> = {
-  planned: { label: "Waiting for approval", tone: "text-muted" },
-  paying: { label: "Sending…", tone: "text-hold" },
+  planned: { label: "Waiting for your OK", tone: "text-muted" },
+  paying: { label: "Paying…", tone: "text-hold" },
   sent: { label: "Sent, on its way…", tone: "text-hold" },
-  delivered: { label: "Delivered", tone: "text-ledger" },
+  delivered: { label: "Paid ✓", tone: "text-ledger" },
   failed: { label: "Not paid", tone: "text-refuse" },
-  refunded: { label: "Refunded to the account", tone: "text-hold" },
+  refunded: { label: "Money returned to your wallet", tone: "text-hold" },
 };
 
 export default async function PlanPage() {
@@ -52,13 +52,13 @@ export default async function PlanPage() {
       <AutoRefresh active={moving} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-semibold">This week&apos;s plan</h1>
+          <h1 className="font-display text-3xl font-semibold">This week&apos;s payments</h1>
           <p className="mt-2 max-w-2xl text-muted">
-            Bursar puts ready invoices and staff pay into one plan. You approve it once; the agent account then pays each person, and
-            refuses anything outside your rules.
+            Every invoice that passed its checks, plus your staff&apos;s pay, in one list. Look it over, tap approve once, and everyone gets
+            paid in the digital dollars they prefer. Anything outside your spending rules simply can&apos;t go out.
           </p>
         </div>
-        {(!plan || plan.status !== "draft") && <ActionForm action={preparePlanAction} submit={plan ? "Prepare next plan" : "Prepare this week's plan"} />}
+        {(!plan || plan.status !== "draft") && <ActionForm action={preparePlanAction} submit={plan ? "Get next week's payments ready" : "Get this week's payments ready"} />}
       </div>
 
       {!plan && <p className="text-muted">No plan yet.</p>}
@@ -68,24 +68,24 @@ export default async function PlanPage() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-sm text-muted">
-                {plan.status === "draft" ? "Ready for your approval" : `Approved by ${plan.approvedBy} · ${plan.approvedAt?.toLocaleString("en-GB")}`}
+                {plan.status === "draft" ? "Ready for your OK" : `You approved this on ${plan.approvedAt?.toLocaleString("en-GB")}`}
               </p>
               <p className="num font-display text-4xl font-semibold">{formatUsd(total)}</p>
               <p className="text-sm text-muted">
                 {inPlan.length} payments ·{" "}
                 {unquoted === 0
-                  ? `costs about ${formatUnits(cost, treasury.decimals)} ${treasury.symbol} with network fees`
-                  : `${unquoted} without a price quote (priced again when paid)`}{" "}
+                  ? `about $${formatUnits(cost, treasury.decimals)} including transfer fees`
+                  : `fees for ${unquoted} will be worked out when paid`}{" "}
                 ·{" "}
-                {formatUsd(plan.capLeftUsd)} was left under your weekly limit
+                {formatUsd(plan.capLeftUsd)} was left of your weekly limit
               </p>
             </div>
             {plan.status === "draft" && (
               <div className="text-right">
-                <ActionForm action={approvePlanAction} submit="Approve plan and pay">
+                <ActionForm action={approvePlanAction} submit="Approve and pay everyone">
                   <input type="hidden" name="planId" value={plan.id} />
                 </ActionForm>
-                {waitingTaps > 0 && <p className="mt-1 text-sm text-hold">{waitingTaps} payment(s) below need your own tap first.</p>}
+                {waitingTaps > 0 && <p className="mt-1 text-sm text-hold">{waitingTaps} payment(s) below need your own OK first.</p>}
               </div>
             )}
           </div>
@@ -100,7 +100,7 @@ export default async function PlanPage() {
                     {i.payout && (
                       <>
                         {" "}
-                        · paid in {i.payout.token.symbol} on {chainName(i.payout.token.chain)}
+                        · gets {i.payout.token.symbol} on {chainName(i.payout.token.chain)}
                       </>
                     )}
                   </p>
@@ -112,15 +112,15 @@ export default async function PlanPage() {
                   <p className="num font-medium">{formatUsd(i.amountUsd)}</p>
                   <p className="num text-xs text-muted">
                     {i.quote
-                      ? `fee ${formatUnits(BigInt(i.quote.withdrawFee), i.payout?.token.decimals ?? 6)} · ~${i.quote.timeEstimateSec}s`
-                      : "no price quote yet"}
+                      ? `fee $${formatUnits(BigInt(i.quote.withdrawFee), i.payout?.token.decimals ?? 6)} · arrives in ~${i.quote.timeEstimateSec}s`
+                      : "fee worked out when paid"}
                   </p>
                 </div>
                 <div className="flex w-56 justify-end gap-2">
                   {plan.status === "draft" ? (
                     <>
-                      {i.needsOwnTap && !i.ownTapAt && <ItemButton action={approveItemAction} itemId={i.id} label="Approve this one" tone="primary" />}
-                      {i.kind !== "fee" && <ItemButton action={removeItemAction} itemId={i.id} label="Remove" />}
+                      {i.needsOwnTap && !i.ownTapAt && <ItemButton action={approveItemAction} itemId={i.id} label="OK this one" tone="primary" />}
+                      {i.kind !== "fee" && <ItemButton action={removeItemAction} itemId={i.id} label="Not this week" />}
                     </>
                   ) : (
                     <span className={`text-sm font-medium ${PAY_STATUS[i.payStatus].tone}`}>{PAY_STATUS[i.payStatus].label}</span>
@@ -134,7 +134,7 @@ export default async function PlanPage() {
 
       {out.length > 0 && (
         <section>
-          <h2 className="font-display text-xl font-semibold">Not in this plan</h2>
+          <h2 className="font-display text-xl font-semibold">Not paid this week, and why</h2>
           <ul className="mt-3 divide-y divide-line rounded-xl border border-line bg-card">
             {out.map((i) => (
               <li key={i.id} className="flex flex-wrap gap-x-6 gap-y-1 px-5 py-3 text-sm">
@@ -154,17 +154,18 @@ export default async function PlanPage() {
       {plan && plan.status !== "draft" && (
         <p className="text-sm">
           <Link href="/statement" className="text-indigo underline">
-            See the statement
+            See your records
           </Link>{" "}
-          for every payment and its references.
+          for every payment, with proof.
         </p>
       )}
 
       <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="font-display text-xl font-semibold">Can Bursar go around your limits?</h2>
+        <h2 className="font-display text-xl font-semibold">Can anyone get around your limits?</h2>
         <p className="mt-1 max-w-2xl text-sm text-muted">
-          Send one payment above your largest single payment straight to the agent account, skipping the plan and your approval. The account
-          itself should refuse it. {dryRun ? "In practice mode the account is simulated with the same rules." : "In live mode this only asks the account (nothing is sent)."}
+          Try it yourself: Bursar sends one payment bigger than your limit straight to your wallet, skipping this list and your approval.
+          Your spending rules live in the wallet itself, so it should be stopped there.{" "}
+          {dryRun ? "In the demo, the wallet follows the same rules with practice money." : "In live mode this only asks the wallet; nothing is sent."}
         </p>
         <div className="mt-4">
           <ForceTester action={forceOverCapAction} />

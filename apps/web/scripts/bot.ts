@@ -20,8 +20,8 @@ const web = env.NEXT_PUBLIC_APP_URL;
 
 bot.command("start", (ctx) =>
   ctx.reply(
-    "This is Bursar. It reads your supplier invoices, checks them, and pays the week's plan after you approve it.\n\n" +
-      "To connect: open Bursar → Rules & account → Connect Telegram, then send /link CODE here.",
+    "Hi, I'm Bursar. I check your supplier invoices for fraud and pay everyone once you approve.\n\n" +
+      "To connect: open Bursar → Spending rules → Connect my Telegram, then send me the /link line it shows you.",
   ),
 );
 
@@ -30,28 +30,28 @@ bot.command("link", async (ctx) => {
 });
 
 bot.command("plan", async (ctx) => {
-  if (!(await ownerForChat(db(), ctx.chat.id))) return ctx.reply("This chat is not connected. Send /start for how to connect.");
+  if (!(await ownerForChat(db(), ctx.chat.id))) return ctx.reply("This chat isn't connected yet. Send /start to see how.");
   const plan = await getLatestPlan(db());
-  if (!plan) return ctx.reply(`No plan yet. Prepare one on ${web}/plan`);
-  const keyboard = plan.status === "draft" ? new InlineKeyboard().text("✅ Approve plan and pay", `approve:${plan.id}`) : undefined;
-  await ctx.reply(`${planText(plan)}\n\nReview in the web app: ${web}/plan`, { reply_markup: keyboard });
+  if (!plan) return ctx.reply(`Nothing waiting yet. Get this week's payments ready at ${web}/plan`);
+  const keyboard = plan.status === "draft" ? new InlineKeyboard().text("✅ Approve and pay everyone", `approve:${plan.id}`) : undefined;
+  await ctx.reply(`${planText(plan)}\n\nSee the details: ${web}/plan`, { reply_markup: keyboard });
 });
 
 bot.callbackQuery(/^approve:(.+)$/, async (ctx) => {
   const owner = ctx.chat ? await ownerForChat(db(), ctx.chat.id) : null;
-  if (!owner) return ctx.answerCallbackQuery({ text: "This chat is not connected.", show_alert: true });
+  if (!owner) return ctx.answerCallbackQuery({ text: "This chat isn't connected.", show_alert: true });
   const planId = ctx.match[1];
   try {
     await approvePlan(db(), owner, planId);
   } catch (e) {
     return ctx.answerCallbackQuery({ text: e instanceof Error ? e.message.slice(0, 190) : "Could not approve.", show_alert: true });
   }
-  await ctx.answerCallbackQuery({ text: "Approved. Paying now…" });
+  await ctx.answerCallbackQuery({ text: "Approved. Paying everyone now…" });
   await ctx.editMessageReplyMarkup({ reply_markup: undefined });
   const results = await payApprovedPlan(db(), await agentAccount(db()), planId);
   const sent = Object.values(results).filter((s) => s === "sent").length;
   const failed = Object.values(results).length - sent;
-  await ctx.reply(`Plan approved from Telegram. ${sent} payments sent${failed ? `, ${failed} not paid (reasons follow)` : ""}.\n\n${planText((await getPlan(db(), planId))!)}`);
+  await ctx.reply(`Done. ${sent} payments on the way${failed ? `, ${failed} not paid (see why below)` : ""}.\n\n${planText((await getPlan(db(), planId))!)}`);
 });
 
 async function sendAlerts() {
