@@ -46,7 +46,7 @@ describe("sample restaurant", () => {
 
   it("$901 is refused: above the $900 per-payment cap", async () => {
     const out = await account.preview(pay(901n));
-    expect(out.status === "refused" && out.refusal.message).toBe("This payment is above the owner's per-payment cap of $900.00.");
+    expect(out.status === "refused" && out.refusal.message).toBe("This is more than your $900.00 limit for a single payment.");
   });
 
   it("an address not on the list is refused", async () => {

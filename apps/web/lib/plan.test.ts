@@ -67,11 +67,11 @@ describe("weekly plan", () => {
     const both = invoice({
       id: "h",
       status: "block",
-      needsOwner: "The reader was not sure about: supplierName.",
-      results: [{ check: "payout-changed", status: "block", reason: "Payout details changed." }],
+      needsOwner: "Bursar couldn't read the supplier's name clearly.",
+      results: [{ check: "payout-changed", status: "block", reason: "Payment details changed." }],
     });
     expect(placement(buildPlan(input({ invoices: [both] })), "Invoice #H").reason).toBe(
-      "Payout details changed. The reader was not sure about: supplierName.",
+      "Payment details changed. Bursar couldn't read the supplier's name clearly.",
     );
   });
 
@@ -117,7 +117,7 @@ describe("weekly plan", () => {
     const changed = { ...farm, payoutChangedAt: "2026-11-05T12:00:00.000Z" };
     const item = placement(buildPlan(input({ payees: [changed], invoices: [invoice({ id: "g" })] })), "Invoice #G");
     expect(item.placement).toBe("held");
-    expect(item.reason).toContain("on hold until");
+    expect(item.reason).toContain("safety hold until");
   });
 
   it("skips invoices already paid and wages already paid this period", () => {

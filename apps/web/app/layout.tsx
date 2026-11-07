@@ -12,16 +12,16 @@ const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"
 
 export const metadata: Metadata = {
   title: "Bursar",
-  description: "Pays your business bills inside the rules you set.",
+  description: "Bursar checks your supplier invoices for fraud and pays everyone once you approve. Safely, inside the limits you set.",
 };
 
 const NAV = [
   { href: "/", label: "This week" },
   { href: "/invoices", label: "Invoices" },
-  { href: "/plan", label: "Plan" },
-  { href: "/statement", label: "Statement" },
-  { href: "/setup", label: "Rules & account" },
-  { href: "/payees", label: "Payees" },
+  { href: "/plan", label: "Payments" },
+  { href: "/statement", label: "Records" },
+  { href: "/payees", label: "People" },
+  { href: "/setup", label: "Spending rules" },
 ];
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -46,9 +46,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             {!dryRun && <HeaderWallet accountId={owner?.accountId ?? null} />}
             <span
               className={`rounded-full px-3 py-1 text-xs font-medium ${dryRun ? "bg-hold-soft text-hold" : "bg-refuse-soft text-refuse"}`}
-              title={dryRun ? "Sample data and demo money. Nothing real is paid." : "Real payments on NEAR mainnet."}
+              title={dryRun ? "You're exploring with a sample restaurant and practice money. Nothing real is paid." : "Real money. Payments go out for real."}
             >
-              {dryRun ? "Practice mode: demo money" : "Live: real money"}
+              {dryRun ? "Demo · practice money" : "Live · real money"}
             </span>
             </span>
           </div>

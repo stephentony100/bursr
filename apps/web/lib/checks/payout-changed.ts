@@ -22,12 +22,12 @@ export const payoutChanged: Check = (invoice, { payees }) => {
     return {
       check: "payout-changed",
       status: "flag",
-      reason: `The payment address on the invoice could not be read exactly ("${printed}" is not a valid address). Bursar only ever pays ${payee.name} at the address on record, ${payee.payout.address}.`,
+      reason: `Bursar couldn't read the payment address on this invoice clearly. No problem: Bursar only ever pays ${payee.name} at the address you saved.`,
     };
   }
   return {
     check: "payout-changed",
     status: "block",
-    reason: `Payout details changed: the invoice asks for payment to ${printed}, but ${payee.name} is paid at ${payee.payout.address}. Confirm with ${payee.name} by phone before changing anything.`,
+    reason: `Payment details changed: this invoice asks you to pay ${printed}, but you pay ${payee.name} at ${payee.payout.address}. Call ${payee.name} on a number you already trust before changing anything.`,
   };
 };

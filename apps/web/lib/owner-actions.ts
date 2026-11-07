@@ -92,21 +92,21 @@ export async function setupBusiness(db: PrismaClient, owner: OwnerSession, input
       update: {},
     });
   }
-  await audit(db, owner, "business_setup", `Business "${input.name}" set up`, rules);
+  await audit(db, owner, "business_setup", `Welcome to Bursar, ${input.name}`, rules);
 }
 
 export async function updateRules(db: PrismaClient, owner: OwnerSession, rules: Rules) {
   await assertOwner(db, owner);
   const parsed = RulesSchema.parse(rules);
   await db.business.update({ where: { id: "main" }, data: { rules: JSON.stringify(parsed) } });
-  await audit(db, owner, "rules_changed", "Rules changed", parsed);
+  await audit(db, owner, "rules_changed", "You updated your spending rules", parsed);
   await applyToSimulatedAccount(db);
 }
 
 export async function setFrozen(db: PrismaClient, owner: OwnerSession, frozen: boolean) {
   const business = await assertOwner(db, owner);
   await updateRules(db, owner, { ...business.rules, frozen });
-  await audit(db, owner, frozen ? "account_frozen" : "account_unfrozen", frozen ? "Payments frozen by the owner" : "Payments unfrozen by the owner");
+  await audit(db, owner, frozen ? "account_frozen" : "account_unfrozen", frozen ? "You paused all payments" : "You turned payments back on");
 }
 
 export interface PayeeInput {
@@ -139,7 +139,7 @@ export async function addPayee(db: PrismaClient, owner: OwnerSession, input: Pay
       recurring: JSON.stringify(input.recurring),
     },
   });
-  await audit(db, owner, "payee_added", `Payee "${input.name}" added`, { id: row.id, payout });
+  await audit(db, owner, "payee_added", `You added ${input.name}`, { id: row.id, payout });
   await applyToSimulatedAccount(db);
   return row.id;
 }
@@ -161,7 +161,7 @@ export async function updatePayeeDetails(
       recurring: JSON.stringify(input.recurring),
     },
   });
-  await audit(db, owner, "payee_updated", `Payee "${input.name}" updated`, { id });
+  await audit(db, owner, "payee_updated", `You updated ${input.name}'s details`, { id });
 }
 
 /** Changing where a payee is paid starts a 48-hour hold on that payee. */
@@ -170,7 +170,7 @@ export async function changePayout(db: PrismaClient, owner: OwnerSession, id: st
   const clean = cleanPayout(business.rules, payout);
   const before = await db.payee.findUniqueOrThrow({ where: { id } });
   await db.payee.update({ where: { id }, data: { payout: JSON.stringify(clean), payoutChangedAt: now } });
-  await audit(db, owner, "payout_changed", `Payout details changed for "${before.name}". Payments to them are held for 48 hours.`, {
+  await audit(db, owner, "payout_changed", `You changed where ${before.name} gets paid. Payments to them are on a 48-hour safety hold.`, {
     id,
     before: JSON.parse(before.payout),
     after: clean,
@@ -181,7 +181,7 @@ export async function changePayout(db: PrismaClient, owner: OwnerSession, id: st
 export async function removePayee(db: PrismaClient, owner: OwnerSession, id: string) {
   await assertOwner(db, owner);
   const row = await db.payee.update({ where: { id }, data: { removedAt: new Date() } });
-  await audit(db, owner, "payee_removed", `Payee "${row.name}" removed`, { id });
+  await audit(db, owner, "payee_removed", `You removed ${row.name}`, { id });
   await applyToSimulatedAccount(db);
 }
 
@@ -200,7 +200,7 @@ export async function approvePlanItem(db: PrismaClient, owner: OwnerSession, ite
   const item = await draftItem(db, itemId);
   if (item.placement !== "in" || !item.needsOwnTap) throw new Error("This payment does not need its own approval.");
   await db.planItem.update({ where: { id: itemId }, data: { ownTapAt: new Date() } });
-  await audit(db, owner, "plan_item_approved", `Approved ${item.forWhat} to ${item.payeeName} on its own`, { itemId });
+  await audit(db, owner, "plan_item_approved", `You OK'd ${item.payeeName}: ${item.forWhat}`, { itemId });
 }
 
 export async function removePlanItem(db: PrismaClient, owner: OwnerSession, itemId: string) {
@@ -209,7 +209,7 @@ export async function removePlanItem(db: PrismaClient, owner: OwnerSession, item
   if (item.placement !== "in") throw new Error("Only payments in the plan can be removed.");
   if (item.kind === "fee") throw new Error("Bursar's fee is part of your rules; change it there.");
   await db.planItem.update({ where: { id: itemId }, data: { placement: "removed", reason: "Removed by the owner." } });
-  await audit(db, owner, "plan_item_removed", `Removed ${item.forWhat} to ${item.payeeName} from the plan`, { itemId });
+  await audit(db, owner, "plan_item_removed", `You took ${item.payeeName} (${item.forWhat}) out of this week's payments`, { itemId });
   await recomputeFee(db, item.planId);
 }
 
@@ -240,5 +240,5 @@ export async function approvePlan(db: PrismaClient, owner: OwnerSession, planId:
     throw new Error(`Approve or remove these first: ${waiting.map((i) => `${i.forWhat} to ${i.payeeName}`).join("; ")}.`);
   }
   await db.plan.update({ where: { id: planId }, data: { status: "approved", approvedAt: new Date(), approvedBy: owner.accountId } });
-  await audit(db, owner, "plan_approved", `Plan approved: ${inPlan.length} payments`, { planId });
+  await audit(db, owner, "plan_approved", `You approved this week's payments (${inPlan.length})`, { planId });
 }

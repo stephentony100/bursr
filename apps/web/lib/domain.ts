@@ -32,11 +32,11 @@ export const RulesSchema = z
       .default(null),
   })
   .refine((r) => BigInt(r.perPaymentCapUsd) <= BigInt(r.weeklyCapUsd), {
-    message: "The per-payment cap cannot be larger than the weekly cap",
+    message: "Your largest single payment can't be more than your weekly limit.",
     path: ["perPaymentCapUsd"],
   })
   .refine((r) => BigInt(r.approvalThresholdUsd) <= BigInt(r.perPaymentCapUsd), {
-    message: "The approval threshold cannot be larger than the per-payment cap",
+    message: "\"Ask me first above\" can't be more than your largest single payment.",
     path: ["approvalThresholdUsd"],
   });
 export type Rules = z.infer<typeof RulesSchema>;

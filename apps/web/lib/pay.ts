@@ -31,7 +31,7 @@ function samePayout(a: Payout, b: Payout) {
 }
 
 function refusedText(o: ActionOutcome): string | null {
-  return o.status === "refused" ? `The account refused: ${o.refusal.message}` : null;
+  return o.status === "refused" ? `Blocked by your spending rules: ${o.refusal.message}` : null;
 }
 
 export async function payItem(
@@ -42,7 +42,7 @@ export async function payItem(
 ): Promise<PlanItemView["payStatus"]> {
   const fail = async (payReason: string) => {
     await db.planItem.update({ where: { id: item.id }, data: { payStatus: "failed", payReason } });
-    await db.auditEvent.create({ data: { kind: "payment_failed", actor: "agent", message: `${item.forWhat} to ${item.payeeName}: ${payReason}`, data: JSON.stringify({ itemId: item.id }) } });
+    await db.auditEvent.create({ data: { kind: "payment_failed", actor: "agent", message: `Not paid: ${item.payeeName} (${item.forWhat}). ${payReason}`, data: JSON.stringify({ itemId: item.id }) } });
     return "failed" as const;
   };
 
@@ -53,9 +53,9 @@ export async function payItem(
     item.kind === "fee"
       ? business.rules.fee && { payout: business.rules.fee.payout, payoutChangedAt: null }
       : (await listPayees(db)).find((p) => p.id === item.payeeId);
-  if (!payee) return fail(item.kind === "fee" ? "The fee was removed from the rules. Not paid." : "The payee was removed after the plan was approved. Not paid.");
-  if (!samePayout(payee.payout, planned)) return fail("The payee's payout details changed after the plan was approved. Not paid; it will come back in the next plan.");
-  if (isOnPayoutHold(payee, new Date())) return fail("The payee's payout details changed recently and are on a 48-hour hold. Not paid.");
+  if (!payee) return fail(item.kind === "fee" ? "Bursar's fee was removed from your rules, so it wasn't paid." : "You removed this person after approving, so they weren't paid.");
+  if (!samePayout(payee.payout, planned)) return fail("Their payment details changed after you approved, so they weren't paid. It will come back in next week's payments.");
+  if (isOnPayoutHold(payee, new Date())) return fail("Their payment details changed recently and are on a 48-hour safety hold, so they weren't paid.");
 
   await db.planItem.update({ where: { id: item.id }, data: { payStatus: "paying" } });
   const treasury = business.rules.treasury;
@@ -77,7 +77,7 @@ export async function payItem(
       // "Only one money action runs per agent wallet at a time": wait for the swap before withdrawing.
       const o = await settle(account, swap.correlationId);
       if (o.state !== "done") {
-        return fail(o.state === "pending" ? "The swap was still processing after 5 minutes; check the account before paying again." : `The swap did not complete: ${o.reason ?? o.state}.`);
+        return fail(o.state === "pending" ? "The currency exchange was still running after 5 minutes. Check your Bursar wallet before paying again." : `The currency exchange didn't complete (${o.reason ?? o.state}). Nothing was sent to them.`);
       }
     }
   }
@@ -95,7 +95,7 @@ export async function payItem(
     data: { payStatus: "sent", sentAt: new Date(), amountSent: amountSent.toString(), amountReceived: amountOut.toString(), references: JSON.stringify(references) },
   });
   await db.auditEvent.create({
-    data: { kind: "payment_sent", actor: "agent", message: `Sent ${item.forWhat} to ${item.payeeName}`, data: JSON.stringify({ itemId: item.id, references }) },
+    data: { kind: "payment_sent", actor: "agent", message: `Paid ${item.payeeName}: ${item.forWhat}`, data: JSON.stringify({ itemId: item.id, references }) },
   });
   return "sent";
 }

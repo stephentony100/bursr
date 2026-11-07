@@ -9,6 +9,6 @@ export const knownSupplier: Check = (invoice, { payees }) => {
   return {
     check: "known-supplier",
     status: "hold",
-    reason: `Unknown supplier: "${name}" is not on your payee list. Add them first if you want to pay them.`,
+    reason: `New name: "${name}" isn't one of the people you pay. If they're a real supplier, add them first.`,
   };
 };

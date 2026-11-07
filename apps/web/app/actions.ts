@@ -157,7 +157,7 @@ export async function changePayoutAction(_prev: FormResult, f: FormData): Promis
     const payee = await getPayee(db(), id);
     if (!payee) throw new Error("Payee not found.");
     await changePayout(db(), await requireOwner(), id, await payoutFrom(f));
-    return `Payout details changed. Payments to ${payee.name} are on hold for 48 hours.`;
+    return `Saved. For your safety, payments to ${payee.name} are on hold for 48 hours.`;
   });
 }
 

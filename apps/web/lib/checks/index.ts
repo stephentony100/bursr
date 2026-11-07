@@ -52,11 +52,12 @@ export interface Prepared {
 export function prepareForChecks(id: string, extracted: ExtractedInvoice, receivedAt: Date): Prepared {
   const reasons: string[] = [];
   if (extracted.unsureFields.length > 0) {
-    reasons.push(`The reader was not sure about: ${extracted.unsureFields.join(", ")}. Check the invoice yourself.`);
+    const words: Record<string, string> = { supplierName: "the supplier's name", invoiceNumber: "the invoice number", invoiceDate: "the date", dueDate: "the due date", currency: "the currency", lines: "the items", total: "the total", payout: "the payment details" };
+    reasons.push(`Bursar couldn't read ${extracted.unsureFields.map((f) => words[f] ?? f).join(", ")} clearly. Please check the invoice yourself.`);
   }
   const unknownAmounts: InvoiceForChecks = { id, extracted, totalUsd: 0n, lines: [], receivedAt, amountsKnown: false };
   if (extracted.currency.toUpperCase() !== "USD") {
-    reasons.push(`This invoice is in ${extracted.currency}. Bursar only pays US-dollar invoices for now and never converts amounts itself.`);
+    reasons.push(`This invoice is in ${extracted.currency}. Bursar pays dollar invoices for now, and never guesses an exchange rate.`);
     return { invoice: unknownAmounts, needsOwner: reasons.join(" ") };
   }
   try {
@@ -75,7 +76,7 @@ export function prepareForChecks(id: string, extracted: ExtractedInvoice, receiv
     };
     return { invoice, needsOwner: reasons.length ? reasons.join(" ") : null };
   } catch (e) {
-    reasons.push(`An amount could not be read as a number (${e instanceof Error ? e.message : e}).`);
+    reasons.push("Bursar couldn't read one of the amounts clearly. Please check the invoice yourself.");
     return { invoice: unknownAmounts, needsOwner: reasons.join(" ") };
   }
 }

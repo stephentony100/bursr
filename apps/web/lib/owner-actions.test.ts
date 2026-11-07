@@ -125,7 +125,7 @@ describe("owner-only actions", () => {
   it("rules are validated: per-payment cap cannot exceed the weekly cap", async () => {
     await setup();
     await expect(updateRules(t.db, owner, rules({ weeklyCapUsd: "100", perPaymentCapUsd: "200", approvalThresholdUsd: "50" }))).rejects.toThrow(
-      /per-payment cap/,
+      /largest single payment/,
     );
   });
 });

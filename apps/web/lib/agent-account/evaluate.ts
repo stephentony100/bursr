@@ -73,20 +73,20 @@ function refuse(code: RefusalCode, layer: Refusal["layer"], message: string): Ve
 export function evaluate(state: AccountState, req: ActionRequest, now: Date): Verdict {
   const { policy } = state;
   const decimals = state.decimals[req.asset];
-  if (decimals === undefined) return refuse("unsupported_token", "request", "This token is not supported.");
+  if (decimals === undefined) return refuse("unsupported_token", "request", "Bursar can't pay in this currency.");
   if (req.amount <= 0n) return refuse("unsupported_token", "request", "The amount must be more than zero.");
 
   if (policy.frozen) {
-    return refuse("wallet_frozen", "policy", "The account is frozen. Nothing can be paid until the owner unfreezes it.");
+    return refuse("wallet_frozen", "policy", "Payments are paused. Nothing can go out until you turn them back on.");
   }
   if (!policy.actions.includes(req.kind)) {
-    return refuse("policy_action_denied", "policy", `The owner's rules do not allow the agent to ${req.kind}.`);
+    return refuse("policy_action_denied", "policy", "Your spending rules don't allow this kind of payment.");
   }
   if (policy.assets !== "any" && !policy.assets.includes(req.asset)) {
-    return refuse("policy_asset_denied", "policy", "The owner's rules do not allow paying from this token.");
+    return refuse("policy_asset_denied", "policy", "Your spending rules don't allow paying in this currency.");
   }
   if (req.kind === "swap" && policy.assets !== "any" && !policy.assets.includes(req.destinationAsset)) {
-    return refuse("policy_asset_denied", "policy", "The owner's rules do not allow swapping into this token.");
+    return refuse("policy_asset_denied", "policy", "Your spending rules don't allow paying in this currency.");
   }
 
   const cap = policy.limits.per_transaction?.[req.asset];
@@ -95,7 +95,7 @@ export function evaluate(state: AccountState, req: ActionRequest, now: Date): Ve
     return refuse(
       "policy_transaction_limit_exceeded",
       "policy",
-      `This payment is above the owner's per-payment cap of ${formatUsd(capUsd)}.`,
+      `This is more than your ${formatUsd(capUsd)} limit for a single payment.`,
     );
   }
 
@@ -115,7 +115,7 @@ export function evaluate(state: AccountState, req: ActionRequest, now: Date): Ve
       return refuse(
         "policy_destination_denied",
         "policy",
-        "This address is not on the owner's list of payees. Only the owner can add it.",
+        "This wallet isn't one of the people you pay. Only you can add someone new.",
       );
     }
   }
@@ -132,14 +132,14 @@ export function evaluate(state: AccountState, req: ActionRequest, now: Date): Ve
       return refuse(
         "spend_budget_exceeded",
         "budget",
-        `This payment would go over the owner's weekly cap of ${formatUsd(capMicros)} (${formatUsd(left)} left this week).`,
+        `This would go over your weekly limit of ${formatUsd(capMicros)} (${formatUsd(left)} left this week).`,
       );
     }
   }
 
   const balance = state.balances[req.asset] ?? 0n;
   if (req.amount > balance) {
-    return refuse("insufficient_balance", "balance", "The account does not hold enough of this token.");
+    return refuse("insufficient_balance", "balance", "There isn't enough money in your Bursar wallet for this payment.");
   }
 
   return { ok: true, usdMicros };

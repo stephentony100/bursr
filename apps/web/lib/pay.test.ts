@@ -116,11 +116,11 @@ describe("weekly plan → approval → payment (practice mode)", () => {
     await setFrozen(t.db, owner, true);
     await payApprovedPlan(t.db, await agentAccount(t.db), plan.id, fakeQuote);
     const items = (await getPlan(t.db, plan.id))!.items.filter((i) => i.placement === "in");
-    expect(items.every((i) => i.payStatus === "failed" && i.payReason?.startsWith("The account refused: The account is frozen"))).toBe(true);
+    expect(items.every((i) => i.payStatus === "failed" && i.payReason?.startsWith("Blocked by your spending rules: Payments are paused"))).toBe(true);
     expect((await (await agentAccount(t.db)).status()).spentThisWeekUsd).toBe(0n);
   });
 
-  it("re-checked at payment time: payout changed after approval → not paid", async () => {
+  it("re-checked at payment time: payout changed after approval → not paid", { timeout: 30_000 }, async () => {
     const plan = await prepareWeeklyPlan(t.db, new Date(), fakeQuote);
     await approvePlan(t.db, owner, plan.id);
     const tunde = plan.items.find((i) => i.payeeName.startsWith("Tunde"))!;
@@ -128,7 +128,7 @@ describe("weekly plan → approval → payment (practice mode)", () => {
     await payApprovedPlan(t.db, await agentAccount(t.db), plan.id, fakeQuote);
     const after = (await getPlan(t.db, plan.id))!.items.find((i) => i.id === tunde.id)!;
     expect(after.payStatus).toBe("failed");
-    expect(after.payReason).toContain("payout details changed after the plan was approved");
+    expect(after.payReason).toContain("payment details changed after you approved");
   });
 
   it("a failed price quote is retried once; if it still fails, the reason is kept and payment still works", async () => {

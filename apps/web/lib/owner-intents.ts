@@ -19,6 +19,14 @@ import { getAccountRecord, getBusiness } from "./store";
 
 export type OwnerIntentKind = "agent_create" | "policy_update" | "agent_freeze" | "agent_unfreeze" | "grant_issue";
 
+const OWNER_INTENT_WORDS: Record<OwnerIntentKind, string> = {
+  agent_create: "You set up your Bursar wallet with your spending rules",
+  policy_update: "You confirmed your new spending rules with your wallet",
+  agent_freeze: "You paused all payments",
+  agent_unfreeze: "You turned payments back on",
+  grant_issue: "You allowed Bursar to make payments inside your rules",
+};
+
 export interface PreparedIntent {
   kind: OwnerIntentKind;
   correlationId: string;
@@ -142,7 +150,7 @@ export async function submitOwnerIntent(
     });
   }
   await db.auditEvent.create({
-    data: { kind: `owner_${p.kind}`, actor: owner.accountId, message: `Owner signed ${p.kind.replace("_", " ")}`, data: JSON.stringify({ correlationId: p.correlationId }) },
+    data: { kind: `owner_${p.kind}`, actor: owner.accountId, message: OWNER_INTENT_WORDS[p.kind], data: JSON.stringify({ correlationId: p.correlationId }) },
   });
   if (p.kind === "grant_issue") {
     const pending = pendingGrantTokens.get(p.correlationId);

@@ -18,5 +18,5 @@ export const arithmetic: Check = (invoice) => {
     problems.push(`the lines add up to ${formatUsd(sum)} but the total says ${formatUsd(invoice.totalUsd)}`);
   }
   if (problems.length === 0) return pass("arithmetic");
-  return { check: "arithmetic", status: "hold", reason: `Arithmetic error: ${problems.join("; ")}.` };
+  return { check: "arithmetic", status: "hold", reason: `The sums don't add up: ${problems.join("; ")}.` };
 };

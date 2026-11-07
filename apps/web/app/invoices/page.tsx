@@ -14,11 +14,11 @@ import { getBusiness } from "@/lib/store";
 const STATUS: Record<InvoiceStatus, { label: string; tone: string }> = {
   ready: { label: "Ready to pay", tone: "bg-ledger-soft text-ledger" },
   pass: { label: "Ready to pay", tone: "bg-ledger-soft text-ledger" },
-  flag: { label: "Ready, with a warning", tone: "bg-hold-soft text-hold" },
-  defer: { label: "Next week", tone: "bg-paper text-muted" },
-  hold: { label: "On hold: check it", tone: "bg-hold-soft text-hold" },
-  block: { label: "Blocked", tone: "bg-refuse-soft text-refuse" },
-  needs_owner: { label: "Needs you", tone: "bg-hold-soft text-hold" },
+  flag: { label: "Ready, but read the note", tone: "bg-hold-soft text-hold" },
+  defer: { label: "Moves to next week", tone: "bg-paper text-muted" },
+  hold: { label: "On hold: please check", tone: "bg-hold-soft text-hold" },
+  block: { label: "Blocked: don't pay", tone: "bg-refuse-soft text-refuse" },
+  needs_owner: { label: "Needs your eyes", tone: "bg-hold-soft text-hold" },
 };
 
 export default async function InvoicesPage() {
@@ -44,8 +44,9 @@ export default async function InvoicesPage() {
       <div>
         <h1 className="font-display text-3xl font-semibold">Invoices</h1>
         <p className="mt-2 max-w-2xl text-muted">
-          Bursar reads each invoice and checks it before anything is paid: is the supplier on your list, is the name a look-alike,
-          did the payment details change, is it a duplicate, are prices above what you agreed, do the sums add up.
+          Before a single payment goes out, Bursar checks every invoice for the tricks that cost small businesses money: fake suppliers
+          with look-alike names, &ldquo;our bank details have changed&rdquo; messages, the same bill sent twice, prices above what you
+          agreed, and sums that don&apos;t add up.
         </p>
         <p className="mt-2 text-sm">
           {invoices.length} invoices · <span className="text-ledger">{invoices.length - problems} ready</span> ·{" "}
@@ -57,24 +58,25 @@ export default async function InvoicesPage() {
 
       <section className="rounded-xl border border-line bg-card p-6">
         <h2 className="font-display text-xl font-semibold">Add an invoice</h2>
-        <ActionForm action={uploadInvoiceAction} submit="Read and check" className="mt-4 space-y-4">
+        <p className="mt-1 text-sm text-muted">Got a bill by WhatsApp, email or on paper? Add it here and Bursar checks it in seconds.</p>
+        <ActionForm action={uploadInvoiceAction} submit="Check this invoice" className="mt-4 space-y-4">
           <label className="block text-sm font-medium">
-            Photo of the invoice
+            A photo or screenshot of the invoice
             <input type="file" name="file" accept="image/png,image/jpeg,image/webp,text/plain" className="mt-1 block text-sm" />
           </label>
           <label className="block text-sm font-medium">
-            Or paste its text
+            Or paste the text of the message
             <textarea name="pasted" rows={3} className="num mt-1 block w-full rounded-md border border-line bg-card px-3 py-2 text-sm" />
           </label>
           <p className="text-sm text-muted">
             {dryRun
-              ? "Practice mode: the six sample invoices are recognised without AI. Any other invoice needs NEAR AI Cloud (NEAR_AI_API_KEY with credits)."
-              : "Read privately by NEAR AI Cloud, inside a secure enclave (TEE)."}
+              ? "In the demo, Bursar already knows the six sample invoices. Reading your own invoices needs Bursar's AI reader switched on."
+              : "Read by Bursar's AI inside a sealed, verifiable computer that keeps your invoice private."}
           </p>
         </ActionForm>
         {dryRun && (
           <div className="mt-6 border-t border-line pt-4">
-            <ActionForm action={loadSampleInvoicesAction} submit="Read the six sample invoices again" tone="quiet" />
+            <ActionForm action={loadSampleInvoicesAction} submit="Reload the sample invoices" tone="quiet" />
           </div>
         )}
       </section>
@@ -95,7 +97,7 @@ export default async function InvoicesPage() {
                   <p className="text-sm text-muted">
                     Received {inv.receivedAt.toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" })} ·{" "}
                     <a href={`/api/invoices/${inv.id}/file`} target="_blank" rel="noreferrer" className="text-indigo underline">
-                      see the invoice
+                      view invoice
                     </a>
                   </p>
                 </div>
@@ -114,7 +116,7 @@ export default async function InvoicesPage() {
               )}
               {inv.extracted && inv.extracted.lines.length > 0 && (
                 <details className="mt-3 text-sm">
-                  <summary className="cursor-pointer text-muted">What Bursar read</summary>
+                  <summary className="cursor-pointer text-muted">What Bursar read from it</summary>
                   <table className="num mt-2 w-full max-w-xl text-left text-xs">
                     <tbody>
                       {inv.extracted.lines.map((l, i) => (

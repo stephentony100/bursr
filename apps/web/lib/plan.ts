@@ -123,7 +123,7 @@ export function buildPlan(input: PlanInput): DraftPlan {
     void _due;
     const payee = byId.get(c.payeeId)!;
     if (isOnPayoutHold(payee, now)) {
-      items.push({ ...base, placement: "held", reason: `Payout details changed recently; on hold until ${day(payoutHoldEndsAt(payee)!)}.`, needsOwnTap: false, ownTapReason: null });
+      items.push({ ...base, placement: "held", reason: `Their payment details changed recently; on a safety hold until ${day(payoutHoldEndsAt(payee)!)}.`, needsOwnTap: false, ownTapReason: null });
       continue;
     }
     if (c.amountUsd > perPayment) {

@@ -24,7 +24,7 @@ export default async function PayeePage({ params }: PageProps<"/payees/[id]">) {
         <h1 className="mt-2 font-display text-3xl font-semibold">{payee.name}</h1>
         {held && (
           <p className="mt-2 rounded-md bg-hold-soft px-4 py-2 text-sm text-hold">
-            Payout details changed recently. Payments are on hold until {payoutHoldEndsAt(payee)!.toLocaleString("en-GB")}.
+            Their payment details changed recently. For your safety, payments are on hold until {payoutHoldEndsAt(payee)!.toLocaleString("en-GB")}.
           </p>
         )}
       </div>

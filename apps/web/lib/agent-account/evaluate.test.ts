@@ -88,7 +88,7 @@ describe("agent account rules (dry-run simulator)", () => {
       expect(v.ok).toBe(false);
       if (!v.ok) {
         expect(v.refusal.code).toBe("policy_transaction_limit_exceeded");
-        expect(v.refusal.message).toContain("$400.00");
+        expect(v.refusal.message).toContain("$400.00 limit for a single payment");
       }
     });
   });

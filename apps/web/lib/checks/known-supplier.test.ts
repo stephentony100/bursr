@@ -11,7 +11,7 @@ describe("known supplier", () => {
   it("holds a supplier that is not on the list", () => {
     const r = knownSupplier(inv({ supplierName: "Unity Bakery" }), ctx());
     expect(r.status).toBe("hold");
-    expect(r.reason).toContain('Unknown supplier: "Unity Bakery"');
+    expect(r.reason).toContain('New name: "Unity Bakery"');
   });
 
   it("leaves look-alikes to the look-alike check", () => {

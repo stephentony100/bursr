@@ -31,7 +31,7 @@ describe("the six sample invoices", () => {
     const reason = (file: string, check: string) => invoices.find((i) => i.fileName === file)!.results.find((r) => r.check === check)!.reason;
     expect(reason("03-ek0-fresh-foods-EFF-7781.png", "look-alike")).toMatch(/^Name looks like Eko Fresh Foods but is not Eko Fresh Foods/);
     expect(reason("04-mama-put-farms-MPF-0412-again.png", "duplicate")).toMatch(/^Possible duplicate of invoice #MPF-0412/);
-    expect(reason("05-eko-fresh-foods-EFF-7790.png", "payout-changed")).toMatch(/^Payout details changed/);
+    expect(reason("05-eko-fresh-foods-EFF-7790.png", "payout-changed")).toMatch(/^Payment details changed/);
     expect(reason("05-eko-fresh-foods-EFF-7790.png", "urgency")).toContain("Pay today or your supply will be stopped.");
     expect(reason("06-mama-put-farms-MPF-0419.png", "overpriced")).toBe("Tomatoes (crate) billed at $23.40, agreed $18.00 (30% more).");
   });

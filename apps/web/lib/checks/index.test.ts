@@ -20,7 +20,7 @@ describe("runChecks and prepareForChecks", () => {
 
   it("never guesses: unsure fields go to the owner, and the checks still run", () => {
     const p = prepareForChecks("x", extracted({ unsureFields: ["total"] }), NOW);
-    expect(p.needsOwner).toContain("not sure about: total");
+    expect(p.needsOwner).toContain("couldn't read the total clearly");
     const v = runChecks(p.invoice, ctx(), p.needsOwner);
     expect(v.status).toBe("needs_owner");
     expect(v.results).toHaveLength(8);
@@ -50,7 +50,7 @@ describe("runChecks and prepareForChecks", () => {
 
   it("an amount that is not a plain number goes to the owner", () => {
     const p = prepareForChecks("x", extracted({ total: "1,000.00" }), NOW);
-    expect(p.needsOwner).toContain("could not be read as a number");
+    expect(p.needsOwner).toContain("couldn't read one of the amounts");
     expect(p.invoice.amountsKnown).toBe(false);
   });
 });

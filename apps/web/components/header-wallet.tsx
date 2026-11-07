@@ -26,7 +26,7 @@ export function HeaderWallet({ accountId }: { accountId: string | null }) {
   if (accountId) {
     return (
       <span className="flex items-center gap-2 text-sm">
-        <span className="num text-muted" title="Signed in as the owner">
+        <span className="num text-muted" title="You're signed in as the owner">
           {accountId}
         </span>
         <button onClick={() => run(signOut)} disabled={busy} className="text-indigo underline disabled:opacity-60">
@@ -42,7 +42,7 @@ export function HeaderWallet({ accountId }: { accountId: string | null }) {
         disabled={busy}
         className="rounded-md bg-indigo px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
       >
-        {busy ? "Waiting for your wallet…" : "Sign in with NEAR wallet"}
+        {busy ? "Check your wallet…" : "Sign in"}
       </button>
       {error && (
         <span role="alert" className="max-w-56 text-xs text-refuse">

@@ -10,16 +10,15 @@ describe("payout details changed", () => {
   it("blocks an invoice asking to be paid somewhere else", () => {
     const r = payoutChanged(eko(demoTronAddress("new-bank-details")), ctx());
     expect(r.status).toBe("block");
-    expect(r.reason).toContain("Payout details changed");
-    expect(r.reason).toContain("by phone");
+    expect(r.reason).toContain("Payment details changed");
+    expect(r.reason).toContain("on a number you already trust");
   });
 
   it("only warns when the address as read is not even valid (a misread, not a new address)", () => {
     const misread = EKO.payout.address.slice(0, 20) + EKO.payout.address.slice(21); // one character dropped
     const r = payoutChanged(eko(misread), ctx());
     expect(r.status).toBe("flag");
-    expect(r.reason).toContain("could not be read exactly");
-    expect(r.reason).toContain(EKO.payout.address);
+    expect(r.reason).toContain("couldn't read the payment address");
   });
 
   it("still blocks a valid address that differs by one character (address poisoning)", () => {
