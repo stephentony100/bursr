@@ -1,3 +1,4 @@
+import { shortenAddresses } from "@/lib/address";
 import Link from "next/link";
 import { connection } from "next/server";
 import { loadSampleInvoicesAction, uploadInvoiceAction, verifyReaderAction } from "@/app/actions";
@@ -12,13 +13,13 @@ import { formatUsd } from "@/lib/money";
 import { getBusiness } from "@/lib/store";
 
 const STATUS: Record<InvoiceStatus, { label: string; tone: string }> = {
-  ready: { label: "Ready to pay", tone: "bg-ledger-soft text-ledger" },
-  pass: { label: "Ready to pay", tone: "bg-ledger-soft text-ledger" },
-  flag: { label: "Ready, but read the note", tone: "bg-hold-soft text-hold" },
-  defer: { label: "Moves to next week", tone: "bg-paper text-muted" },
-  hold: { label: "On hold: please check", tone: "bg-hold-soft text-hold" },
-  block: { label: "Blocked: don't pay", tone: "bg-refuse-soft text-refuse" },
-  needs_owner: { label: "Needs your eyes", tone: "bg-hold-soft text-hold" },
+  ready: { label: "Ready to pay", tone: "text-ledger" },
+  pass: { label: "Ready to pay", tone: "text-ledger" },
+  flag: { label: "Ready, but read the note", tone: "text-hold" },
+  defer: { label: "Moves to next week", tone: "text-muted" },
+  hold: { label: "On hold: please check", tone: "text-hold" },
+  block: { label: "Blocked: don't pay", tone: "text-refuse" },
+  needs_owner: { label: "Needs your eyes", tone: "text-hold" },
 };
 
 export default async function InvoicesPage() {
@@ -42,7 +43,7 @@ export default async function InvoicesPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="font-display text-3xl font-semibold">Invoices</h1>
+        <h1 className="display text-4xl">Invoices</h1>
         <p className="mt-2 max-w-2xl text-muted">
           Before a single payment goes out, Bursar checks every invoice for the tricks that cost small businesses money: fake suppliers
           with look-alike names, &ldquo;our bank details have changed&rdquo; messages, the same bill sent twice, prices above what you
@@ -57,7 +58,7 @@ export default async function InvoicesPage() {
       <VerifiedPanel action={verifyReaderAction} model={readEnv().NEAR_AI_MODEL ?? DEFAULT_READER_MODEL} />
 
       <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="font-display text-xl font-semibold">Add an invoice</h2>
+        <h2 className="text-xl font-bold [font-stretch:110%]">Add an invoice</h2>
         <p className="mt-1 text-sm text-muted">Got a bill by WhatsApp, email or on paper? Add it here and Bursar checks it in seconds.</p>
         <ActionForm action={uploadInvoiceAction} submit="Check this invoice" className="mt-4 space-y-4">
           <label className="block text-sm font-medium">
@@ -87,7 +88,7 @@ export default async function InvoicesPage() {
           const s = STATUS[inv.status];
           const issues = inv.results.filter((r) => r.status !== "pass");
           return (
-            <li key={inv.id} className="rounded-xl border border-line bg-card p-5">
+            <li key={inv.id} className="rounded-xl border border-line bg-card p-5 [overflow-wrap:anywhere]">
               <div className="flex flex-wrap items-start gap-x-6 gap-y-2">
                 <div className="min-w-56 flex-1">
                   <p className="font-medium">
@@ -95,21 +96,21 @@ export default async function InvoicesPage() {
                     {inv.invoiceNumber && <span className="text-muted"> · #{inv.invoiceNumber}</span>}
                   </p>
                   <p className="text-sm text-muted">
-                    Received {inv.receivedAt.toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" })} ·{" "}
+                    Received {inv.receivedAt.toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} ·{" "}
                     <a href={`/api/invoices/${inv.id}/file`} target="_blank" rel="noreferrer" className="text-indigo underline">
                       view invoice
                     </a>
                   </p>
                 </div>
-                <p className="num font-display text-xl font-semibold">{inv.totalUsd > 0n ? formatUsd(inv.totalUsd) : "—"}</p>
-                <span className={`rounded-full px-3 py-1 text-sm font-medium ${s.tone}`}>{s.label}</span>
+                <p className="num text-xl font-semibold">{inv.totalUsd > 0n ? formatUsd(inv.totalUsd) : "Not read"}</p>
+                <span className={`field-label inline-block -rotate-2 rounded-[3px] border-2 border-current px-2.5 py-1.5 text-[0.72rem] font-extrabold ${s.tone}`}>{s.label}</span>
               </div>
               {(issues.length > 0 || inv.needsOwner) && (
                 <ul className="mt-3 space-y-1 text-sm">
-                  {inv.needsOwner && <li className="text-hold">{inv.needsOwner}</li>}
+                  {inv.needsOwner && <li className="text-hold">{shortenAddresses(inv.needsOwner)}</li>}
                   {issues.map((r) => (
                     <li key={r.check} className={r.status === "block" ? "text-refuse" : r.status === "flag" ? "text-muted" : "text-hold"}>
-                      {r.reason}
+                      {shortenAddresses(r.reason)}
                     </li>
                   ))}
                 </ul>

@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ease, lerp, seg, useReducedMotion, useScrollProgress } from "./motion";
-import { CropMarks, PaperInvoice, Stamp, TINTS } from "./paper";
-import { NETWORKS, WEEK_INVOICES, WEEK_PAYMENTS, WEEK_TOTAL_CENTS, usd, type Network } from "./week-data";
+import { ArrowRight, Check } from "@phosphor-icons/react";
+import { PaperInvoice, Stamp } from "./paper";
+import { NETWORKS, WEEK_INVOICES, WEEK_PAYMENTS, WEEK_TOTAL_CENTS, usd } from "./week-data";
 
 // The home page's centrepiece: one pinned screen that plays a week at the
 // sample restaurant as you scroll. Invoices drop into a pile, fan out, get
@@ -125,7 +126,6 @@ const JITTER = [
   { x: 10, y: -2, r: 4 },
 ];
 const TILT = [-8, 6, -5, 9, -7, 4];
-const DOT: Record<Network, string> = { NEAR: "#9de5c6", Base: "#86a8ff", Tron: "#ffb27a", Solana: "#c9a2ff" };
 
 function arcPoint(i: number, L: Layout) {
   const th = (i - (WEEK_INVOICES.length - 1) / 2) * L.arc.step;
@@ -199,7 +199,7 @@ export function WeekScene() {
   const scale = box.w ? Math.min(box.w / L.W, box.h / L.H) : 0;
 
   return (
-    <section ref={ref} id="how" aria-label="A week with Bursar" className="relative bg-night text-cream" style={{ height: "620vh" }}>
+    <section ref={ref} id="how" aria-label="A week with Bursar" className="relative border-y border-ink/10 bg-paper-2 text-ink" style={{ height: "620vh" }}>
       <ol className="sr-only">
         {STEPS.map((s) => (
           <li key={s.n}>
@@ -207,29 +207,17 @@ export function WeekScene() {
           </li>
         ))}
       </ol>
-      <div className="ledger-grid sticky top-0 flex h-[100svh] flex-col overflow-hidden lg:flex-row">
-        <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_60%_at_70%_50%,rgb(79_209_160/0.10),transparent)]" />
-
+      <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden lg:flex-row">
         {/* Caption: left column on large screens, top block on phones */}
         <div className="relative z-10 flex shrink-0 gap-6 px-5 pt-6 lg:w-[440px] lg:items-center lg:pl-12 lg:pt-0 xl:w-[480px]">
-          <div aria-hidden className="relative hidden h-[56vh] w-6 shrink-0 lg:block">
-            <div className="absolute inset-y-0 left-0 w-2 bg-[repeating-linear-gradient(to_bottom,rgb(251_246_234/0.28)_0_1px,transparent_1px_7px)]" />
-            {STEP_AT.map((s, i) => (
-              <span key={s} className={`absolute left-0 h-px w-5 ${i <= step ? "bg-mint" : "bg-cream/50"}`} style={{ top: `${s * 100}%` }} />
-            ))}
-            <span className="absolute -left-1 h-[3px] w-7 rounded-full bg-mint shadow-[0_0_12px_rgba(79,209,160,0.9)]" style={{ top: `${q * 100}%` }} />
-          </div>
-          <div aria-hidden className="relative min-h-[168px] flex-1 lg:min-h-[320px]">
+          <div aria-hidden className="relative min-h-[150px] flex-1 lg:min-h-[320px]">
             {STEPS.map((s, i) => (
               <div
                 key={s.n}
-                className={`absolute inset-x-0 top-0 transition-all duration-500 lg:top-1/2 lg:-translate-y-1/2 ${i === step ? "opacity-100" : "pointer-events-none translate-y-3 opacity-0 lg:translate-y-[-45%]"}`}
+                className={`absolute inset-x-0 top-0 transition-[opacity,transform] duration-300 ease-[var(--ease-out)] lg:top-1/2 lg:-translate-y-1/2 ${i === step ? "opacity-100" : "pointer-events-none translate-y-2 opacity-0 lg:translate-y-[-46%]"}`}
               >
-                <p className="eyebrow text-mint">
-                  {s.n} · {s.when}
-                </p>
-                <h2 className="mt-2 font-display text-3xl font-semibold leading-[0.95] tracking-tight sm:text-4xl lg:mt-4 lg:text-5xl xl:text-6xl">{s.title}</h2>
-                <p className="mt-3 max-w-md text-sm leading-relaxed text-cream/70 lg:mt-5 lg:text-base">{s.body}</p>
+                <h2 className="display text-3xl leading-[0.95] sm:text-4xl xl:text-5xl">{s.title}</h2>
+                <p className="mt-3 max-w-md text-sm leading-relaxed text-ink/75 lg:mt-5 lg:text-base">{s.body}</p>
               </div>
             ))}
           </div>
@@ -239,7 +227,6 @@ export function WeekScene() {
         <div ref={wrap} className="relative mx-3 mb-20 mt-3 min-h-0 flex-1 lg:my-20 lg:mr-12">
           {scale > 0 && (
             <div aria-hidden className="absolute left-1/2 top-1/2" style={{ width: L.W, height: L.H, transform: `translate(-50%, -50%) scale(${scale})` }}>
-              <CropMarks color="rgb(251 246 234 / 0.5)" />
               <Stage q={q} L={L} />
             </div>
           )}
@@ -258,6 +245,7 @@ function Stage({ q, L }: { q: number; L: Layout }) {
   const tTray = ease(seg(q, ...T.tray));
   const tReceipt = ease(seg(q, ...T.receipt));
   const tChips = ease(seg(q, ...T.chips));
+  const tSign = ease(seg(q, ...T.approved));
   const arrived = WEEK_PAYMENTS.map((_, j) => q >= T.ticket(j)[1]);
   const paidCents = WEEK_PAYMENTS.reduce((s, pmt, j) => s + (arrived[j] ? pmt.cents : 0), 0);
   const pressed = q >= T.press;
@@ -266,19 +254,19 @@ function Stage({ q, L }: { q: number; L: Layout }) {
     <div className="absolute inset-0 overflow-hidden">
       {/* Held for you */}
       <div
-        className="absolute rounded-2xl border-2 border-dashed border-[#ff8a80]/50 bg-stamp/[0.07]"
+        className="absolute rounded-[6px] border-2 border-dashed border-refuse/45 bg-refuse-soft/60"
         style={{ left: L.tray.x, top: L.tray.y, width: L.tray.w, height: L.tray.h, opacity: tTray, transform: `translateY(${(1 - tTray) * 24}px)` }}
       >
-        <p className={`eyebrow absolute left-3 top-3 text-[#ff9d95] ${L.compact ? "text-[0.6rem]" : ""}`}>Held for you · {HELD.length}</p>
-        {!L.compact && <p className="absolute left-3 right-3 top-8 text-[0.7rem] leading-snug text-cream/60">Each with its reason. Nothing here is paid until you decide.</p>}
+        <p className={`field-label absolute left-3 top-3 text-refuse ${L.compact ? "text-[0.6rem]" : ""}`}>Held for you: {HELD.length}</p>
+        {!L.compact && <p className="absolute left-3 right-3 top-8 text-[0.72rem] leading-snug text-ink/70">Each with its reason. Nothing here is paid until you decide.</p>}
       </div>
 
-      {/* This week's list */}
+      {/* This week's cheques, as a counterfoil list */}
       <div className="absolute" style={{ left: R.x, top: R.y, width: R.w, opacity: tReceipt, transform: `translateY(${(1 - tReceipt) * 30}px)` }}>
-        <div className="receipt-edge grain relative rounded-t-2xl bg-cream px-4 pb-7 text-ink shadow-[0_30px_60px_-25px_rgba(0,0,0,0.8)]">
-          <div style={{ height: R.top }} className="flex flex-col justify-center border-b border-black/15">
-            <p className={`eyebrow text-muted ${L.compact ? "text-[0.55rem]" : ""}`}>This week&apos;s list · Friday</p>
-            <p className={`font-display font-semibold ${L.compact ? "text-base" : "text-xl"}`}>Bukka Corner Restaurant</p>
+        <div className="relative rounded-t-[6px] border border-b-2 border-ink/15 border-b-ink/35 border-dotted bg-card px-4 pb-5 text-ink shadow-[0_24px_50px_-30px_rgb(22_32_42/0.6)] [border-left-style:solid] [border-right-style:solid] [border-top-style:solid]">
+          <div style={{ height: R.top }} className="flex flex-col justify-center border-b-2 border-ink">
+            <p className={`field-label text-muted ${L.compact ? "text-[0.55rem]" : ""}`}>This week&apos;s cheques, Friday</p>
+            <p className={`font-bold [font-stretch:110%] ${L.compact ? "text-base" : "text-xl"}`}>Bukka Corner Restaurant</p>
           </div>
           {WEEK_PAYMENTS.map((pmt, j) => {
             const on = q >= T.rows[j];
@@ -286,32 +274,45 @@ function Stage({ q, L }: { q: number; L: Layout }) {
               <div
                 key={pmt.who}
                 style={{ height: R.row }}
-                className={`flex items-center justify-between gap-3 border-b border-dashed border-black/15 transition-all duration-300 ${on ? "translate-x-0 opacity-100" : "-translate-x-3 opacity-0"}`}
+                className={`flex items-center justify-between gap-3 border-b border-dotted border-ink/25 transition-[opacity,transform] duration-300 ${on ? "translate-x-0 opacity-100" : "-translate-x-3 opacity-0"}`}
               >
                 <div className="min-w-0">
-                  <p className={`truncate font-medium ${L.compact ? "text-[0.72rem]" : "text-sm"}`}>{pmt.who}</p>
-                  <p className={`truncate font-mono text-muted ${L.compact ? "text-[0.55rem]" : "text-[0.66rem]"}`}>
-                    {pmt.what} · {pmt.token} on {pmt.network}
+                  <p className={`truncate font-semibold ${L.compact ? "text-[0.72rem]" : "text-sm"}`}>{pmt.who}</p>
+                  <p className={`truncate text-muted ${L.compact ? "text-[0.56rem]" : "text-[0.7rem]"}`}>
+                    {pmt.what}, {pmt.token} on {pmt.network}
                   </p>
                 </div>
                 <div className="shrink-0 text-right">
                   <p className={`num ${L.compact ? "text-[0.72rem]" : "text-sm"}`}>{usd(pmt.cents)}</p>
-                  <p className={`eyebrow text-[0.55rem] text-ledger transition-opacity ${arrived[j] ? "opacity-100" : "opacity-0"}`}>Paid ✓</p>
+                  <p className={`field-label flex items-center justify-end gap-1 text-[0.52rem] text-ledger transition-opacity ${arrived[j] ? "opacity-100" : "opacity-0"}`}>
+                    <Check size={9} weight="bold" /> Paid
+                  </p>
                 </div>
               </div>
             );
           })}
-          <div className={`flex justify-between py-2.5 font-medium transition-opacity duration-300 ${q >= T.total ? "opacity-100" : "opacity-0"} ${L.compact ? "text-sm" : "text-base"}`}>
+          <div className={`flex justify-between py-2.5 font-bold transition-opacity duration-300 ${q >= T.total ? "opacity-100" : "opacity-0"} ${L.compact ? "text-sm" : "text-base"}`}>
             <span>Total</span>
             <span className="num">{usd(WEEK_TOTAL_CENTS)}</span>
           </div>
-          <div
-            className={`rounded-full text-center font-medium transition-all duration-300 ${L.compact ? "py-1.5 text-xs" : "py-2.5 text-sm"} ${pressed ? "scale-[0.97] bg-ledger text-white" : "bg-mint text-night"} ${q >= T.total ? "opacity-100" : "opacity-0"}`}
-          >
-            {pressed ? "Approved ✓" : "Approve and pay everyone"}
-          </div>
-          <div className="pointer-events-none absolute inset-x-0 top-[38%] flex justify-center">
-            <Stamp verdict="ready" word="Approved" note="Once, for everyone" t={seg(q, ...T.approved)} tilt={-12} size={L.compact ? "md" : "lg"} />
+          <div className={`relative flex items-end justify-between gap-3 transition-opacity duration-300 ${q >= T.total ? "opacity-100" : "opacity-0"}`}>
+            <div
+              className={`inline-flex items-center gap-1.5 rounded-[5px] font-semibold transition-colors duration-200 ${L.compact ? "px-3 py-1.5 text-xs" : "px-4 py-2.5 text-sm"} ${pressed ? "bg-ink text-card" : "bg-ledger text-card"}`}
+            >
+              {pressed ? (
+                <>
+                  <Check size={14} weight="bold" /> Approved
+                </>
+              ) : (
+                "Approve and pay everyone"
+              )}
+            </div>
+            <div className="min-w-0 text-right">
+              <p className={`hand border-b border-ink/40 px-1 ${L.compact ? "text-[0.8rem] leading-[2]" : "text-base leading-[2.2]"}`} style={{ clipPath: `inset(0 ${(1 - tSign) * 100}% 0 0)` }}>
+                Bukka Corner
+              </p>
+              <p className={`field-label mt-1 text-muted ${L.compact ? "text-[0.48rem]" : "text-[0.55rem]"}`}>Signed once</p>
+            </div>
           </div>
         </div>
       </div>
@@ -325,22 +326,22 @@ function Stage({ q, L }: { q: number; L: Layout }) {
             className="absolute left-0 top-0"
             style={{ transform: `translate(${c.x - CW / 2}px, ${c.y - CH / 2}px) rotate(${c.r}deg) scale(${c.s})`, opacity: c.o, zIndex: 10 + i }}
           >
-            <PaperInvoice inv={inv} tint={TINTS[i]} stamp={<Stamp verdict={inv.verdict} note={inv.note} t={stampAt(i, q, L)} tilt={TILT[i]} />} />
+            <PaperInvoice inv={inv} stamp={<Stamp verdict={inv.verdict} note={inv.note} t={stampAt(i, q, L)} tilt={TILT[i]} />} />
           </div>
         );
       })}
 
-      {/* Scanner */}
+      {/* The checking pass: a ruler line moving across */}
       <div className="absolute top-0 z-30 h-full" style={{ left: beamX, opacity: tb > 0 && tb < 1 ? 1 : 0 }}>
-        <div className="absolute -left-28 top-0 h-full w-28 bg-gradient-to-r from-transparent to-mint/25" />
-        <div className="absolute left-0 top-0 h-full w-[2px] bg-mint shadow-[0_0_24px_4px_rgba(79,209,160,0.7)]" />
-        <span className="eyebrow absolute left-3 top-3 whitespace-nowrap text-mint">Checking…</span>
+        <div className="absolute -left-16 top-0 h-full w-16 bg-ledger/[0.07]" />
+        <div className="absolute left-0 top-0 h-full w-[2px] bg-ledger" />
+        <span className="field-label absolute left-2.5 top-2 whitespace-nowrap rounded-[3px] bg-ledger px-1.5 py-0.5 text-card">Checking</span>
       </div>
 
-      {/* Paid so far, and one chip per network */}
+      {/* Paid so far, and one clearing slot per network */}
       <div className="absolute" style={{ left: L.counter.x, top: L.counter.y, opacity: tChips }}>
-        <p className={`eyebrow text-cream/55 ${L.compact ? "text-[0.55rem]" : ""}`}>Paid so far</p>
-        <p className={`num text-mint ${L.compact ? "text-lg leading-tight" : "mt-1 text-5xl"}`}>{usd(paidCents)}</p>
+        <p className={`field-label text-muted ${L.compact ? "text-[0.55rem]" : ""}`}>Paid so far</p>
+        <p className={`num font-semibold text-ledger ${L.compact ? "text-lg leading-tight" : "mt-1 text-[2.6rem] leading-none"}`}>{usd(paidCents)}</p>
       </div>
       {NETWORKS.map((n, k) => {
         const ch = L.chips[k];
@@ -348,18 +349,15 @@ function Stage({ q, L }: { q: number; L: Layout }) {
         return (
           <div
             key={n}
-            className={`absolute rounded-2xl border bg-night-2 transition-colors duration-300 ${mine.length ? "border-mint/60" : "border-cream/15"} ${L.compact ? "p-2.5" : "px-4 py-3"}`}
+            className={`absolute rounded-[6px] border bg-card transition-colors duration-300 ${mine.length ? "border-ledger" : "border-ink/15"} ${L.compact ? "p-2.5" : "px-4 py-3"}`}
             style={{ left: ch.x, top: ch.y, width: ch.w, height: ch.h, opacity: tChips, transform: `translateX(${(1 - tChips) * 40}px)` }}
           >
-            <p className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: DOT[n] }} />
-              <span className={`font-display font-semibold ${L.compact ? "text-sm" : "text-lg"}`}>{n}</span>
-            </p>
-            <p className={`num mt-1 text-cream/70 ${L.compact ? "text-[0.62rem] leading-snug" : "text-sm"}`}>
+            <p className={`font-bold [font-stretch:110%] ${L.compact ? "text-sm" : "text-lg"}`}>{n}</p>
+            <p className={`mt-1 tabular-nums ${mine.length ? "text-ledger" : "text-muted"} ${L.compact ? "text-[0.66rem] leading-snug" : "text-sm"}`}>
               {mine.length ? (
                 <>
-                  {mine.length} paid{L.compact ? <br /> : " · "}
-                  {usd(mine.reduce((a, b) => a + b, 0))}
+                  {mine.length} paid{L.compact ? <br /> : ", "}
+                  <span className="num">{usd(mine.reduce((a, b) => a + b, 0))}</span>
                 </>
               ) : (
                 "Waiting"
@@ -369,7 +367,7 @@ function Stage({ q, L }: { q: number; L: Layout }) {
         );
       })}
 
-      {/* Payments in flight */}
+      {/* Payments in flight: small cheques on their way to clear */}
       {WEEK_PAYMENTS.map((pmt, j) => {
         const t = seg(q, ...T.ticket(j));
         if (t <= 0 || t >= 1) return null;
@@ -386,10 +384,11 @@ function Stage({ q, L }: { q: number; L: Layout }) {
         return (
           <div
             key={pmt.who}
-            className="absolute left-0 top-0 z-40 whitespace-nowrap rounded-full bg-mint px-3 py-1.5 font-mono text-[0.7rem] text-night shadow-[0_0_30px_rgba(79,209,160,0.65)]"
+            className="absolute left-0 top-0 z-40 flex items-center gap-1.5 whitespace-nowrap rounded-[4px] border border-ink/25 bg-card px-2.5 py-1.5 text-[0.7rem] font-semibold text-ink shadow-[0_8px_18px_-10px_rgb(22_32_42/0.6)]"
             style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${L.compact ? 0.85 : 1})`, opacity: t > 0.85 ? (1 - t) / 0.15 : 1 }}
           >
-            {pmt.who.split(" ")[0]} · {usd(pmt.cents)} → {pmt.network}
+            {pmt.who.split(" ")[0]} <span className="num font-normal">{usd(pmt.cents)}</span>
+            <ArrowRight size={11} weight="bold" /> {pmt.network}
           </div>
         );
       })}
@@ -403,17 +402,26 @@ function WeekRuler({ q }: { q: number }) {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
   return (
     <div aria-hidden className="absolute inset-x-5 bottom-4 lg:inset-x-12 lg:bottom-6">
-      <div className="relative h-4 bg-[repeating-linear-gradient(to_right,rgb(251_246_234/0.25)_0_1px,transparent_1px_10px)] [mask:linear-gradient(to_bottom,transparent_40%,#000_40%)]">
-        <span className="absolute -top-1 bottom-0 w-[2px] bg-mint shadow-[0_0_10px_rgba(79,209,160,0.9)]" style={{ left: `${pos * 100}%` }} />
+      <div className="relative h-3 border-b border-ink/40">
+        {days.map((d, i) => (
+          <span key={d} className="absolute bottom-0 h-3 w-px bg-ink/40" style={{ left: `${(i / 4) * 100}%` }} />
+        ))}
+        <span className="absolute -bottom-1 h-5 w-[3px] -translate-x-1/2 bg-ledger" style={{ left: `${pos * 100}%` }} />
       </div>
       <div className="relative mt-1.5 h-4">
         {days.map((d, i) => (
           <span
             key={d}
-            className={`eyebrow absolute -translate-x-1/2 whitespace-nowrap text-[0.6rem] first:translate-x-0 last:-translate-x-full ${i === 4 && pos >= 1 ? "text-mint" : pos >= i / 4 - 0.001 ? "text-cream" : "text-cream/35"}`}
+            className={`field-label absolute -translate-x-1/2 whitespace-nowrap first:translate-x-0 last:-translate-x-full ${i === 4 && pos >= 1 ? "text-ledger" : pos >= i / 4 - 0.001 ? "text-ink" : "text-ink/40"}`}
             style={{ left: `${(i / 4) * 100}%` }}
           >
-            {i === 4 ? "Fri · payday" : d}
+            {i === 4 ? (
+              <>
+                Fri<span className="hidden sm:inline">, payday</span>
+              </>
+            ) : (
+              d
+            )}
           </span>
         ))}
       </div>

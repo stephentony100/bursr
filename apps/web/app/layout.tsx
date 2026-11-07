@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, IBM_Plex_Mono, Public_Sans } from "next/font/google";
+import { Archivo, Homemade_Apple, Martian_Mono } from "next/font/google";
 import "./globals.css";
 
-const bricolage = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"] });
-const publicSans = Public_Sans({ variable: "--font-public-sans", subsets: ["latin"] });
-const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "500"] });
+// Archivo carries its width axis: expanded for printed cheque fields, normal for reading.
+const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"], axes: ["wdth"] });
+const martian = Martian_Mono({ variable: "--font-martian", subsets: ["latin"] });
+// The owner's own hand, used only for the payee line and the signature.
+const hand = Homemade_Apple({ variable: "--font-hand-apple", subsets: ["latin"], weight: "400" });
 
 export const metadata: Metadata = {
   title: "Bursar: pay everyone, never the wrong person",
@@ -13,7 +15,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${bricolage.variable} ${publicSans.variable} ${plexMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${archivo.variable} ${martian.variable} ${hand.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

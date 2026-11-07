@@ -1,3 +1,4 @@
+import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -18,10 +19,10 @@ export default async function PayeePage({ params }: PageProps<"/people/[id]">) {
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/people" className="text-sm text-indigo underline">
-          ← Everyone you pay
+        <Link href="/people" className="inline-flex items-center gap-1.5 text-sm text-indigo underline">
+          <ArrowLeft size={14} weight="bold" aria-hidden /> Everyone you pay
         </Link>
-        <h1 className="mt-2 font-display text-3xl font-semibold">{payee.name}</h1>
+        <h1 className="mt-2 display text-4xl">{payee.name}</h1>
         {held && (
           <p className="mt-2 rounded-md bg-hold-soft px-4 py-2 text-sm text-hold">
             Their payment details changed recently. For your safety, payments are on hold until {payoutHoldEndsAt(payee)!.toLocaleString("en-GB")}.
@@ -30,7 +31,7 @@ export default async function PayeePage({ params }: PageProps<"/people/[id]">) {
       </div>
 
       <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="font-display text-xl font-semibold">Their details</h2>
+        <h2 className="text-xl font-bold [font-stretch:110%]">Their details</h2>
         <ActionForm action={updatePayeeAction} submit="Save" className="mt-4">
           <input type="hidden" name="id" value={payee.id} />
           <DetailFields payee={payee} />
@@ -38,7 +39,7 @@ export default async function PayeePage({ params }: PageProps<"/people/[id]">) {
       </section>
 
       <section className="rounded-xl border border-hold/40 bg-card p-6">
-        <h2 className="font-display text-xl font-semibold">Where they get paid</h2>
+        <h2 className="text-xl font-bold [font-stretch:110%]">Where they get paid</h2>
         <p className="mt-1 max-w-2xl text-sm text-muted">
           Only change this after you&apos;ve checked with {payee.name} by phone or in person, never just because an invoice or message
           asked you to. That&apos;s exactly how most payment fraud works. Saving puts them on a 48-hour safety hold.
@@ -50,7 +51,7 @@ export default async function PayeePage({ params }: PageProps<"/people/[id]">) {
       </section>
 
       <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="font-display text-xl font-semibold">Stop paying them</h2>
+        <h2 className="text-xl font-bold [font-stretch:110%]">Stop paying them</h2>
         <p className="mt-1 text-sm text-muted">Bursar won&apos;t be able to pay them any more. You can add them again later.</p>
         <ActionForm action={removePayeeAction} submit={`Remove ${payee.name}`} tone="danger">
           <input type="hidden" name="id" value={payee.id} />

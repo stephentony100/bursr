@@ -5,7 +5,9 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { ActionForm, ForceTester, ItemButton } from "@/components/forms";
 import { db } from "@/lib/db";
 import { readEnv } from "@/lib/env";
-import { formatUnits, formatUsd } from "@/lib/money";
+import { shortenAddresses } from "@/lib/address";
+import { listInvoices } from "@/lib/invoices";
+import { formatUsd, rescale } from "@/lib/money";
 import { refreshPayments } from "@/lib/pay";
 import { getLatestPlan, type PlanItemView } from "@/lib/plans";
 import { getBusiness } from "@/lib/store";
@@ -15,10 +17,22 @@ const PAY_STATUS: Record<PlanItemView["payStatus"], { label: string; tone: strin
   planned: { label: "Waiting for your OK", tone: "text-muted" },
   paying: { label: "Paying…", tone: "text-hold" },
   sent: { label: "Sent, on its way…", tone: "text-hold" },
-  delivered: { label: "Paid ✓", tone: "text-ledger" },
+  delivered: { label: "Paid", tone: "text-ledger" },
   failed: { label: "Not paid", tone: "text-refuse" },
   refunded: { label: "Money returned to your wallet", tone: "text-hold" },
 };
+
+/** A transfer fee in the payout token's units, to the cent; tiny fees say so instead of rounding to $0.00. */
+function FeeText({ raw, decimals }: { raw: bigint; decimals: number }) {
+  const micros = rescale(raw, decimals, 6);
+  return micros < 10_000n ? (
+    <>
+      under <span className="num">$0.01</span>
+    </>
+  ) : (
+    <span className="num">{formatUsd(micros)}</span>
+  );
+}
 
 export default async function PlanPage() {
   await connection();
@@ -37,6 +51,7 @@ export default async function PlanPage() {
   }
   await refreshPayments(db());
   const plan = await getLatestPlan(db());
+  const invoiceStatus = new Map((await listInvoices(db())).map((v) => [v.id, v.status]));
   const treasury = business.rules.treasury;
 
   const inPlan = plan?.items.filter((i) => i.placement === "in") ?? [];
@@ -52,7 +67,7 @@ export default async function PlanPage() {
       <AutoRefresh active={moving} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-semibold">This week&apos;s payments</h1>
+          <h1 className="display text-4xl">This week&apos;s payments</h1>
           <p className="mt-2 max-w-2xl text-muted">
             Every invoice that passed its checks, plus your staff&apos;s pay, in one list. Look it over, tap approve once, and everyone gets
             paid in the digital dollars they prefer. Anything outside your spending rules simply can&apos;t go out.
@@ -68,13 +83,13 @@ export default async function PlanPage() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-sm text-muted">
-                {plan.status === "draft" ? "Ready for your OK" : `You approved this on ${plan.approvedAt?.toLocaleString("en-GB")}`}
+                {plan.status === "draft" ? "Ready for your OK" : `You approved this on ${plan.approvedAt?.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`}
               </p>
-              <p className="num font-display text-4xl font-semibold">{formatUsd(total)}</p>
+              <p className="num whitespace-nowrap text-4xl font-semibold">{formatUsd(total)}</p>
               <p className="text-sm text-muted">
                 {inPlan.length} payments ·{" "}
                 {unquoted === 0
-                  ? `about $${formatUnits(cost, treasury.decimals)} including transfer fees`
+                  ? `about ${formatUsd(rescale(cost, treasury.decimals, 6))} including transfer fees`
                   : `fees for ${unquoted} will be worked out when paid`}{" "}
                 ·{" "}
                 {formatUsd(plan.capLeftUsd)} was left of your weekly limit
@@ -110,10 +125,14 @@ export default async function PlanPage() {
                 </div>
                 <div className="text-right">
                   <p className="num font-medium">{formatUsd(i.amountUsd)}</p>
-                  <p className="num text-xs text-muted">
-                    {i.quote
-                      ? `fee $${formatUnits(BigInt(i.quote.withdrawFee), i.payout?.token.decimals ?? 6)} · arrives in ~${i.quote.timeEstimateSec}s`
-                      : "fee worked out when paid"}
+                  <p className="text-xs tabular-nums text-muted">
+                    {i.quote ? (
+                      <>
+                        fee <FeeText raw={BigInt(i.quote.withdrawFee)} decimals={i.payout?.token.decimals ?? 6} />, arrives in about {i.quote.timeEstimateSec}s
+                      </>
+                    ) : (
+                      "fee worked out when paid"
+                    )}
                   </p>
                 </div>
                 <div className="flex w-56 justify-end gap-2">
@@ -134,7 +153,7 @@ export default async function PlanPage() {
 
       {out.length > 0 && (
         <section>
-          <h2 className="font-display text-xl font-semibold">Not paid this week, and why</h2>
+          <h2 className="text-xl font-bold [font-stretch:110%]">Not paid this week, and why</h2>
           <ul className="mt-3 divide-y divide-line rounded-xl border border-line bg-card">
             {out.map((i) => (
               <li key={i.id} className="flex flex-wrap gap-x-6 gap-y-1 px-5 py-3 text-sm">
@@ -142,9 +161,9 @@ export default async function PlanPage() {
                   <p className="font-medium">
                     {i.payeeName} <span className="font-normal text-muted">· {i.forWhat}</span>
                   </p>
-                  <p className={i.placement === "removed" ? "text-muted" : i.placement === "deferred" ? "text-muted" : "text-hold"}>{i.reason}</p>
+                  <p className={i.placement !== "held" ? "text-muted" : i.invoiceId && invoiceStatus.get(i.invoiceId) === "block" ? "text-refuse" : "text-hold"}>{i.reason && shortenAddresses(i.reason)}</p>
                 </div>
-                <p className="num">{i.amountUsd > 0n ? formatUsd(i.amountUsd) : "—"}</p>
+                <p className="num">{i.amountUsd > 0n ? formatUsd(i.amountUsd) : "Not read"}</p>
               </li>
             ))}
           </ul>
@@ -161,7 +180,7 @@ export default async function PlanPage() {
       )}
 
       <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="font-display text-xl font-semibold">Can anyone get around your limits?</h2>
+        <h2 className="text-xl font-bold [font-stretch:110%]">Can anyone get around your limits?</h2>
         <p className="mt-1 max-w-2xl text-sm text-muted">
           Try it yourself: Bursar sends one payment bigger than your limit straight to your wallet, skipping this list and your approval.
           Your spending rules live in the wallet itself, so it should be stopped there.{" "}

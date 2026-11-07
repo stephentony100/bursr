@@ -1,3 +1,4 @@
+import { shortenAddresses } from "@/lib/address";
 import { connection } from "next/server";
 import { saveRules, telegramLinkAction, testRule, toggleFreeze } from "@/app/actions";
 import { linkedChat } from "@/lib/telegram";
@@ -36,7 +37,7 @@ export default async function SetupPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="font-display text-3xl font-semibold">Spending rules</h1>
+        <h1 className="display text-4xl">Spending rules</h1>
         <p className="mt-2 max-w-2xl text-muted">
           You set the limits once. They&apos;re locked into your Bursar wallet itself, so any payment that breaks them is stopped there,
           no matter what. Bursar&apos;s AI can only ask to pay; it can never change your limits or who you pay.
@@ -57,7 +58,7 @@ export default async function SetupPage() {
 
       {r && (
         <section className="rounded-xl border border-line bg-card p-6">
-          <h2 className="font-display text-xl font-semibold">Your limits</h2>
+          <h2 className="text-xl font-bold [font-stretch:110%]">Your limits</h2>
           <ActionForm action={saveRules} submit={dryRun ? "Save my limits" : "Save my limits (then confirm with your wallet)"}>
             <div className="mt-4 grid gap-5 sm:grid-cols-3">
               <Money name="weeklyCap" label="Weekly limit" hint="The most that can go out in any 7 days." value={usd(r.weeklyCapUsd)} />
@@ -79,8 +80,8 @@ export default async function SetupPage() {
               {r.fee ? (
                 <>
                   {(r.fee.bps / 100).toFixed(2).replace(/\.?0+$/, "")}% of each week&apos;s payments, shown as its own line before you approve. Like
-                  everyone you pay, it can only go to one fixed address ({" "}
-                  <span className="num text-xs">{r.fee.payout.address}</span>), so it can never be raised or sent anywhere else.
+                  everyone you pay, it can only go to one fixed address (<span className="num text-xs" title={r.fee.payout.address}>{shortenAddresses(r.fee.payout.address)}</span>), so it can
+                  never be raised or sent anywhere else.
                 </>
               ) : (
                 "none."
@@ -104,7 +105,7 @@ export default async function SetupPage() {
 
       {r && dryRun && status && (
         <section className="rounded-xl border border-line bg-card p-6">
-          <h2 className="font-display text-xl font-semibold">Emergency stop</h2>
+          <h2 className="text-xl font-bold [font-stretch:110%]">Emergency stop</h2>
           <p className="mt-1 text-sm text-muted">
             Something feels wrong? One tap stops every payment until you turn them back on.{" "}
             {status.frozen ? <strong className="text-refuse">All payments are paused right now.</strong> : "Payments are on right now."}
@@ -117,7 +118,7 @@ export default async function SetupPage() {
 
       {r && env.TELEGRAM_BOT_TOKEN && (
         <section className="rounded-xl border border-line bg-card p-6">
-          <h2 className="font-display text-xl font-semibold">Telegram</h2>
+          <h2 className="text-xl font-bold [font-stretch:110%]">Telegram</h2>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             Get a message the moment Bursar stops a suspicious invoice, and approve the week&apos;s payments from your phone.{" "}
             {telegram ? <strong className="text-ledger">Connected.</strong> : "Not connected yet."}
@@ -128,7 +129,7 @@ export default async function SetupPage() {
 
       {r && status && (
         <section className="rounded-xl border border-line bg-card p-6">
-          <h2 className="font-display text-xl font-semibold">See your limits in action</h2>
+          <h2 className="text-xl font-bold [font-stretch:110%]">See your limits in action</h2>
           <p className="mt-1 max-w-2xl text-sm text-muted">
             Pick a payment and Bursar asks your wallet whether it would let it through. Nothing is actually paid.{" "}
             {dryRun ? "In the demo, the wallet follows the same rules with practice money." : "The answer comes from your real wallet."}

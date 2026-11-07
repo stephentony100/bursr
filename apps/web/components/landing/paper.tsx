@@ -1,124 +1,140 @@
 import type { CSSProperties, ReactNode } from "react";
 import { usd, type Verdict, type WeekInvoice } from "./week-data";
 
-// Paper pieces for the home page: invoice cards, rubber stamps, a red-pen
-// ring and blueprint crop marks. All drawn with HTML/CSS/SVG.
+// Paper pieces for the home page, drawn as exact geometry: security
+// linework, crossings, rubber stamps, invoices. Flat colour only.
 
 export const VERDICT: Record<Verdict, { word: string; color: string }> = {
-  ready: { word: "Ready", color: "#0f6b4f" },
-  hold: { word: "Hold", color: "#a86a12" },
-  block: { word: "Blocked", color: "#c8322b" },
+  ready: { word: "Ready", color: "#1d6a60" },
+  hold: { word: "Hold", color: "#95580a" },
+  block: { word: "Void", color: "#b3261e" },
 };
 
-/** Pastel paper tints, one per invoice. */
-export const TINTS = ["#e4f4ea", "#fff1cf", "#ffe3dc", "#e9e9ff", "#dff0fa", "#fbe4f0"];
+/**
+ * Guilloche: the interlaced security lines printed across a cheque.
+ * Phase-shifted sine waves under a slow envelope, computed once.
+ */
+function guilloche(w: number, h: number, lines: number, period: number) {
+  const paths: string[] = [];
+  for (let k = 0; k < lines; k++) {
+    const phase = (k / lines) * Math.PI * 2;
+    let d = "";
+    for (let x = 0; x <= w; x += 3) {
+      const env = 0.55 + 0.45 * Math.cos((2 * Math.PI * x) / (period * 4.3) + phase / 3);
+      const y = h / 2 + (h / 2 - 1) * env * Math.sin((2 * Math.PI * x) / period + phase);
+      d += `${x === 0 ? "M" : "L"}${x} ${y.toFixed(1)}`;
+    }
+    paths.push(d);
+  }
+  return paths;
+}
+const BAND = guilloche(600, 40, 7, 46);
 
-/** A banknote-style rosette: thin rotated ellipses, like the security print on a cheque. */
-export function Rosette({ color = "#0f6b4f", className = "" }: { color?: string; className?: string }) {
+export function GuillocheBand({ className = "", color = "#2f6f6a", opacity = 0.35 }: { className?: string; color?: string; opacity?: number }) {
   return (
-    <svg viewBox="-50 -50 100 100" className={className} aria-hidden>
-      {Array.from({ length: 18 }, (_, k) => (
-        <ellipse key={k} rx="46" ry="13" fill="none" stroke={color} strokeWidth="0.45" transform={`rotate(${k * 10})`} />
+    <svg viewBox="0 0 600 40" preserveAspectRatio="none" className={className} aria-hidden>
+      {BAND.map((d, i) => (
+        <path key={i} d={d} fill="none" stroke={color} strokeOpacity={opacity} strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
       ))}
-      <circle r="9" fill="none" stroke={color} strokeWidth="0.5" />
     </svg>
   );
 }
 
-/** A rubber stamp. `t` (0..1) drives the slam when it is animated by scroll; omit it for a static stamp. */
-export function Stamp({ verdict, word, note, t, tilt = -8, size = "md" }: { verdict: Verdict; word?: string; note?: string; t?: number; tilt?: number; size?: "sm" | "md" | "lg" }) {
+/** A rosette, the round security mark in a cheque's corner. */
+export function Rosette({ color = "#2f6f6a", className = "" }: { color?: string; className?: string }) {
+  return (
+    <svg viewBox="-50 -50 100 100" className={className} aria-hidden>
+      {Array.from({ length: 24 }, (_, k) => (
+        <ellipse key={k} rx="46" ry="15" fill="none" stroke={color} strokeWidth="0.4" transform={`rotate(${k * 7.5})`} />
+      ))}
+    </svg>
+  );
+}
+
+/**
+ * A rubber stamp. `t` (0..1) drives the press when scroll animates it;
+ * omit it for a stamp that is already down.
+ */
+export function Stamp({ verdict, word, note, t, tilt = -6, size = "md" }: { verdict: Verdict; word?: string; note?: string; t?: number; tilt?: number; size?: "sm" | "md" | "lg" }) {
   const v = VERDICT[verdict];
   const style: CSSProperties = { color: v.color, borderColor: v.color };
   if (t === undefined) style.transform = `rotate(${tilt}deg)`;
   else {
-    const k = t <= 0 ? 0 : t;
-    style.opacity = k > 0 ? Math.min(1, k * 2.5) : 0;
-    style.transform = `rotate(${tilt}deg) scale(${k > 0 ? 1 + (1 - k) * 1.3 : 2.3})`;
+    style.opacity = t > 0 ? Math.min(1, t * 3) : 0;
+    style.transform = `rotate(${tilt}deg) scale(${t > 0 ? 1 + (1 - t) * 0.5 : 1.5})`;
   }
-  const pad = size === "lg" ? "px-4 py-2" : size === "sm" ? "px-1.5 py-0.5" : "px-2.5 py-1";
-  const text = size === "lg" ? "text-2xl" : size === "sm" ? "text-[0.55rem]" : "text-[0.8rem]";
+  const pad = size === "lg" ? "px-4 py-2" : size === "sm" ? "px-1.5 py-1" : "px-2.5 py-1.5";
+  const text = size === "lg" ? "text-xl" : size === "sm" ? "text-[0.55rem]" : "text-[0.72rem]";
   return (
-    <span className={`inline-block rounded-md border-[2.5px] bg-white/40 text-center leading-none mix-blend-multiply ${pad}`} style={style}>
-      <span className={`eyebrow block font-semibold ${text}`}>{word ?? v.word}</span>
-      {note && <span className="mt-1 block font-mono text-[0.6rem] leading-tight">{note}</span>}
+    <span className={`inline-block rounded-[3px] border-2 text-center leading-none ${pad}`} style={style}>
+      <span className={`field-label block font-extrabold ${text}`}>{word ?? v.word}</span>
+      {note && <span className="mt-1 block text-[0.62rem] font-medium leading-tight">{note}</span>}
     </span>
   );
 }
 
-/** One supplier invoice on paper, 170 × 224 px. */
-export function PaperInvoice({ inv, tint, stamp }: { inv: WeekInvoice; tint: string; stamp?: ReactNode }) {
+/** One supplier invoice on plain paper, 170 x 224 px. */
+export function PaperInvoice({ inv, stamp }: { inv: WeekInvoice; stamp?: ReactNode }) {
   return (
-    <div
-      className="grain relative h-[224px] w-[170px] overflow-hidden rounded-xl border border-black/10 p-3.5 text-ink shadow-[0_24px_50px_-20px_rgba(0,0,0,0.65)]"
-      style={{ background: `linear-gradient(165deg, ${tint} 0%, #fffdf6 75%)` }}
-    >
-      <Rosette className="absolute -right-10 -top-10 h-32 w-32 opacity-30" />
-      <p className="relative whitespace-nowrap font-mono text-[0.55rem] uppercase tracking-[0.06em] text-muted">Invoice #{inv.number}</p>
-      <p className="relative mt-1 font-display text-[1.05rem] font-semibold leading-tight">{inv.supplier}</p>
-      <ul className="relative mt-3 space-y-1 font-mono text-[0.6rem] text-muted">
+    <div className="relative h-[224px] w-[170px] overflow-hidden rounded-[4px] border border-ink/15 bg-card p-3.5 text-ink shadow-[0_14px_30px_-18px_rgb(22_32_42/0.55)]">
+      <p className="field-label whitespace-nowrap text-[0.52rem] text-muted">Invoice {inv.number}</p>
+      <p className="mt-1.5 text-[1rem] font-bold leading-tight [font-stretch:105%]">{inv.supplier}</p>
+      <ul className="mt-3 space-y-1 border-t border-ink/10 pt-2 text-[0.62rem] text-muted">
         {inv.lines.map((l) => (
           <li key={l.description} className="flex justify-between gap-2">
             <span className="truncate">{l.description}</span>
-            <span>{l.total}</span>
+            <span className="num">{l.total}</span>
           </li>
         ))}
       </ul>
-      <p className="relative mt-2.5 flex justify-between border-t border-dashed border-black/20 pt-2 font-mono text-[0.7rem] font-medium">
-        <span>TOTAL</span>
-        <span>{usd(inv.totalCents)}</span>
+      <p className="mt-2.5 flex justify-between border-t border-ink/25 pt-2 text-[0.7rem] font-semibold">
+        <span className="field-label text-[0.55rem]">Total</span>
+        <span className="num">{usd(inv.totalCents)}</span>
       </p>
       {stamp && <div className="absolute bottom-4 left-0 right-0 flex justify-center">{stamp}</div>}
     </div>
   );
 }
 
-/** A red-pen ring drawn around a word, the way you'd circle a mistake on paper. */
-export function RingMark({ delay = 900, color = "#e5483f", className = "" }: { delay?: number; color?: string; className?: string }) {
+/** A red-pen ring drawn round a mistake. */
+export function RingMark({ delay = 600, color = "#b3261e", className = "" }: { delay?: number; color?: string; className?: string }) {
   return (
-    <svg viewBox="0 0 200 80" preserveAspectRatio="none" className={`pointer-events-none absolute -inset-x-[7%] -inset-y-[16%] h-[132%] w-[114%] overflow-visible ${className}`} aria-hidden>
+    <svg viewBox="0 0 200 80" preserveAspectRatio="none" className={`pointer-events-none absolute -inset-x-[14%] -inset-y-[16%] h-[132%] w-[128%] overflow-visible ${className}`} aria-hidden>
       <path
         d="M168 14 C 120 2, 40 4, 14 26 C -6 44, 22 72, 96 74 C 160 76, 196 58, 190 34 C 186 18, 150 8, 112 9"
         pathLength={1}
         fill="none"
         stroke={color}
-        strokeWidth="4"
+        strokeWidth="3.5"
         strokeLinecap="round"
         className="draw"
-        style={{ animationDelay: `${delay}ms`, animationDuration: "900ms" }}
+        style={{ animationDelay: `${delay}ms` }}
       />
     </svg>
   );
 }
 
-/** Blueprint crop marks on the four corners of the parent (which must be `relative`). */
-export function CropMarks({ color = "#4fd1a0" }: { color?: string }) {
-  const c = "pointer-events-none absolute h-3 w-3";
-  const s = { borderColor: color };
+/** The crossing: two parallel lines with A/C PAYEE ONLY between them. Draws itself unless `still`. */
+export function Crossing({ delay = 300, still = false, className = "" }: { delay?: number; still?: boolean; className?: string }) {
+  const draw = still ? "" : "draw";
   return (
-    <>
-      <span aria-hidden className={`${c} -left-px -top-px border-l-2 border-t-2`} style={s} />
-      <span aria-hidden className={`${c} -right-px -top-px border-r-2 border-t-2`} style={s} />
-      <span aria-hidden className={`${c} -bottom-px -left-px border-b-2 border-l-2`} style={s} />
-      <span aria-hidden className={`${c} -bottom-px -right-px border-b-2 border-r-2`} style={s} />
-    </>
-  );
-}
-
-/** A slowly turning seal with Bursar's four outcomes printed round the rim. */
-export function Seal({ id, className = "", spin = true }: { id: string; className?: string; spin?: boolean }) {
-  return (
-    <svg viewBox="0 0 200 200" className={className} aria-hidden>
-      <defs>
-        <path id={id} d="M100,100 m-74,0 a74,74 0 1,1 148,0 a74,74 0 1,1 -148,0" />
-      </defs>
-      <g className={spin ? "spin-slow" : ""} style={{ transformOrigin: "100px 100px" }}>
-        <circle cx="100" cy="100" r="96" fill="none" stroke="currentColor" strokeOpacity="0.35" />
-        <circle cx="100" cy="100" r="58" fill="none" stroke="currentColor" strokeOpacity="0.35" strokeDasharray="2 4" />
-        <text fill="currentColor" fontFamily="var(--font-mono)" fontSize="12" textLength="458" lengthAdjust="spacing">
-          <textPath href={`#${id}`}>CHECKED • HELD FOR YOU • APPROVED • PAID •</textPath>
-        </text>
+    <svg viewBox="0 0 240 70" className={`pointer-events-none overflow-visible ${className}`} aria-hidden>
+      <path d="M6 46 L234 6" pathLength={1} stroke="#16202a" strokeWidth="2" className={draw} style={{ animationDelay: `${delay}ms` }} />
+      <path d="M6 66 L234 26" pathLength={1} stroke="#16202a" strokeWidth="2" className={draw} style={{ animationDelay: `${delay + 140}ms` }} />
+      <g transform="rotate(-9.95 120 36)">
+      <text
+        x="120"
+        y="40"
+        textAnchor="middle"
+        fill="#16202a"
+        fontSize="11"
+        fontWeight="700"
+        letterSpacing="2"
+        style={{ fontFamily: "var(--font-archivo)", fontStretch: "125%", opacity: still ? 1 : 0, animation: still ? undefined : `tick-in 260ms var(--ease-out) ${delay + 420}ms both` }}
+      >
+        A/C PAYEE ONLY
+      </text>
       </g>
-      <path d="M78 102l15 15 30-34" fill="none" stroke="#4fd1a0" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

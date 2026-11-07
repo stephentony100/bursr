@@ -122,12 +122,12 @@ export function WalletPanel(props: {
 
   return (
     <section className="rounded-xl border-2 border-indigo/30 bg-card p-6">
-      <h2 className="font-display text-xl font-semibold">Your Bursar wallet</h2>
+      <h2 className="text-xl font-bold [font-stretch:110%]">Your Bursar wallet</h2>
 
       {!props.ownerAccountId ? (
         <div className="mt-3">
           <p className="text-sm text-muted">Sign in with your wallet app (for example HOT Wallet) to set up or manage your business. Signing in is free.</p>
-          <button onClick={signIn} disabled={busy} className="mt-3 rounded-md bg-indigo px-4 py-2 text-sm font-medium text-white disabled:opacity-60">
+          <button onClick={signIn} disabled={busy} className="mt-3 rounded-md bg-indigo px-4 py-2 text-sm font-medium text-card disabled:opacity-60">
             {busy ? "Check your wallet app…" : "Sign in"}
           </button>
         </div>
@@ -147,7 +147,7 @@ export function WalletPanel(props: {
                 <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full max-w-sm rounded-md border border-line px-3 py-2" />
               </label>
               <p className="mt-1 text-muted">You start with small limits ($20 a week, $10 a payment) and can raise them any time.</p>
-              <button onClick={setup} disabled={busy || name.trim().length < 2} className="mt-3 rounded-md bg-ledger px-4 py-2 font-medium text-white disabled:opacity-60">
+              <button onClick={setup} disabled={busy || name.trim().length < 2} className="mt-3 rounded-md bg-ledger px-4 py-2 font-medium text-card disabled:opacity-60">
                 Set up my business
               </button>
             </div>
@@ -156,11 +156,11 @@ export function WalletPanel(props: {
           {props.businessExists && (
             <>
               <p className="text-muted">
-                {props.agentId ? (props.hasGrant ? "✓ Your wallet is set up and Bursar can pay inside your limits." : "Your wallet is set up. One more step lets Bursar make payments.") : "Next: set up your Bursar wallet. It's free; your wallet app just confirms it."}
+                {props.agentId ? (props.hasGrant ? "Your wallet is set up and Bursar can pay inside your limits." : "Your wallet is set up. One more step lets Bursar make payments.") : "Next: set up your Bursar wallet. It's free; your wallet app just confirms it."}
               </p>
               <div className="flex flex-wrap gap-2">
                 {next && (
-                  <button onClick={() => prepare(next)} disabled={busy} className="rounded-md bg-ledger px-4 py-2 font-medium text-white disabled:opacity-60">
+                  <button onClick={() => prepare(next)} disabled={busy} className="rounded-md bg-ledger px-4 py-2 font-medium text-card disabled:opacity-60">
                     {LABELS[next]}…
                   </button>
                 )}
@@ -168,7 +168,7 @@ export function WalletPanel(props: {
                   <button
                     onClick={() => prepare(props.frozen ? "agent_unfreeze" : "agent_freeze")}
                     disabled={busy}
-                    className={`rounded-md px-4 py-2 font-medium disabled:opacity-60 ${props.frozen ? "bg-ledger text-white" : "bg-refuse text-white"}`}
+                    className={`rounded-md px-4 py-2 font-medium disabled:opacity-60 ${props.frozen ? "bg-ledger text-card" : "bg-refuse text-card"}`}
                   >
                     {props.frozen ? "Turn payments back on…" : "Pause all payments…"}
                   </button>
@@ -192,7 +192,7 @@ export function WalletPanel(props: {
                 {new Date(prepared.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.
               </p>
               <div className="mt-3 flex gap-2">
-                <button onClick={signAndSubmit} disabled={busy} className="rounded-md bg-indigo px-4 py-2 font-medium text-white disabled:opacity-60">
+                <button onClick={signAndSubmit} disabled={busy} className="rounded-md bg-indigo px-4 py-2 font-medium text-card disabled:opacity-60">
                   {busy ? "Check your wallet app…" : "Confirm in my wallet"}
                 </button>
                 <button onClick={() => setPrepared(null)} disabled={busy} className="rounded-md border border-line px-4 py-2">

@@ -19,7 +19,7 @@ export const duplicate: Check = (invoice, { payees, history }) => {
     return {
       check: "duplicate",
       status: "hold",
-      reason: `Possible duplicate of invoice #${byNumber.invoiceNumber} from ${supplierName}, received ${byNumber.receivedAt.toISOString().slice(0, 10)}.`,
+      reason: `Possible duplicate of invoice #${byNumber.invoiceNumber} from ${supplierName}, received ${byNumber.receivedAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" })}.`,
     };
   }
   const byAmount = !invoice.amountsKnown ? undefined : history.find(

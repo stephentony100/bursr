@@ -27,7 +27,7 @@ export default async function PayeesPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="font-display text-3xl font-semibold">People you pay</h1>
+        <h1 className="display text-4xl">People you pay</h1>
         <p className="mt-2 max-w-2xl text-muted">
           Bursar can only ever pay the people on this list, at exactly these addresses. Only you can add someone or change where they
           get paid, and any change puts them on a 48-hour safety hold. That&apos;s usually long enough for a fake &ldquo;our bank details
@@ -61,11 +61,11 @@ export default async function PayeesPage() {
             </div>
             <div className="w-44 text-right text-sm">
               {isOnPayoutHold(p, now) ? (
-                <span className="rounded-full bg-hold-soft px-2 py-0.5 text-hold">
+                <span className="field-label inline-block -rotate-1 rounded-[3px] border-2 border-current px-2 py-0.5 text-hold">
                   Safety hold until {payoutHoldEndsAt(p)!.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                 </span>
               ) : isNewPayee(p, now) ? (
-                <span className="rounded-full bg-paper px-2 py-0.5 text-muted">New: needs your OK</span>
+                <span className="field-label inline-block -rotate-1 rounded-[3px] border-2 border-current px-2 py-0.5 text-muted">New: needs your OK</span>
               ) : null}
             </div>
           </li>
@@ -73,7 +73,7 @@ export default async function PayeesPage() {
       </ul>
 
       <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="font-display text-xl font-semibold">Add someone you pay</h2>
+        <h2 className="text-xl font-bold [font-stretch:110%]">Add someone you pay</h2>
         <ActionForm action={addPayeeAction} submit="Add them" className="mt-4 space-y-5">
           <DetailFields />
           <PayoutFields tokens={business.rules.payoutTokens} />

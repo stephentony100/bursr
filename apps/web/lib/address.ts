@@ -58,3 +58,8 @@ export function addressProblem(chain: string, address: string): string | null {
   };
   return `That doesn't look like a valid address for this network (${hint[chain] ?? "an address starts with 0x and has 42 characters"}). Check it with the payee.`;
 }
+
+/** For sentences on screen: any address-like run of 30+ letters and digits becomes "d55acc…2179". */
+export function shortenAddresses(text: string): string {
+  return text.replace(/\b[A-Za-z0-9]{30,}\b/g, (a) => `${a.slice(0, 6)}…${a.slice(-4)}`);
+}

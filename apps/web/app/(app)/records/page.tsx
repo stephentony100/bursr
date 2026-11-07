@@ -18,19 +18,19 @@ export default async function StatementPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-semibold">Records</h1>
+          <h1 className="display text-4xl">Records</h1>
           <p className="mt-2 max-w-2xl text-muted">
             Every payment, who it went to, what it was for and when you approved it. Your payments stay private, so this page is your
             proof. Your accountant will love the spreadsheet.
           </p>
         </div>
-        <a href="/api/records.csv" className="rounded-md bg-ledger px-4 py-2 text-sm font-medium text-white hover:bg-ledger/90">
+        <a href="/api/records.csv" className="rounded-md bg-ledger px-4 py-2 text-sm font-medium text-card hover:bg-indigo">
           Download for my accountant (CSV)
         </a>
       </div>
 
       <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="font-display text-xl font-semibold">{facts.month} in plain words</h2>
+        <h2 className="text-xl font-bold [font-stretch:110%]">{facts.month} in plain words</h2>
         <p className="mt-2 max-w-3xl">{plainSummary(facts)}</p>
         <AiSummaryButton action={aiSummaryAction} />
       </section>
@@ -54,7 +54,7 @@ export default async function StatementPage() {
             <tbody className="divide-y divide-line">
               {lines.map((l, i) => (
                 <tr key={i} className="align-top">
-                  <td className="num px-4 py-3 whitespace-nowrap">{l.date.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</td>
+                  <td className="px-4 py-3 whitespace-nowrap tabular-nums">{l.date.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</td>
                   <td className="px-4 py-3">{l.payee}</td>
                   <td className="px-4 py-3">{l.forWhat}</td>
                   <td className="num px-4 py-3 text-right">{formatUsd(l.amountUsd)}</td>

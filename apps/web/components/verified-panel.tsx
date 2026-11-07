@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { useActionState } from "react";
 import type { AttestationResult } from "@/lib/attestation";
 
@@ -21,11 +22,12 @@ export function VerifiedPanel({ action, model }: { action: () => Promise<Attesta
     <section className="rounded-xl border border-line bg-card p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-2xl">
-          <h2 className="font-display text-xl font-semibold">
+          <h2 className="text-xl font-bold [font-stretch:110%]">
             Your invoices stay private{" "}
             {result && (
-              <span className={`ml-2 rounded-full px-3 py-1 align-middle text-sm ${result.verified ? "bg-ledger-soft text-ledger" : "bg-refuse-soft text-refuse"}`}>
-                {result.verified ? "✓ Proof checked" : "Proof not confirmed"}
+              <span className={`field-label ml-2 inline-flex items-center gap-1 rounded-[3px] border-[1.5px] px-2 py-1 align-middle ${result.verified ? "border-ledger text-ledger" : "border-refuse text-refuse"}`}>
+                {result.verified ? <CheckCircle size={13} weight="fill" aria-hidden /> : <XCircle size={13} weight="fill" aria-hidden />}
+                {result.verified ? "Proof checked" : "Proof not confirmed"}
               </span>
             )}
           </h2>
@@ -36,8 +38,8 @@ export function VerifiedPanel({ action, model }: { action: () => Promise<Attesta
           </p>
         </div>
         <form action={run}>
-          <button disabled={pending} className="rounded-md bg-indigo px-4 py-2 text-sm font-medium text-white disabled:opacity-60">
-            {pending ? "Checking… (about 20 seconds)" : result ? "Check again" : "Check the proof"}
+          <button disabled={pending} className="rounded-md bg-indigo px-4 py-2 text-sm font-medium text-card disabled:opacity-60">
+            {pending ? "Checking, about 20 seconds" : result ? "Check again" : "Check the proof"}
           </button>
         </form>
       </div>
@@ -51,8 +53,8 @@ export function VerifiedPanel({ action, model }: { action: () => Promise<Attesta
                 const ok = relevant.length > 0 && relevant.every((c) => c.ok);
                 return (
                   <li key={p.text} className="flex gap-2">
-                    <span className={ok ? "text-ledger" : "text-refuse"} aria-label={ok ? "confirmed" : "not confirmed"}>
-                      {ok ? "✓" : "✗"}
+                    <span className={`mt-0.5 shrink-0 ${ok ? "text-ledger" : "text-refuse"}`} aria-label={ok ? "confirmed" : "not confirmed"}>
+                      {ok ? <CheckCircle size={16} weight="fill" /> : <XCircle size={16} weight="fill" />}
                     </span>
                     <span>{p.text}</span>
                   </li>
@@ -75,7 +77,9 @@ export function VerifiedPanel({ action, model }: { action: () => Promise<Attesta
                   <ul className="mt-1 space-y-1">
                     {e.checks.map((c) => (
                       <li key={c.label} className="flex gap-2">
-                        <span className={c.ok ? "text-ledger" : "text-refuse"}>{c.ok ? "✓" : "✗"}</span>
+                        <span className={`mt-0.5 shrink-0 ${c.ok ? "text-ledger" : "text-refuse"}`} aria-label={c.ok ? "passed" : "failed"}>
+                          {c.ok ? <CheckCircle size={15} weight="fill" /> : <XCircle size={15} weight="fill" />}
+                        </span>
                         <span>
                           {c.label} <span className="num text-xs text-muted">{c.detail}</span>
                         </span>

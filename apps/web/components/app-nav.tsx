@@ -23,7 +23,7 @@ export function AppNav() {
             key={n.href}
             href={n.href}
             aria-current={active ? "page" : undefined}
-            className={`eyebrow rounded-md px-3 py-2 transition-colors ${active ? "bg-cream text-night" : "text-cream/70 hover:bg-night-2 hover:text-cream"}`}
+            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150 ${active ? "bg-card text-ink" : "text-card/75 hover:bg-night-2 hover:text-card"}`}
           >
             {n.label}
           </Link>

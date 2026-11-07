@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCircle, ShieldCheck } from "@phosphor-icons/react";
 import { useActionState } from "react";
 import type { FormResult, RuleTestResult } from "@/app/actions";
 
@@ -22,10 +23,10 @@ export function ActionForm({
   const [result, formAction, pending] = useActionState(action, null);
   const btn =
     tone === "danger"
-      ? "bg-refuse text-white hover:bg-refuse/90"
+      ? "bg-refuse text-card hover:bg-refuse/90"
       : tone === "quiet"
         ? "border border-line bg-card text-ink hover:bg-paper"
-        : "bg-ledger text-white hover:bg-ledger/90";
+        : "bg-ledger text-card hover:bg-indigo";
   return (
     <form action={formAction} className={className}>
       {children}
@@ -70,12 +71,19 @@ export function RuleTester({ action }: { action: (prev: RuleTestResult, f: FormD
       {result && result.tried && (
         <div
           role="status"
-          className={`mt-4 rounded-md border-l-4 px-4 py-3 text-sm ${result.allowed ? "border-ledger bg-ledger-soft" : "border-refuse bg-refuse-soft"}`}
+          className={`mt-4 rounded-md border px-4 py-3 text-sm ${result.allowed ? "border-ledger/40 bg-ledger-soft" : "border-refuse/40 bg-refuse-soft"}`}
         >
           <p className="text-muted">We tried: {result.tried}</p>
-          <p className="mt-1 font-medium">
-            {result.allowed ? "✓ Allowed. " : "🛡 Blocked by your spending rules. "}
-            {result.message}
+          <p className="mt-1 flex items-start gap-2 font-medium">
+            {result.allowed ? (
+              <CheckCircle size={18} weight="fill" className="mt-0.5 shrink-0 text-ledger" aria-hidden />
+            ) : (
+              <ShieldCheck size={18} weight="fill" className="mt-0.5 shrink-0 text-refuse" aria-hidden />
+            )}
+            <span>
+              {result.allowed ? "Allowed. " : "Blocked by your spending rules. "}
+              {result.message}
+            </span>
           </p>
         </div>
       )}
@@ -92,9 +100,9 @@ export function ItemButton({ action, itemId, label, tone = "quiet" }: { action: 
       <input type="hidden" name="itemId" value={itemId} />
       <button
         disabled={pending}
-        className={`rounded-md px-3 py-1.5 text-sm disabled:opacity-60 ${tone === "primary" ? "bg-ledger text-white hover:bg-ledger/90" : "border border-line bg-card hover:bg-paper"}`}
+        className={`rounded-md px-3 py-1.5 text-sm disabled:opacity-60 ${tone === "primary" ? "bg-ledger text-card hover:bg-indigo" : "border border-line bg-card hover:bg-paper"}`}
       >
-        {pending ? "…" : label}
+        {pending ? "One moment" : label}
       </button>
       {result && !result.ok && <span className="text-xs text-refuse">{result.message}</span>}
     </form>
@@ -112,11 +120,14 @@ export function ForceTester({ action }: { action: () => Promise<RuleTestResult> 
         </button>
       </form>
       {result && result.tried && (
-        <div role="status" className={`mt-4 rounded-md border-l-4 px-4 py-3 text-sm ${result.allowed ? "border-hold bg-hold-soft" : "border-refuse bg-refuse-soft"}`}>
+        <div role="status" className={`mt-4 rounded-md border px-4 py-3 text-sm ${result.allowed ? "border-hold/40 bg-hold-soft" : "border-refuse/40 bg-refuse-soft"}`}>
           <p className="text-muted">We tried: {result.tried}</p>
-          <p className="mt-1 font-medium">
-            {result.allowed ? "" : "🛡 Blocked by your spending rules. "}
-            {result.message}
+          <p className="mt-1 flex items-start gap-2 font-medium">
+            {!result.allowed && <ShieldCheck size={18} weight="fill" className="mt-0.5 shrink-0 text-refuse" aria-hidden />}
+            <span>
+              {result.allowed ? "" : "Blocked by your spending rules. "}
+              {result.message}
+            </span>
           </p>
         </div>
       )}
