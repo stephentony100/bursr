@@ -25,6 +25,11 @@ export const RulesSchema = z
     paydayWeekday: z.number().int().min(0).max(6), // 0 = Sunday
     timeZone: z.string().min(1),
     frozen: z.boolean(),
+    /** Bursar's own fee per plan, paid like any payee to an address on the signed list. null = no fee. */
+    fee: z
+      .object({ bps: z.number().int().min(1).max(500), payout: z.lazy(() => PayoutSchema) })
+      .nullable()
+      .default(null),
   })
   .refine((r) => BigInt(r.perPaymentCapUsd) <= BigInt(r.weeklyCapUsd), {
     message: "The per-payment cap cannot be larger than the weekly cap",

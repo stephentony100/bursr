@@ -120,7 +120,7 @@ export default async function PlanPage() {
                   {plan.status === "draft" ? (
                     <>
                       {i.needsOwnTap && !i.ownTapAt && <ItemButton action={approveItemAction} itemId={i.id} label="Approve this one" tone="primary" />}
-                      <ItemButton action={removeItemAction} itemId={i.id} label="Remove" />
+                      {i.kind !== "fee" && <ItemButton action={removeItemAction} itemId={i.id} label="Remove" />}
                     </>
                   ) : (
                     <span className={`text-sm font-medium ${PAY_STATUS[i.payStatus].tone}`}>{PAY_STATUS[i.payStatus].label}</span>

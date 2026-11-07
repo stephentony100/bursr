@@ -52,7 +52,9 @@ const EnvSchema = z.object({
   ONECLICK_API_KEY: optional,
   ONECLICK_SLIPPAGE_BPS: z.coerce.number().int().min(0).max(10_000).default(100),
   BURSAR_FEE_ACCOUNT_ID: optional,
-  BURSAR_FEE_BPS: z.coerce.number().int().min(0).max(10_000).default(0),
+  // Bursar's fee per plan in basis points (50 = 0.5%). Practice mode pays it to a made-up account;
+  // live mode needs BURSAR_FEE_ACCOUNT_ID (a NEAR account receiving USDC), otherwise no fee.
+  BURSAR_FEE_BPS: z.coerce.number().int().min(0).max(500).default(50),
 
   NEAR_AI_BASE_URL: z.string().default("https://cloud-api.near.ai/v1"),
   NEAR_AI_API_KEY: optional,

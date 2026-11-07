@@ -10,7 +10,7 @@ import { formatUsd } from "./money";
 export type Placement = "in" | "held" | "deferred";
 
 export interface DraftItem {
-  kind: "invoice" | "wages";
+  kind: "invoice" | "wages" | "fee";
   invoiceId: string | null;
   payeeId: string;
   payeeName: string;
@@ -113,8 +113,10 @@ export function buildPlan(input: PlanInput): DraftPlan {
     });
   }
 
-  // 3. Place candidates in order (staff, then by due date) under the weekly limit.
+  // 3. Place candidates in order (staff, then by due date) under the weekly limit,
+  // leaving room for Bursar's fee on everything placed.
   candidates.sort((a, b) => a.due.localeCompare(b.due));
+  const feeOn = (amount: bigint) => (rules.fee ? (amount * BigInt(rules.fee.bps)) / 10_000n : 0n);
   let used = 0n;
   for (const c of candidates) {
     const { due: _due, ...base } = c;
@@ -134,11 +136,11 @@ export function buildPlan(input: PlanInput): DraftPlan {
       });
       continue;
     }
-    if (used + c.amountUsd > capLeftUsd) {
+    if (used + c.amountUsd + feeOn(used + c.amountUsd) > capLeftUsd) {
       items.push({
         ...base,
         placement: "deferred",
-        reason: `Moved to next week: only ${formatUsd(capLeftUsd - used)} is left under your weekly limit of ${formatUsd(cap)}.`,
+        reason: `Moved to next week: only ${formatUsd(capLeftUsd - used - feeOn(used))} is left under your weekly limit of ${formatUsd(cap)}.`,
         needsOwnTap: false,
         ownTapReason: null,
       });
@@ -155,6 +157,25 @@ export function buildPlan(input: PlanInput): DraftPlan {
       needsOwnTap: tapReasons.length > 0,
       ownTapReason: tapReasons.length ? `Needs your own tap: ${tapReasons.join(", ")}.` : null,
     });
+  }
+
+  // 4. Bursar's fee: one line for the plan, paid to the fee address on the owner's signed list.
+  const fee = feeOn(used);
+  if (rules.fee && fee > 0n) {
+    items.push({
+      kind: "fee",
+      invoiceId: null,
+      payeeId: "",
+      payeeName: "Bursar",
+      forWhat: `Bursar fee (${(rules.fee.bps / 100).toFixed(2).replace(/\.?0+$/, "")}% of ${formatUsd(used)})`,
+      amountUsd: fee,
+      payout: rules.fee.payout,
+      placement: "in",
+      reason: null,
+      needsOwnTap: false,
+      ownTapReason: null,
+    });
+    used += fee;
   }
 
   return { items, capLeftUsd, inTotalUsd: used };

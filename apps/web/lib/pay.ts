@@ -49,8 +49,11 @@ export async function payItem(
   const business = (await getBusiness(db))!;
   const planned = item.payout;
   if (!planned) return fail("No payee to pay.");
-  const payee = (await listPayees(db)).find((p) => p.id === item.payeeId);
-  if (!payee) return fail("The payee was removed after the plan was approved. Not paid.");
+  const payee =
+    item.kind === "fee"
+      ? business.rules.fee && { payout: business.rules.fee.payout, payoutChangedAt: null }
+      : (await listPayees(db)).find((p) => p.id === item.payeeId);
+  if (!payee) return fail(item.kind === "fee" ? "The fee was removed from the rules. Not paid." : "The payee was removed after the plan was approved. Not paid.");
   if (!samePayout(payee.payout, planned)) return fail("The payee's payout details changed after the plan was approved. Not paid; it will come back in the next plan.");
   if (isOnPayoutHold(payee, new Date())) return fail("The payee's payout details changed recently and are on a 48-hour hold. Not paid.");
 

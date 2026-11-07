@@ -17,7 +17,7 @@ export function destinationFor(p: Payee): Policy["destinations"]["list"][number]
 }
 
 export function buildPolicy(rules: Rules, payees: Payee[]): Policy {
-  const tokens = [rules.treasury, ...payees.map((p) => p.payout.token)];
+  const tokens = [rules.treasury, ...payees.map((p) => p.payout.token), ...(rules.fee ? [rules.fee.payout.token] : [])];
   const byAsset = new Map(tokens.map((t) => [t.assetId, t]));
 
   // Caps are set in USD; every allowed token is a USD stablecoin, so the cap
@@ -28,8 +28,10 @@ export function buildPolicy(rules: Rules, payees: Payee[]): Policy {
   }
 
   const seen = new Set<string>();
-  const list = payees
-    .map(destinationFor)
+  const feeDestination = rules.fee
+    ? [{ action: "withdraw" as const, chain: rules.fee.payout.token.chain, address: normaliseAddress(rules.fee.payout.address), memo: rules.fee.payout.memo }]
+    : [];
+  const list = [...payees.map(destinationFor), ...feeDestination]
     .filter((d) => {
       const key = JSON.stringify(d);
       return seen.has(key) ? false : (seen.add(key), true);

@@ -72,6 +72,17 @@ export default async function SetupPage() {
                 ))}
               </select>
             </label>
+            <p className="mt-5 text-sm">
+              <span className="font-medium">Bursar&apos;s fee: </span>
+              {r.fee ? (
+                <>
+                  {(r.fee.bps / 100).toFixed(2).replace(/\.?0+$/, "")}% of each plan, paid in {r.fee.payout.token.symbol} to{" "}
+                  <span className="num text-xs">{r.fee.payout.address}</span>. It is on your signed payee list like anyone else, so it can only go there.
+                </>
+              ) : (
+                "none."
+              )}
+            </p>
             <fieldset className="mt-5">
               <legend className="text-sm font-medium">Ways you can pay people</legend>
               <p className="text-sm text-muted">You pay from {r.treasury.symbol} on {chainName(r.treasury.chain)}. Payees can receive any of these.</p>

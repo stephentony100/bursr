@@ -12,7 +12,7 @@ import { getBusiness, listPayees } from "./store";
 
 export interface PlanItemView {
   id: string;
-  kind: "invoice" | "wages";
+  kind: "invoice" | "wages" | "fee";
   invoiceId: string | null;
   payeeId: string;
   payeeName: string;

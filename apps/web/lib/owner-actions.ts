@@ -4,6 +4,7 @@ import { normaliseAddress, PayoutSchema, PriceItemSchema, RulesSchema, type Paye
 import { addressProblem } from "./address";
 import type { PrismaClient } from "./generated/prisma/client";
 import { isOwnerSession, type OwnerSession } from "./owner";
+import { formatUsd } from "./money";
 import { buildPolicy } from "./policy";
 import { getAccountRecord, getBusiness, listPayees } from "./store";
 
@@ -206,8 +207,24 @@ export async function removePlanItem(db: PrismaClient, owner: OwnerSession, item
   await assertOwner(db, owner);
   const item = await draftItem(db, itemId);
   if (item.placement !== "in") throw new Error("Only payments in the plan can be removed.");
+  if (item.kind === "fee") throw new Error("Bursar's fee is part of your rules; change it there.");
   await db.planItem.update({ where: { id: itemId }, data: { placement: "removed", reason: "Removed by the owner." } });
   await audit(db, owner, "plan_item_removed", `Removed ${item.forWhat} to ${item.payeeName} from the plan`, { itemId });
+  await recomputeFee(db, item.planId);
+}
+
+/** Bursar's fee is a share of the payments in the plan; after a removal it shrinks with them. */
+async function recomputeFee(db: PrismaClient, planId: string) {
+  const business = await getBusiness(db);
+  const items = await db.planItem.findMany({ where: { planId } });
+  const fee = items.find((i) => i.kind === "fee" && i.placement === "in");
+  if (!fee || !business?.rules.fee) return;
+  const base = items.filter((i) => i.kind !== "fee" && i.placement === "in").reduce((a, i) => a + BigInt(i.amountUsd), 0n);
+  const amount = (base * BigInt(business.rules.fee.bps)) / 10_000n;
+  const pct = (business.rules.fee.bps / 100).toFixed(2).replace(/\.?0+$/, "");
+  const forWhat = `Bursar fee (${pct}% of ${formatUsd(base)})`;
+  if (amount === 0n) await db.planItem.update({ where: { id: fee.id }, data: { placement: "removed", reason: "Nothing left to charge a fee on." } });
+  else await db.planItem.update({ where: { id: fee.id }, data: { amountUsd: amount.toString(), forWhat, quote: null } });
 }
 
 /** One tap for the whole plan. Items that need their own tap must have it first. */

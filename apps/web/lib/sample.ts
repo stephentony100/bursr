@@ -3,6 +3,7 @@ import type { PayoutToken, Rules } from "./domain";
 import { USD_DECIMALS, parseUnits } from "./money";
 import type { PayeeInput } from "./owner-actions";
 import { findPayoutToken } from "./tokens";
+import { readEnv } from "./env";
 
 // DRY-RUN SAMPLE BUSINESS. A fictional Lagos restaurant. Every name is made up
 // and every address is derived from a hash (lib/demo-addresses.ts), so nobody
@@ -23,6 +24,8 @@ export function sampleRules(tokens: PayoutToken[]): Rules {
     paydayWeekday: 5, // Friday
     timeZone: "Africa/Lagos",
     frozen: false,
+    // Practice mode: Bursar's fee goes to a made-up account (hash-derived; nobody holds its key).
+    fee: readEnv().BURSAR_FEE_BPS > 0 ? { bps: readEnv().BURSAR_FEE_BPS, payout: { token: t("USDC", "near"), address: demoNearImplicit("bursar-fees"), memo: null } } : null,
   };
 }
 

@@ -34,6 +34,7 @@ export function rules(over: Partial<Rules> = {}): Rules {
     paydayWeekday: 5,
     timeZone: "Africa/Lagos",
     frozen: false,
+    fee: null,
     ...over,
   };
 }

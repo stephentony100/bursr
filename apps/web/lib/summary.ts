@@ -16,6 +16,7 @@ export interface MonthFacts {
   staffUsd: bigint;
   suppliersUsd: bigint;
   otherUsd: bigint;
+  feesUsd: bigint;
   topPayees: { name: string; usd: bigint }[];
   invoices: number;
   invoicesReady: number;
@@ -36,8 +37,9 @@ export async function monthFacts(db: PrismaClient, now = new Date()): Promise<Mo
   const category = new Map(payees.map((p) => [p.name, p.category]));
   const sum = (xs: { amountUsd: bigint }[]) => xs.reduce((a, x) => a + x.amountUsd, 0n);
 
+  const isFee = (l: { forWhat: string }) => l.forWhat.startsWith("Bursar fee");
   const byPayee = new Map<string, bigint>();
-  for (const l of paid) byPayee.set(l.payee, (byPayee.get(l.payee) ?? 0n) + l.amountUsd);
+  for (const l of paid.filter((x) => !isFee(x))) byPayee.set(l.payee, (byPayee.get(l.payee) ?? 0n) + l.amountUsd);
 
   const invoices = await db.invoice.findMany({ where: { receivedAt: { gte: from, lt: to } }, select: { status: true } });
   const refused = await db.auditEvent.count({ where: { kind: "account_refused", at: { gte: from, lt: to } } });
@@ -48,7 +50,8 @@ export async function monthFacts(db: PrismaClient, now = new Date()): Promise<Mo
     payments: paid.length,
     staffUsd: sum(paid.filter((l) => category.get(l.payee) === "staff")),
     suppliersUsd: sum(paid.filter((l) => category.get(l.payee) === "supplier")),
-    otherUsd: sum(paid.filter((l) => !["staff", "supplier"].includes(category.get(l.payee) ?? ""))),
+    otherUsd: sum(paid.filter((l) => !isFee(l) && !["staff", "supplier"].includes(category.get(l.payee) ?? ""))),
+    feesUsd: sum(paid.filter(isFee)),
     topPayees: [...byPayee.entries()].sort((a, b) => (b[1] > a[1] ? 1 : -1)).slice(0, 3).map(([name, usd]) => ({ name, usd })),
     invoices: invoices.length,
     invoicesReady: invoices.filter((i) => i.status === "ready" || i.status === "flag").length,
@@ -64,7 +67,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 /** The summary Bursar writes itself, with no AI: always available, always exact. */
 export function plainSummary(f: MonthFacts): string {
   const parts = [
-    `In ${f.month} Bursar paid ${formatUsd(f.paidUsd)} in ${plural(f.payments, "payment")}: ${formatUsd(f.staffUsd)} to staff and ${formatUsd(f.suppliersUsd)} to suppliers${f.otherUsd > 0n ? `, ${formatUsd(f.otherUsd)} to others` : ""}.`,
+    `In ${f.month} Bursar paid ${formatUsd(f.paidUsd)} in ${plural(f.payments, "payment")}: ${formatUsd(f.staffUsd)} to staff and ${formatUsd(f.suppliersUsd)} to suppliers${f.otherUsd > 0n ? `, ${formatUsd(f.otherUsd)} to others` : ""}${f.feesUsd > 0n ? `, and ${formatUsd(f.feesUsd)} in Bursar fees` : ""}.`,
   ];
   if (f.topPayees.length) parts.push(`The largest was ${f.topPayees[0].name} at ${formatUsd(f.topPayees[0].usd)}.`);
   parts.push(
@@ -85,7 +88,7 @@ export function allowedNumbers(f: MonthFacts): Set<string> {
     out.add(s.replace(/\.00$/, ""));
     out.add(s.replace(/,/g, "").replace(/\.00$/, ""));
   };
-  [f.paidUsd, f.staffUsd, f.suppliersUsd, f.otherUsd, ...f.topPayees.map((p) => p.usd)].forEach(addUsd);
+  [f.paidUsd, f.staffUsd, f.suppliersUsd, f.otherUsd, f.feesUsd, ...f.topPayees.map((p) => p.usd)].forEach(addUsd);
   [f.payments, f.invoices, f.invoicesReady, f.invoicesBlocked, f.invoicesHeld, f.refusedByAccount, f.failedPayments].forEach((n) => out.add(String(n)));
   for (const m of f.month.match(/\d+/g) ?? []) out.add(m);
   return out;

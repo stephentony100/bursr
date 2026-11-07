@@ -35,9 +35,12 @@ beforeEach(async () => {
 const M = 1_000_000n;
 
 describe("weekly plan → approval → payment (practice mode)", () => {
-  it("the sample week: 3 staff + 2 suppliers in the plan, 4 held with reasons, under the cap", async () => {
+  it("the sample week: 3 staff + 2 suppliers + Bursar's fee in the plan, 4 held with reasons, under the cap", async () => {
     const plan = await prepareWeeklyPlan(t.db, new Date(), fakeQuote);
-    const inPlan = plan.items.filter((i) => i.placement === "in");
+    const fee = plan.items.find((i) => i.kind === "fee")!;
+    expect(fee.amountUsd).toBe(3_290_000n); // 0.5% of $658.00
+    expect(fee.forWhat).toBe("Bursar fee (0.5% of $658.00)");
+    const inPlan = plan.items.filter((i) => i.placement === "in" && i.kind !== "fee");
     expect(inPlan.map((i) => i.payeeName).sort()).toEqual(
       ["Amaka Eze (cashier)", "Bisi Adeyemi (head chef)", "Ikeja Gas & Charcoal", "Mama Put Farms Ltd", "Tunde Okafor (server)"].sort(),
     );
@@ -58,7 +61,7 @@ describe("weekly plan → approval → payment (practice mode)", () => {
     const paid = (await getPlan(t.db, plan.id))!.items.filter((i) => i.placement === "in");
     expect(paid.every((i) => i.payStatus === "sent" && i.references.length > 0)).toBe(true);
     const status = await account.status();
-    expect(status.spentThisWeekUsd).toBe(658n * M);
+    expect(status.spentThisWeekUsd).toBe(661_290_000n); // $658.00 + $3.29 fee
     const treasury = (await getBusiness(t.db))!.rules.treasury.assetId;
     expect(before[treasury] - status.balances[treasury]).toBeGreaterThan(658n * M); // swaps cost a little more
 
@@ -75,7 +78,7 @@ describe("weekly plan → approval → payment (practice mode)", () => {
     await payApprovedPlan(t.db, account, plan.id, fakeQuote);
     await t.db.planItem.updateMany({ where: { planId: plan.id, placement: "in" }, data: { payStatus: "planned" } }); // simulate a crash before status was saved
     await payApprovedPlan(t.db, account, plan.id, fakeQuote);
-    expect((await account.status()).spentThisWeekUsd).toBe(658n * M);
+    expect((await account.status()).spentThisWeekUsd).toBe(661_290_000n);
   });
 
   it("paid invoices and wages do not come back in the next plan", async () => {
@@ -104,7 +107,7 @@ describe("weekly plan → approval → payment (practice mode)", () => {
     await approvePlan(t.db, owner, plan.id);
     await payApprovedPlan(t.db, await agentAccount(t.db), plan.id, fakeQuote);
     expect((await getPlan(t.db, plan.id))!.items.find((i) => i.id === tunde.id)!.payStatus).toBe("planned");
-    expect((await (await agentAccount(t.db)).status()).spentThisWeekUsd).toBe(548n * M);
+    expect((await (await agentAccount(t.db)).status()).spentThisWeekUsd).toBe(550_740_000n); // $548.00 + $2.74 fee
   });
 
   it("re-checked at payment time: frozen after approval → the account refuses, nothing moves", async () => {

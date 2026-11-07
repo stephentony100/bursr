@@ -47,6 +47,7 @@ Record each decision with date, reason and the doc line relied on.
 | 2026-11-07 | Paid live run deferred by the owner (no stablecoins on hand); README says so | AGENTS.md rule 2: no spending without the human's OK; honesty in README |
 | 2026-11-07 | Monthly summary: Bursar computes every figure from its own records (`lib/summary.ts`); NEAR AI may only rephrase them; a reply containing any number (digits or number words up to twenty) not in the facts is rejected and Bursar's own sentence is shown | AGENTS.md rule 5 "Never invent amounts" |
 | 2026-11-07 | Bursar fee via 1Click `appFees` does not fit: payments go through the Agent API (`swap`/`withdraw`), whose request types have no app-fee field (searched the SDK 0.8.0 types and the docs) | PRD B14 assumed direct 1Click deposits; open question for the owner |
+| 2026-11-07 | Bursar fee (owner chose option A): `rules.fee = {bps, payout}`; the plan adds one line "Bursar fee (0.5% of $X)" on the in-plan payments, reserved under the weekly limit, recomputed when the owner removes an item, paid through the agent account; the fee address is a `withdraw` destination in the signed policy, so the account refuses any other fee address and the per-payment cap still applies. Default 50 bps; practice mode pays a hash-derived account; live mode needs `BURSAR_FEE_ACCOUNT_ID` | Agent API has no app-fee field; keeping the fee inside the owner's signed rules keeps it visible and bounded |
 
 ## Answers to the M0 open questions (checked 5 Nov 2026)
 

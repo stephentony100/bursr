@@ -9,6 +9,7 @@ const facts: MonthFacts = {
   staffUsd: 450n * M,
   suppliersUsd: 208n * M,
   otherUsd: 0n,
+  feesUsd: 0n,
   topPayees: [{ name: "Bisi Adeyemi (head chef)", usd: 220n * M }],
   invoices: 6,
   invoicesReady: 2,
