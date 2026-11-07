@@ -29,7 +29,7 @@ export default async function InvoicesPage() {
     return (
       <p className="text-muted">
         Set up the business first on the{" "}
-        <Link href="/" className="text-indigo underline">
+        <Link href="/this-week" className="text-indigo underline">
           This week
         </Link>{" "}
         page.

@@ -26,10 +26,10 @@ export function HeaderWallet({ accountId }: { accountId: string | null }) {
   if (accountId) {
     return (
       <span className="flex items-center gap-2 text-sm">
-        <span className="num text-muted" title="You're signed in as the owner">
+        <span className="num text-cream/70" title="You're signed in as the owner">
           {accountId}
         </span>
-        <button onClick={() => run(signOut)} disabled={busy} className="text-indigo underline disabled:opacity-60">
+        <button onClick={() => run(signOut)} disabled={busy} className="text-mint underline disabled:opacity-60">
           Sign out
         </button>
       </span>
@@ -40,7 +40,7 @@ export function HeaderWallet({ accountId }: { accountId: string | null }) {
       <button
         onClick={() => run(signInWithWallet)}
         disabled={busy}
-        className="rounded-md bg-indigo px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
+        className="rounded-md bg-mint px-3 py-1.5 text-sm font-semibold text-night disabled:opacity-60"
       >
         {busy ? "Check your wallet…" : "Sign in"}
       </button>

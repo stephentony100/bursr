@@ -7,7 +7,7 @@ import { agentAccount, type AccountStatus } from "@/lib/agent-account";
 import { db } from "@/lib/db";
 import { readEnv } from "@/lib/env";
 import { listInvoices } from "@/lib/invoices";
-import { formatUnits, formatUsd } from "@/lib/money";
+import { formatUsd, rescale } from "@/lib/money";
 import { getLatestPlan } from "@/lib/plans";
 import { getBusiness, listPayees, recentAudit } from "@/lib/store";
 
@@ -110,7 +110,7 @@ export default async function Home() {
               {status.frozen ? <span className="text-refuse">Paused 🔒</span> : <span className="text-ledger">On</span>}
             </Fact>
             <Fact label="Money in your Bursar wallet">
-              <span className="num">${formatUnits(status.balances[treasury.assetId] ?? 0n, treasury.decimals)}</span>
+              <span className="num">{formatUsd(rescale(status.balances[treasury.assetId] ?? 0n, treasury.decimals, 6))}</span>
             </Fact>
             <Fact label="Largest single payment allowed">
               <span className="num">{formatUsd(BigInt(business.rules.perPaymentCapUsd))}</span>

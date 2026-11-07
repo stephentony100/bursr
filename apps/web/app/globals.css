@@ -15,6 +15,14 @@
   --color-refuse: #b4232c;
   --color-refuse-soft: #f7e4e5;
 
+  /* Night ledger (hero bands) and paper (invoice cards) */
+  --color-night: #0a1813;
+  --color-night-2: #10251d;
+  --color-night-line: rgb(214 236 226 / 0.07);
+  --color-mint: #4fd1a0;
+  --color-cream: #fbf6ea;
+  --color-stamp: #c8322b;
+
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-public-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
@@ -41,4 +49,49 @@ body {
     transition-duration: 0ms !important;
     animation-duration: 0ms !important;
   }
+}
+
+/* A faint ledger grid, drawn with gradients (no image). */
+.ledger-grid {
+  background-image:
+    linear-gradient(to right, var(--color-night-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-night-line) 1px, transparent 1px);
+  background-size: 72px 72px;
+}
+
+/* Small monospace caps for labels, like the column heads of a ledger. */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Scroll progress bar on the landing page (Chromium scroll timelines; harmless elsewhere). */
+@supports (animation-timeline: scroll()) {
+  .scroll-progress {
+    transform-origin: left;
+    animation: grow linear both;
+    animation-timeline: scroll(root);
+  }
+  @keyframes grow {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+}
+
+/* The deck of invoices fans out once on load. */
+@keyframes deal {
+  from { transform: translateY(40px) rotate(0deg); opacity: 0; }
+}
+.deal {
+  animation: deal 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes stamp {
+  0% { transform: scale(1.6) rotate(var(--tilt, -8deg)); opacity: 0; }
+  60% { transform: scale(0.95) rotate(var(--tilt, -8deg)); opacity: 1; }
+  100% { transform: scale(1) rotate(var(--tilt, -8deg)); opacity: 1; }
+}
+.stamp-in {
+  animation: stamp 500ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
 }

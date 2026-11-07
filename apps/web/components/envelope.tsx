@@ -1,7 +1,7 @@
 import { formatUsd } from "@/lib/money";
 
 /**
- * The week's spending as a cash envelope filling toward the weekly limit.
+ * The week's spending as a bar filling toward the weekly limit, over a ledger ruler.
  * The limit itself is enforced by the agent account, not by this page.
  */
 export function Envelope({ spent, cap, resetsAt }: { spent: bigint; cap: bigint; resetsAt: Date | null }) {
@@ -19,22 +19,26 @@ export function Envelope({ spent, cap, resetsAt }: { spent: bigint; cap: bigint;
           {resetsAt && <> · refills {resetsAt.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</>}
         </p>
       </div>
-      <div
-        className="relative mt-5 h-14 overflow-hidden rounded-md border-2 border-ink/80 bg-paper"
-        role="meter"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.min(100, pct)}
-        aria-label="Share of the weekly limit used"
-      >
-        {/* envelope flap */}
-        <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden>
-          <polyline points="0,0 50,13 100,0" fill="none" stroke="currentColor" strokeOpacity="0.35" strokeWidth="0.6" vectorEffect="non-scaling-stroke" />
-        </svg>
+      <div className="relative mt-5">
         <div
-          className={`h-full transition-[width] duration-700 ease-out ${pct >= 100 ? "bg-refuse/80" : pct >= 80 ? "bg-hold/80" : "bg-ledger/85"}`}
-          style={{ width: `${Math.min(100, pct)}%` }}
-        />
+          className="h-4 overflow-hidden rounded-full bg-paper ring-1 ring-line"
+          role="meter"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.min(100, pct)}
+          aria-label="Share of the weekly limit used"
+        >
+          <div
+            className={`h-full rounded-full transition-[width] duration-700 ease-out ${pct >= 100 ? "bg-refuse" : pct >= 80 ? "bg-hold" : "bg-ledger"}`}
+            style={{ width: `${Math.min(100, pct)}%` }}
+          />
+        </div>
+        {/* a ledger ruler under the bar: a tick every 10%, taller at the halfway mark */}
+        <div className="mt-1.5 flex justify-between" aria-hidden>
+          {Array.from({ length: 11 }, (_, i) => (
+            <span key={i} className={`w-px ${i % 5 === 0 ? "h-3 bg-ink/50" : "h-1.5 bg-ink/25"}`} />
+          ))}
+        </div>
       </div>
     </section>
   );
