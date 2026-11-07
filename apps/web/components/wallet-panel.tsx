@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { NearConnector } from "@hot-labs/near-connect";
+import { post, signInWithWallet, signOut as walletSignOut, wallet } from "./wallet";
 
 // Live mode only. The owner's wallet (HOT, via @hot-labs/near-connect) signs
 // everything; Bursar's server never sees the owner's key. Before any signature
@@ -18,24 +18,6 @@ interface Prepared {
   summary: string;
   policy?: unknown;
   intent: { standard: string; payload: Record<string, unknown> };
-}
-
-let connector: NearConnector | null = null;
-async function wallet() {
-  const { NearConnector } = await import("@hot-labs/near-connect");
-  connector ??= new NearConnector({ network: "mainnet" });
-  try {
-    return await connector.wallet();
-  } catch {
-    return await connector.connect();
-  }
-}
-
-async function post<T>(url: string, body: unknown): Promise<T> {
-  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error ?? `Request failed (${res.status})`);
-  return data as T;
 }
 
 const LABELS: Record<Kind, string> = {
@@ -77,17 +59,13 @@ export function WalletPanel(props: {
 
   const signIn = () =>
     guard(async () => {
-      const c = await (await fetch("/api/auth/challenge")).json();
-      const w = await wallet();
-      const nonce = Uint8Array.from(atob(c.nonce), (ch) => ch.charCodeAt(0));
-      const signed = await w.signMessage({ message: c.message, recipient: c.recipient, nonce });
-      await post("/api/auth/verify", { token: c.token, accountId: signed.accountId, publicKey: signed.publicKey, signature: signed.signature });
+      await signInWithWallet();
       router.refresh();
     });
 
   const signOut = () =>
     guard(async () => {
-      await post("/api/auth/signout", {});
+      await walletSignOut();
       router.refresh();
     });
 

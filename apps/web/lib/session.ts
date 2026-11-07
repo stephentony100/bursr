@@ -10,6 +10,6 @@ export async function getOwner(): Promise<OwnerSession | null> {
 
 export async function requireOwner(): Promise<OwnerSession> {
   const owner = await getOwner();
-  if (!owner) throw new Error("Sign in with your NEAR wallet first.");
+  if (!owner) throw new Error("Sign in with your NEAR wallet first (button at the top right).");
   return owner;
 }

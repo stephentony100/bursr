@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, IBM_Plex_Mono, Public_Sans } from "next/font/google";
 import Link from "next/link";
+import { HeaderWallet } from "@/components/header-wallet";
 import { readEnv } from "@/lib/env";
+import { getOwner } from "@/lib/session";
 import "./globals.css";
 
 const bricolage = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"] });
@@ -22,8 +24,9 @@ const NAV = [
   { href: "/payees", label: "Payees" },
 ];
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
   const dryRun = readEnv().BURSAR_MODE === "dry-run";
+  const owner = dryRun ? null : await getOwner();
   return (
     <html lang="en" className={`${bricolage.variable} ${publicSans.variable} ${plexMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
@@ -39,11 +42,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 </Link>
               ))}
             </nav>
+            <span className="ml-auto flex flex-wrap items-center gap-3">
+            {!dryRun && <HeaderWallet accountId={owner?.accountId ?? null} />}
             <span
-              className={`ml-auto rounded-full px-3 py-1 text-xs font-medium ${dryRun ? "bg-hold-soft text-hold" : "bg-refuse-soft text-refuse"}`}
+              className={`rounded-full px-3 py-1 text-xs font-medium ${dryRun ? "bg-hold-soft text-hold" : "bg-refuse-soft text-refuse"}`}
               title={dryRun ? "Sample data and demo money. Nothing real is paid." : "Real payments on NEAR mainnet."}
             >
               {dryRun ? "Practice mode: demo money" : "Live: real money"}
+            </span>
             </span>
           </div>
         </header>
