@@ -21,6 +21,8 @@ export async function loadSampleBusiness(db: PrismaClient) {
     throw new Error(`The database belongs to ${existing.ownerAccountId}. Point DATABASE_URL at another file to load the demo.`);
   }
   await db.$transaction([
+    db.planItem.deleteMany(),
+    db.plan.deleteMany(),
     db.invoice.deleteMany(),
     db.accountAction.deleteMany(),
     db.auditEvent.deleteMany(),
@@ -34,6 +36,9 @@ export async function loadSampleBusiness(db: PrismaClient) {
   await setupBusiness(db, owner, { name: SAMPLE_NAME, rules, demoBalances: sampleBalances(rules) });
   const payees = samplePayees(tokens);
   for (const p of payees) await addPayee(db, owner, p);
+  // Sample history: these suppliers and staff have been paid for months, so
+  // they are not "new payees" that need their own approval tap.
+  await db.payee.updateMany({ data: { addedAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } });
   const invoices = await loadSampleInvoices(db);
   return { name: SAMPLE_NAME, payees, invoices };
 }

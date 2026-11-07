@@ -94,6 +94,53 @@ model Invoice {
   needsOwner    String?
 }
 
+/// One week's payment plan. The owner approves it as a whole.
+model Plan {
+  id          String     @id @default(cuid())
+  createdAt   DateTime   @default(now())
+  /// draft | approved | done
+  status      String     @default("draft")
+  approvedAt  DateTime?
+  approvedBy  String?
+  /// USD left under the weekly limit when the plan was built (6 decimals)
+  capLeftUsd  String
+  items       PlanItem[]
+}
+
+model PlanItem {
+  id             String    @id @default(cuid())
+  planId         String
+  plan           Plan      @relation(fields: [planId], references: [id])
+  /// invoice | wages
+  kind           String
+  invoiceId      String?
+  payeeId        String
+  payeeName      String
+  /// What it is for, in plain words ("Invoice #MPF-0412", "Weekly pay")
+  forWhat        String
+  amountUsd      String
+  /// The payout exactly as it was when planned (token, address, memo) as JSON
+  payout         String
+  /// in | held | deferred | removed
+  placement      String
+  reason         String?
+  /// Needs the owner's own tap before paying (above threshold or new payee)
+  needsOwnTap    Boolean   @default(false)
+  ownTapReason   String?
+  ownTapAt       DateTime?
+  /// Dry quote: { amountIn, amountOut, withdrawFee, timeEstimate, at } as JSON
+  quote          String?
+  /// planned | paying | sent | delivered | failed | refunded
+  payStatus      String    @default("planned")
+  payReason      String?
+  sentAt         DateTime?
+  /// What was sent from the account (treasury token) and received by the payee (payee token), smallest units
+  amountSent     String?
+  amountReceived String?
+  /// Account correlation ids (swap, withdraw) as JSON
+  references     String    @default("[]")
+}
+
 /// Every refusal, rule change and payment attempt, in order. Never edited.
 model AuditEvent {
   id      String   @id @default(cuid())

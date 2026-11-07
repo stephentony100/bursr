@@ -183,3 +183,45 @@ export async function removePayee(db: PrismaClient, owner: OwnerSession, id: str
   await audit(db, owner, "payee_removed", `Payee "${row.name}" removed`, { id });
   await applyToSimulatedAccount(db);
 }
+
+// --- The weekly plan: only the owner approves or removes -------------------
+
+async function draftItem(db: PrismaClient, itemId: string) {
+  const item = await db.planItem.findUnique({ where: { id: itemId }, include: { plan: true } });
+  if (!item) throw new Error("That payment is no longer in the plan.");
+  if (item.plan.status !== "draft") throw new Error("This plan was already approved.");
+  return item;
+}
+
+/** The owner's own tap for a payment that needs it (above the threshold or a new payee). */
+export async function approvePlanItem(db: PrismaClient, owner: OwnerSession, itemId: string) {
+  await assertOwner(db, owner);
+  const item = await draftItem(db, itemId);
+  if (item.placement !== "in" || !item.needsOwnTap) throw new Error("This payment does not need its own approval.");
+  await db.planItem.update({ where: { id: itemId }, data: { ownTapAt: new Date() } });
+  await audit(db, owner, "plan_item_approved", `Approved ${item.forWhat} to ${item.payeeName} on its own`, { itemId });
+}
+
+export async function removePlanItem(db: PrismaClient, owner: OwnerSession, itemId: string) {
+  await assertOwner(db, owner);
+  const item = await draftItem(db, itemId);
+  if (item.placement !== "in") throw new Error("Only payments in the plan can be removed.");
+  await db.planItem.update({ where: { id: itemId }, data: { placement: "removed", reason: "Removed by the owner." } });
+  await audit(db, owner, "plan_item_removed", `Removed ${item.forWhat} to ${item.payeeName} from the plan`, { itemId });
+}
+
+/** One tap for the whole plan. Items that need their own tap must have it first. */
+export async function approvePlan(db: PrismaClient, owner: OwnerSession, planId: string) {
+  await assertOwner(db, owner);
+  const plan = await db.plan.findUnique({ where: { id: planId }, include: { items: true } });
+  if (!plan) throw new Error("Plan not found.");
+  if (plan.status !== "draft") throw new Error("This plan was already approved.");
+  const inPlan = plan.items.filter((i) => i.placement === "in");
+  if (inPlan.length === 0) throw new Error("There is nothing to pay in this plan.");
+  const waiting = inPlan.filter((i) => i.needsOwnTap && !i.ownTapAt);
+  if (waiting.length) {
+    throw new Error(`Approve or remove these first: ${waiting.map((i) => `${i.forWhat} to ${i.payeeName}`).join("; ")}.`);
+  }
+  await db.plan.update({ where: { id: planId }, data: { status: "approved", approvedAt: new Date(), approvedBy: owner.accountId } });
+  await audit(db, owner, "plan_approved", `Plan approved: ${inPlan.length} payments`, { planId });
+}
