@@ -67,9 +67,13 @@ body {
   text-transform: uppercase;
 }
 
-/* Scroll progress bar on the landing page (Chromium scroll timelines; harmless elsewhere). */
+/* ---- Home page (app/(site)) ---- */
+
+/* Scroll progress bar (Chromium scroll timelines; hidden where unsupported). */
+.scroll-progress { display: none; }
 @supports (animation-timeline: scroll()) {
   .scroll-progress {
+    display: block;
     transform-origin: left;
     animation: grow linear both;
     animation-timeline: scroll(root);
@@ -80,18 +84,60 @@ body {
   }
 }
 
-/* The deck of invoices fans out once on load. */
-@keyframes deal {
-  from { transform: translateY(40px) rotate(0deg); opacity: 0; }
+/* Blueprint lines draw themselves in (paths use pathLength="1"). */
+@keyframes draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
 }
-.deal {
-  animation: deal 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+.draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 2.4s cubic-bezier(0.6, 0, 0.2, 1) forwards;
 }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+.fade-up { animation: fade-up 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+.spin-slow { animation: spin-slow 28s linear infinite; }
+
+/* Ledger tape ticker: the content is doubled, so -50% loops seamlessly. */
+@keyframes marquee { to { transform: translateX(-50%); } }
+.marquee { animation: marquee 48s linear infinite; }
+.marquee-reverse { animation: marquee 48s linear infinite reverse; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-10px) rotate(-2deg); }
+  40% { transform: translateX(7px) rotate(1.5deg); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(3px); }
+}
+.shake { animation: shake 450ms ease-out; }
+
 @keyframes stamp {
-  0% { transform: scale(1.6) rotate(var(--tilt, -8deg)); opacity: 0; }
-  60% { transform: scale(0.95) rotate(var(--tilt, -8deg)); opacity: 1; }
+  0% { transform: scale(2.1) rotate(var(--tilt, -8deg)); opacity: 0; }
+  60% { transform: scale(0.94) rotate(var(--tilt, -8deg)); opacity: 1; }
   100% { transform: scale(1) rotate(var(--tilt, -8deg)); opacity: 1; }
 }
-.stamp-in {
-  animation: stamp 500ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+.stamp-in { animation: stamp 420ms cubic-bezier(0.3, 1.4, 0.5, 1) both; }
+
+/* Torn receipt edge along the bottom. */
+.receipt-edge {
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / 18px 100%;
+}
+
+/* Fine paper grain for invoice cards (an SVG noise tile, no image file). */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.35;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.4 0 0 0 0 0.35 0 0 0 0 0.3 0 0 0 0.18 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
 }
