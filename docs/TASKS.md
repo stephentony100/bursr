@@ -46,9 +46,9 @@ Each milestone ends at a checkpoint: `/ship-check`, report, wait for OK.
 ## M4 — P1 (10–12 Nov)
 
 - [ ] Telegram bot: plan summary + Approve / Review; alerts
-- [ ] NEAR AI Cloud Verified panel
+- [x] NEAR AI Cloud Verified panel
 - [ ] Monthly summary; appFees
-- [ ] **With the human:** live mainnet run with tiny amounts (one same-chain, one cross-chain payment); save links for README
+- [ ] **With the human:** live mainnet run with tiny amounts (one same-chain, one cross-chain payment); save links for README. 7 Nov: payees + rules signed (revision 3), live dry preview clean; paused because the account is not funded (owner chose to defer)
 
 ## M5 — Submission (12–14 Nov)
 

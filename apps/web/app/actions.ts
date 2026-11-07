@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { verifyReader, type AttestationResult } from "@/lib/attestation";
 import { agentAccount, type ActionRequest } from "@/lib/agent-account";
 import { db } from "@/lib/db";
 import { loadSampleBusiness, loadSampleInvoices } from "@/lib/demo-loader";
@@ -324,4 +325,9 @@ export async function forceOverCapAction(): Promise<RuleTestResult> {
   } catch (e) {
     return { tried, allowed: false, message: e instanceof Error ? e.message : "The account could not be reached." };
   }
+}
+
+/** Runs the NEAR AI Cloud TEE verification (docs' steps) with a fresh nonce. Needs no key. */
+export async function verifyReaderAction(): Promise<AttestationResult> {
+  return verifyReader();
 }

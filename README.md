@@ -13,7 +13,7 @@ An AI that pays a small business's bills. It reads supplier invoices, checks the
 
 ## Status
 
-Milestones M0–M3 are done: owner rules and payees, the agent account, invoices and checks, the weekly plan, payments and the statement. The whole demo below runs in practice mode. Next (M4): the Telegram bot, the NEAR AI "Verified" panel, and a live run on mainnet with tiny amounts (`docs/TASKS.md`).
+Milestones M0–M3 are done: owner rules and payees, the agent account, invoices and checks, the weekly plan, payments and the statement. M4 so far: the NEAR AI "Verified" panel and the live payment path. The whole demo below runs in practice mode. Not done yet: a paid live run on mainnet, the monthly summary, the Bursar fee and the Telegram bot (`docs/TASKS.md`).
 
 ## Try it (practice mode: no keys, no funds)
 
@@ -33,7 +33,7 @@ Requirements: Node.js 24 or newer (needed by the Agent API SDK), npm 11 or newer
    ```
    The readings are real NEAR AI Cloud readings of these images, recorded on 7 Nov 2026 (`fixtures/invoices/readings/`). Two "payout-changed" warnings are the model misreading one character of a 64-character address: an address that is not even valid as read is only a warning, because Bursar never pays an address taken from an invoice. All names are made up and all addresses are derived from a hash, so nobody holds a key for them.
 5. `npm run dev`, open http://localhost:3000 → **This week** shows "$2,500.00" left to spend this week, payments "Allowed", and $6000 of demo USDC to pay from.
-6. Open **Invoices** → "6 invoices · 2 ready · 4 need attention", each with its reason in plain words, for example "Name looks like Eko Fresh Foods but is not Eko Fresh Foods ("Ek0 Fresh Foods"). Possible fraud: do not pay.", "Possible duplicate of invoice #MPF-0412 …", "Payout details changed: the invoice asks for payment to …" and "Tomatoes (crate) billed at $23.40, agreed $18.00 (30% more).". **see the invoice** opens the original image; **What Bursar read** shows the lines and who read them ("NEAR AI Cloud, Qwen/Qwen3-VL-30B-A3B-Instruct (recorded 2026-11-07)").
+6. Open **Invoices** → "6 invoices · 2 ready · 4 need attention", each with its reason in plain words, for example "Name looks like Eko Fresh Foods but is not Eko Fresh Foods ("Ek0 Fresh Foods"). Possible fraud: do not pay.", "Possible duplicate of invoice #MPF-0412 …", "Payout details changed: the invoice asks for payment to …" and "Tomatoes (crate) billed at $23.40, agreed $18.00 (30% more).". **see the invoice** opens the original image; **What Bursar read** shows the lines and who read them ("NEAR AI Cloud, Qwen/Qwen3-VL-30B-A3B-Instruct (recorded 2026-11-07)"). At the top, **Private reading → Check it now** (needs internet, no key) sends a fresh random nonce to NEAR AI Cloud and verifies the signed hardware report for the gateway and the reading model, following NEAR AI's verification steps: Intel TDX quote genuine and up to date, not in debug mode, quote bound to the signing key and our nonce, configuration measurement, event-log replay, and NVIDIA's GPU attestation. Each check is listed with ✓ or ✗ and the badge says "Verified" only if all pass.
 7. Open **Plan** → **Prepare this week's plan** → "$658.00" and "5 payments · costs about … USDC with network fees": the 3 staff's weekly pay (Bisi $220 in USDC on Base, Tunde $110 in USDT on Tron, Amaka $120 in USDC on Solana) and the 2 clean invoices (Mama Put Farms $118 in USDC on NEAR, Ikeja Gas $90 in USDC on Base). Each shows its network fee and time from a real **dry** 1Click quote (Tron is the dearest, about $1.6). **Not in this plan** lists the 4 problem invoices with their reasons. (Offline, the plan still builds and shows "no price quote".)
 8. Click **Approve plan and pay** → "Plan approved. 5 payments sent." Each payment shows "Sent, on its way…" and then "Delivered" within about 30 seconds (the page refreshes itself). In practice mode the payments go to the simulated account; nothing leaves your machine.
 9. On the same page click **Try to force a payment above your limit** → "Refused by the account. This payment is above the owner's per-payment cap of $900.00." The request went straight to the account, skipping the plan and the approval.
@@ -48,6 +48,7 @@ Requirements: Node.js 24 or newer (needed by the Agent API SDK), npm 11 or newer
 15. `npm run smoke:oneclick` → two real **dry** 1Click quotes from USDC held in a NEAR Intents balance: one paying exactly 50 USDT on Tron, one paying exactly 50 USDC on Base. `dry: true` creates no deposit address; nothing is spent.
 16. `npm run smoke:nearai` → confirms the invoice-reading model (`Qwen/Qwen3-VL-30B-A3B-Instruct`) accepts images. With `NEAR_AI_API_KEY` set and credits on the account it also reads `fixtures/invoices/smoke-invoice.svg`.
 17. `npm run smoke:agent-api` → shows the Agent API's network (`mainnet`, contract `outlayer.near`); with `AGENT_API_KEY` set, also the key's quota.
+18. `npm run verify:ai` → the same TEE verification in the terminal; ends with "VERIFIED: every check passed." (needs internet, no key).
 
 In practice mode the agent account is a local simulator of the Agent API policy (`apps/web/lib/agent-account/evaluate.ts`): same rules, same refusal codes, demo money. The six sample invoices are recognised by their file hash and their readings come from `fixtures/invoices/readings/`, recorded from NEAR AI Cloud with `npm run readings:record` (if those files are deleted, the hand-typed values in `apps/web/lib/sample-invoices.ts` are used and the page says so). Reading any other invoice needs `NEAR_AI_API_KEY`. The checks themselves (`apps/web/lib/checks/`) are the same code in both modes. Plan prices come from real 1Click dry quotes (`dry: true`: no deposit address, nothing can be spent); payments are simulated with the same idempotency keys a live payment uses. Nothing leaves your machine except those quote requests.
 
@@ -62,6 +63,7 @@ Live mode uses a real NEAR Intents Agent API account. There is no testnet for it
 3. Set up the business (starts at $20 a week, $10 a payment), add payees, then **Create the agent account with these rules**. The page shows the exact policy first; your wallet signs it (a gasless delegate action the Agent API relays).
 4. **Let Bursar pay inside these rules** → your wallet signs a grant; put the shown `AGENT_API_GRANT_TOKEN` line in `.env` and restart.
 5. `npm run rules:live` → asks the live account for payments the rules forbid (an unlisted address; one unit over the per-payment cap) and saves its answers in `fixtures/live/`. Run it on an unfunded account: refused requests create no operation and move nothing.
+6. To pay for real: give payees a regular pay (or add invoices), **Plan → Prepare this week's plan**, then `npm run live:preview` (the account's own dry preview of every payment). Fund the account with `npm run fund -- <TOKEN> <chain>` (for example `npm run fund -- USDC near`), which prints a one-time deposit address and the minimum; send from your own wallet. Then approve the plan. Each payment is followed to its final status and the payee-side transaction is recorded on the statement.
 
 ## Live run
 
@@ -74,6 +76,8 @@ Live mode uses a real NEAR Intents Agent API account. There is no testnet for it
 | Preview: $10.000001 to the listed payee (cap $10) | warning `policy_transaction_limit_exceeded` |
 
 Full responses: `fixtures/live/rules-live-2026-11-06.json`. Bursar's code did not decide any of these; the Agent API did.
+
+**7 Nov 2026: live payment preview, no money moved.** With a second payee on Base (`0x4128…2600`) signed into the rules (revision 3), `npm run live:preview` asked the live account to preview this week's plan ($1 to each address). The account raised no rule warnings, only `insufficient_balance` (it holds $0), and quoted the fees: about $0.005 per withdrawal, so each payee would receive about $0.995. **A paid live run has not been done**: the agent account has not been funded. The code path is in place (`lib/pay.ts`: confidential swap, wait for settlement, withdraw, then the account's own status and destination transaction are recorded on the statement); funding steps are under "Live mode" above (`npm run fund -- USDC near`).
 
 ## How NEAR is used
 
@@ -100,10 +104,12 @@ Details and the doc lines relied on: `docs/DECISIONS.md`.
 - The Agent API policy cannot stop a second payment to an allowed payee; Bursar's duplicate check covers that.
 - The invoice reader (an AI model) can misread long strings: in our recorded run it dropped one character of a 64-character address on 3 of 6 invoices and was unsure of one supplier name. Bursar treats an invalid address as a misreading (warning) and anything the model is unsure of as "needs you"; it never pays an address read from an invoice.
 - PDFs are not read yet; send a photo or screenshot.
+- No paid live payment has been made yet (see "Live run"). Live payments deduct the network withdrawal fee from the amount sent (about $0.005 on NEAR and Base), so a payee receives slightly less than the invoice; the statement records the exact amount received.
+- The "Verified" panel checks the attestation report before use; it does not yet verify the per-response signature of each invoice reading (`/v1/signature/<chat_id>`).
 
 ## Built with
 
-Next.js, React, Tailwind CSS, TypeScript, Prisma (SQLite via better-sqlite3), zod, Vitest, tsx, the OpenAI SDK (pointed at NEAR AI Cloud), `@near-intents-agent-api/sdk`, near-api-js (NEP-413 sign-in check), `@hot-labs/near-connect` (wallet sign-in and signing), sharp. Fonts: Bricolage Grotesque, Public Sans, IBM Plex Mono (Google Fonts via `next/font`). Scaffolded with `create-next-app`. Written with Claude Code (Anthropic); NEAR agent skills from `near/agent-skills`.
+Next.js, React, Tailwind CSS, TypeScript, Prisma (SQLite via better-sqlite3), zod, Vitest, tsx, the OpenAI SDK (pointed at NEAR AI Cloud), `@near-intents-agent-api/sdk`, near-api-js (NEP-413 sign-in check), `@hot-labs/near-connect` (wallet sign-in and signing), `@phala/dcap-qvl` (Intel TDX quote verification), sharp. Fonts: Bricolage Grotesque, Public Sans, IBM Plex Mono (Google Fonts via `next/font`). Scaffolded with `create-next-app`. Written with Claude Code (Anthropic); NEAR agent skills from `near/agent-skills`.
 
 ## License
 

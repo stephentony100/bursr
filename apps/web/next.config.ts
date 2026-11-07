@@ -6,7 +6,7 @@ import type { NextConfig } from "next";
 // Cache Components is off: every Bursar page shows live data from the local
 // database, so pages render per request (see `connection()` in each page).
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["better-sqlite3", "@prisma/adapter-better-sqlite3"],
+  serverExternalPackages: ["better-sqlite3", "@prisma/adapter-better-sqlite3", "@phala/dcap-qvl"],
   turbopack: {
     root: path.resolve(import.meta.dirname, "../.."),
     rules: {

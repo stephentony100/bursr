@@ -23,7 +23,8 @@
     "db:push": "npm run db:push -w apps/web",
     "readings:record": "npm run readings:record -w apps/web",
     "live:preview": "npm run live:preview -w apps/web",
-    "fund": "npm run fund -w apps/web --"
+    "fund": "npm run fund -w apps/web --",
+    "verify:ai": "npm run verify:ai -w apps/web"
   },
   "allowScripts": {
     "@prisma/engines": true,

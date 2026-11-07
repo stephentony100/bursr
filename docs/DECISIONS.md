@@ -40,6 +40,11 @@ Record each decision with date, reason and the doc line relied on.
 | 2026-11-07 | Practice-mode payments: simulated account, "sent" → "delivered" after the quote's time estimate (8–30 s) | "Dry-run mode: simulated payments with realistic status progression" (TASKS M3) |
 | 2026-11-07 | CSV cells are always quoted and a leading = + - @ is prefixed with ' | Stops a payee name from running as a spreadsheet formula |
 | 2026-11-07 | "Try to force a payment above your limit" sends the request to the simulated account in practice mode, but only previews it in live mode | A real refused request is recorded by `npm run rules:live`; the UI button never sends real money requests |
+| 2026-11-07 | Live payments: the swap uses the confidential balance (`confidential: true`, like the policy and withdrawals); the agent waits for the swap's final status before withdrawing; refresh reads each withdrawal's final status, `amount_out` and `destination_tx_hash` | "Only one money action runs per agent wallet at a time"; SUCCESS details carry `amount_out`, `destination_tx_hash` (SDK `ExecutionDetails`) |
+| 2026-11-07 | Funding: `npm run fund` creates a one-time deposit address with `destination_asset` = USDC on NEAR and `confidential: true`. Minimums seen live: 0.001 USDC (NEAR, Solana), 0.15 USDC (Base), 1 USDT (Tron) | Agent API funding docs: "Fund either one from any supported chain with a one-time deposit address"; creating one "never spends the agent's funds" |
+| 2026-11-07 | "Verified" panel = NEAR AI Cloud docs' Node.js reference, step by step, for the gateway and every model candidate, plus NVIDIA NRAS for GPU evidence; TCB policy accepts only `UpToDate` (the docs' example) | docs.near.ai …/model-attestations: "Perform these checks on every returned candidate before sending a completion" |
+| 2026-11-07 | Quote collateral: `dcap-qvl` default (Phala PCCS), falling back to Intel PCS (`getCollateralFromPcs`) | Phala's PCCS timed out from the builder's network; Intel PCS answered. Both are collateral sources `dcap-qvl` supports |
+| 2026-11-07 | Paid live run deferred by the owner (no stablecoins on hand); README says so | AGENTS.md rule 2: no spending without the human's OK; honesty in README |
 
 ## Answers to the M0 open questions (checked 5 Nov 2026)
 

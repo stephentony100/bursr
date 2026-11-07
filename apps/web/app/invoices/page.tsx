@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { loadSampleInvoicesAction, uploadInvoiceAction } from "@/app/actions";
+import { loadSampleInvoicesAction, uploadInvoiceAction, verifyReaderAction } from "@/app/actions";
+import { VerifiedPanel } from "@/components/verified-panel";
+import { DEFAULT_READER_MODEL } from "@/lib/reader";
 import { ActionForm } from "@/components/forms";
 import type { InvoiceStatus } from "@/lib/checks";
 import { db } from "@/lib/db";
@@ -50,6 +52,8 @@ export default async function InvoicesPage() {
           <span className={problems ? "text-refuse" : "text-muted"}>{problems} need attention</span>
         </p>
       </div>
+
+      <VerifiedPanel action={verifyReaderAction} model={readEnv().NEAR_AI_MODEL ?? DEFAULT_READER_MODEL} />
 
       <section className="rounded-xl border border-line bg-card p-6">
         <h2 className="font-display text-xl font-semibold">Add an invoice</h2>
