@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@hot-labs/near-connect": "^0.12.0",
-    "@near-intents-agent-api/sdk": "0.7.3",
+    "@near-intents-agent-api/sdk": "0.8.0",
     "@prisma/adapter-better-sqlite3": "7.10.1",
     "@prisma/client": "7.10.1",
     "dotenv": "^17",

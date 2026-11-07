@@ -94,6 +94,12 @@ Record each decision with date, reason and the doc line relied on.
 - Change: checks always run, even when the owner must look; a block wins over "needs owner", so a fraud signal is never hidden behind "needs you".
 - Sample test now requires exact statuses and every expected problem, and allows extra findings only as warnings.
 
+## Agent API key rotation (7 Nov 2026)
+
+- The API answered "This API key is retired: keys moved to the partner portal, and keys issued before that no longer work … Create and revoke keys at partners.demo.agentsonintents.com." New portal keys are JWT-like (`eyJ…`), not `naa_…`.
+- SDK 0.7.3 rejected non-`naa_` keys at construction. Upgraded to `@near-intents-agent-api/sdk` 0.8.0, whose changelog says: "`AgentApi` no longer checks the shape of `apiKey`; it accepts any non-empty string … Keys created before the partner portal are retired." The other 0.8.0 breaking changes (`getPartnerQuota` drops `api_keys`, `verifyOperationProof` needs a trusted checkpoint) don't touch Bursar's code.
+- The new key belongs to the same tenant (`whoami` tenant unchanged), so the existing agent, its policy (revision 2) and the grant token kept working; no new agent was needed.
+
 ## Still open
 
 - [x] Human: Agent API demo key in `.env` (checked 5 Nov: quota 100 agents/day); OK to create one unfunded mainnet agent owned by `stephentony.near` (HOT Wallet) for the M1 rule-rejection test
