@@ -32,9 +32,9 @@ bot.command("link", async (ctx) => {
 bot.command("plan", async (ctx) => {
   if (!(await ownerForChat(db(), ctx.chat.id))) return ctx.reply("This chat isn't connected yet. Send /start to see how.");
   const plan = await getLatestPlan(db());
-  if (!plan) return ctx.reply(`Nothing waiting yet. Get this week's payments ready at ${web}/plan`);
+  if (!plan) return ctx.reply(`Nothing waiting yet. Get this week's payments ready at ${web}/payments`);
   const keyboard = plan.status === "draft" ? new InlineKeyboard().text("✅ Approve and pay everyone", `approve:${plan.id}`) : undefined;
-  await ctx.reply(`${planText(plan)}\n\nSee the details: ${web}/plan`, { reply_markup: keyboard });
+  await ctx.reply(`${planText(plan)}\n\nSee the details: ${web}/payments`, { reply_markup: keyboard });
 });
 
 bot.callbackQuery(/^approve:(.+)$/, async (ctx) => {

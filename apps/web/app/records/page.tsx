@@ -24,7 +24,7 @@ export default async function StatementPage() {
             proof. Your accountant will love the spreadsheet.
           </p>
         </div>
-        <a href="/api/statement.csv" className="rounded-md bg-ledger px-4 py-2 text-sm font-medium text-white hover:bg-ledger/90">
+        <a href="/api/records.csv" className="rounded-md bg-ledger px-4 py-2 text-sm font-medium text-white hover:bg-ledger/90">
           Download for my accountant (CSV)
         </a>
       </div>

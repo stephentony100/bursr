@@ -153,7 +153,7 @@ export default async function PlanPage() {
 
       {plan && plan.status !== "draft" && (
         <p className="text-sm">
-          <Link href="/statement" className="text-indigo underline">
+          <Link href="/records" className="text-indigo underline">
             See your records
           </Link>{" "}
           for every payment, with proof.

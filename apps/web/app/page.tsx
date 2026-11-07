@@ -55,7 +55,7 @@ export default async function Home() {
         ) : (
           <p className="text-muted">
             To begin, press <strong>Sign in</strong> at the top right, then open{" "}
-            <Link href="/setup" className="text-indigo underline">
+            <Link href="/spending-rules" className="text-indigo underline">
               Spending rules
             </Link>{" "}
             to set up your business.
@@ -87,7 +87,7 @@ export default async function Home() {
       {(needsLook > 0 || planWaiting > 0) && (
         <div className="flex flex-wrap gap-3">
           {planWaiting > 0 && (
-            <Link href="/plan" className="rounded-xl border-2 border-ledger/40 bg-ledger-soft px-5 py-3 text-sm">
+            <Link href="/payments" className="rounded-xl border-2 border-ledger/40 bg-ledger-soft px-5 py-3 text-sm">
               <span className="font-semibold">{planWaiting} payments are ready for your OK.</span> Review and approve →
             </Link>
           )}
@@ -124,7 +124,7 @@ export default async function Home() {
       <section>
         <div className="flex items-baseline justify-between">
           <h2 className="font-display text-xl font-semibold">People you pay</h2>
-          <Link href="/payees" className="text-sm text-indigo underline">
+          <Link href="/people" className="text-sm text-indigo underline">
             See everyone
           </Link>
         </div>

@@ -40,7 +40,7 @@ export default async function PayeesPage() {
         {payees.map((p) => (
           <li key={p.id} className="flex flex-wrap items-center gap-x-6 gap-y-1 px-5 py-4">
             <div className="min-w-56 flex-1">
-              <Link href={`/payees/${p.id}`} className="font-medium hover:underline">
+              <Link href={`/people/${p.id}`} className="font-medium hover:underline">
                 {p.name}
               </Link>
               <p className="text-sm text-muted">

@@ -18,10 +18,10 @@ export const metadata: Metadata = {
 const NAV = [
   { href: "/", label: "This week" },
   { href: "/invoices", label: "Invoices" },
-  { href: "/plan", label: "Payments" },
-  { href: "/statement", label: "Records" },
-  { href: "/payees", label: "People" },
-  { href: "/setup", label: "Spending rules" },
+  { href: "/payments", label: "Payments" },
+  { href: "/records", label: "Records" },
+  { href: "/people", label: "People" },
+  { href: "/spending-rules", label: "Spending rules" },
 ];
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { isOnPayoutHold, payoutHoldEndsAt } from "@/lib/domain";
 import { getBusiness, getPayee } from "@/lib/store";
 
-export default async function PayeePage({ params }: PageProps<"/payees/[id]">) {
+export default async function PayeePage({ params }: PageProps<"/people/[id]">) {
   await connection();
   const { id } = await params;
   const [business, payee] = await Promise.all([getBusiness(db()), getPayee(db(), id)]);
@@ -18,7 +18,7 @@ export default async function PayeePage({ params }: PageProps<"/payees/[id]">) {
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/payees" className="text-sm text-indigo underline">
+        <Link href="/people" className="text-sm text-indigo underline">
           ← Everyone you pay
         </Link>
         <h1 className="mt-2 font-display text-3xl font-semibold">{payee.name}</h1>
