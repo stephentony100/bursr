@@ -6,7 +6,7 @@ import { ActionForm, ForceTester, ItemButton } from "@/components/forms";
 import { db } from "@/lib/db";
 import { readEnv } from "@/lib/env";
 import { formatUnits, formatUsd } from "@/lib/money";
-import { advanceSimulatedPayments } from "@/lib/pay";
+import { refreshPayments } from "@/lib/pay";
 import { getLatestPlan, type PlanItemView } from "@/lib/plans";
 import { getBusiness } from "@/lib/store";
 import { chainName } from "@/lib/tokens";
@@ -35,7 +35,7 @@ export default async function PlanPage() {
       </p>
     );
   }
-  if (dryRun) await advanceSimulatedPayments(db());
+  await refreshPayments(db());
   const plan = await getLatestPlan(db());
   const treasury = business.rules.treasury;
 

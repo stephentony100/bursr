@@ -1,4 +1,5 @@
-import type { ActionOutcome, AgentAccount } from "./agent-account";
+import { agentAccount, type ActionOutcome, type AgentAccount } from "./agent-account";
+import { readEnv } from "./env";
 import { isOnPayoutHold, normaliseAddress, type Payout } from "./domain";
 import type { PrismaClient } from "./generated/prisma/client";
 import { getPlan, type PlanItemView } from "./plans";
@@ -12,6 +13,18 @@ import { getBusiness, listPayees } from "./store";
 // so retrying never pays twice. Agent-side code: it cannot change payees.
 
 const MIN_SIM_DELIVERY_MS = 8_000;
+const SETTLE_TIMEOUT_MS = 5 * 60_000;
+const POLL_MS = 5_000;
+
+/** Waits for an accepted action to reach a final state (live swaps take seconds to a minute). */
+async function settle(account: AgentAccount, correlationId: string, timeoutMs = SETTLE_TIMEOUT_MS) {
+  const until = Date.now() + timeoutMs;
+  for (;;) {
+    const o = await account.outcome(correlationId);
+    if (o.state !== "pending" || Date.now() > until) return o;
+    await new Promise((r) => setTimeout(r, POLL_MS));
+  }
+}
 
 function samePayout(a: Payout, b: Payout) {
   return a.token.assetId === b.token.assetId && normaliseAddress(a.address) === normaliseAddress(b.address) && (a.memo ?? null) === (b.memo ?? null);
@@ -56,7 +69,14 @@ export async function payItem(
     const swap = await account.execute({ kind: "swap", asset: treasury.assetId, amount: amountSent, destinationAsset: token.assetId }, `${item.id}:swap`);
     const refused = refusedText(swap);
     if (refused) return fail(refused);
-    if (swap.status === "accepted") references.push(swap.correlationId);
+    if (swap.status === "accepted") {
+      references.push(swap.correlationId);
+      // "Only one money action runs per agent wallet at a time": wait for the swap before withdrawing.
+      const o = await settle(account, swap.correlationId);
+      if (o.state !== "done") {
+        return fail(o.state === "pending" ? "The swap was still processing after 5 minutes; check the account before paying again." : `The swap did not complete: ${o.reason ?? o.state}.`);
+      }
+    }
   }
 
   const withdraw = await account.execute(
@@ -90,6 +110,40 @@ export async function payApprovedPlan(db: PrismaClient, account: AgentAccount, p
 }
 
 /**
+ * Live mode: asks the account how each sent payment ended and records the
+ * delivered amount and the payee-side transaction for the statement.
+ */
+export async function refreshLivePayments(db: PrismaClient, account: AgentAccount) {
+  const sent = await db.planItem.findMany({ where: { payStatus: "sent" } });
+  for (const i of sent) {
+    const refs = JSON.parse(i.references) as string[];
+    const last = [...refs].reverse().find((r) => !r.startsWith("sim_") && !r.startsWith("tx:"));
+    if (!last) continue;
+    const o = await account.outcome(last);
+    if (o.state === "pending") continue;
+    const next = o.state === "done" ? "delivered" : o.state === "refunded" ? "refunded" : "failed";
+    await db.planItem.update({
+      where: { id: i.id },
+      data: {
+        payStatus: next,
+        payReason: o.state === "done" ? null : o.reason ?? null,
+        amountReceived: o.amountOut !== undefined ? o.amountOut.toString() : i.amountReceived,
+        references: JSON.stringify(o.txHash ? [...refs, `tx:${o.txHash}`] : refs),
+      },
+    });
+  }
+  await closeFinishedPlans(db);
+}
+
+async function closeFinishedPlans(db: PrismaClient) {
+  const open = await db.plan.findMany({ where: { status: "approved" }, include: { items: true } });
+  for (const p of open) {
+    const done = p.items.filter((i) => i.placement === "in").every((i) => ["delivered", "failed", "refunded"].includes(i.payStatus));
+    if (done) await db.plan.update({ where: { id: p.id }, data: { status: "done" } });
+  }
+}
+
+/**
  * Practice mode: simulated payments move from "sent" to "delivered" after the
  * quote's time estimate (at least a few seconds), so the page shows the same
  * progression a live payment has. Live mode reads the real status (M4).
@@ -104,10 +158,18 @@ export async function advanceSimulatedPayments(db: PrismaClient, now = new Date(
       await db.planItem.update({ where: { id: i.id }, data: { payStatus: "delivered" } });
     }
   }
-  const open = await db.plan.findMany({ where: { status: "approved" }, include: { items: true } });
-  for (const p of open) {
-    const done = p.items.filter((i) => i.placement === "in").every((i) => ["delivered", "failed", "refunded"].includes(i.payStatus));
-    if (done) await db.plan.update({ where: { id: p.id }, data: { status: "done" } });
-  }
+  await closeFinishedPlans(db);
 }
 
+
+/** Brings payment statuses up to date: simulated progress in practice mode, the account's real status in live mode. */
+export async function refreshPayments(db: PrismaClient) {
+  if (readEnv().BURSAR_MODE === "dry-run") return advanceSimulatedPayments(db);
+  const pending = await db.planItem.count({ where: { payStatus: "sent" } });
+  if (pending === 0) return;
+  try {
+    await refreshLivePayments(db, await agentAccount(db));
+  } catch {
+    // The page still renders with the last known status; the next visit tries again.
+  }
+}

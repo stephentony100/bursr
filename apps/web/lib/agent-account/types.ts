@@ -20,6 +20,16 @@ export type ActionOutcome =
   /** Live: accepted by the account; follow correlationId to the end. Dry-run: done at once. */
   | { status: "accepted"; correlationId: string; simulated: boolean };
 
+/** Where an accepted action ended up. */
+export interface Outcome {
+  state: "pending" | "done" | "failed" | "refunded";
+  /** Delivered amount (smallest units), only when done. */
+  amountOut?: bigint;
+  /** Transaction on the payee's chain (or the NEAR tx), when known. */
+  txHash?: string;
+  reason?: string;
+}
+
 /**
  * The one interface all payment code uses (PRD §7). The agent can only ask;
  * the account decides. Owner actions (rules, payees, freeze) are NOT here:
@@ -32,4 +42,6 @@ export interface AgentAccount {
   execute(req: ActionRequest, idempotencyKey: string): Promise<ActionOutcome>;
   /** Asks what the account would say, moving nothing. */
   preview(req: ActionRequest): Promise<ActionOutcome>;
+  /** The current outcome of an accepted action. */
+  outcome(correlationId: string): Promise<Outcome>;
 }

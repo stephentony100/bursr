@@ -1,7 +1,7 @@
 import { AgentApiError, createAgentApi, type AgentApi } from "@near-intents-agent-api/sdk";
 import { parseUnits, USD_DECIMALS } from "../money";
 import type { ActionRequest, RefusalCode } from "./evaluate";
-import type { AccountStatus, ActionOutcome, AgentAccount } from "./types";
+import type { AccountStatus, ActionOutcome, AgentAccount, Outcome } from "./types";
 
 // Live agent account on the NEAR Intents Agent API (mainnet). Bursar only
 // asks; the API (destinations, budget) and its TEE wallet provider (assets,
@@ -68,7 +68,8 @@ export class AgentApiAccount implements AgentAccount {
         return { status: "accepted", correlationId: r.correlation_id, simulated: false };
       }
       if (req.kind === "swap") {
-        const body = { origin_asset: req.asset, destination_asset: req.destinationAsset, amount: req.amount.toString() };
+        // Confidential, like the policy and the withdrawals: the swap uses the private balance.
+        const body = { origin_asset: req.asset, destination_asset: req.destinationAsset, amount: req.amount.toString(), confidential: true };
         if (dry) {
           const q = await this.agent.swap(this.cfg.agentId, { ...body, dry: true });
           return fromWarnings(q.warnings);
@@ -82,6 +83,22 @@ export class AgentApiAccount implements AgentAccount {
     } catch (e) {
       if (e instanceof AgentApiError && e.status >= 400 && e.status < 500 && !e.retryable) return refusalFrom(e);
       throw e;
+    }
+  }
+
+  async outcome(correlationId: string): Promise<Outcome> {
+    const s = await this.api.getStatus(correlationId);
+    const d = (s.details ?? {}) as { amount_out?: string | null; destination_tx_hash?: string | null; tx_hash?: string | null; refund_tx_hash?: string | null; failure_reason?: string | null };
+    switch (s.status) {
+      case "SUCCESS":
+        return { state: "done", amountOut: d.amount_out ? BigInt(d.amount_out) : undefined, txHash: d.destination_tx_hash ?? d.tx_hash ?? undefined };
+      case "REFUNDED":
+        return { state: "refunded", txHash: d.refund_tx_hash ?? undefined, reason: "The route could not complete; the money went back to the account." };
+      case "FAILED":
+        return { state: "failed", reason: d.failure_reason ?? s.failure_code ?? "Failed." };
+      default:
+        // PROCESSING, QUEUED, PENDING_APPROVAL, UNCERTAIN, NEEDS_REVIEW: not final yet.
+        return { state: "pending", reason: s.status };
     }
   }
 

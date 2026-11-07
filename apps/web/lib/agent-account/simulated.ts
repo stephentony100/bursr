@@ -1,7 +1,7 @@
 import type { Policy } from "@near-intents-agent-api/sdk";
 import type { PrismaClient } from "../generated/prisma/client";
 import { evaluate, spentThisWeek, weekPeriodStart, type AccountState, type ActionRequest } from "./evaluate";
-import type { AccountStatus, ActionOutcome, AgentAccount } from "./types";
+import type { AccountStatus, ActionOutcome, AgentAccount, Outcome } from "./types";
 
 // Dry-run agent account: the policy and balances live in SQLite and every
 // request is judged by evaluate(), the same rules the Agent API applies.
@@ -62,6 +62,14 @@ export class SimulatedAccount implements AgentAccount {
   async preview(req: ActionRequest): Promise<ActionOutcome> {
     const v = evaluate(await this.load(), req, this.now());
     return v.ok ? { status: "accepted", correlationId: "preview", simulated: true } : { status: "refused", refusal: v.refusal };
+  }
+
+  /** Simulated actions settle at once; the page shows delivery progress separately (lib/pay.ts). */
+  async outcome(correlationId: string): Promise<Outcome> {
+    const row = await this.db.accountAction.findFirst({ where: { correlationId } });
+    if (!row) return { state: "failed", reason: "Unknown action." };
+    const req = JSON.parse(row.request) as { amount: string };
+    return { state: "done", amountOut: BigInt(req.amount), txHash: correlationId };
   }
 
   async execute(req: ActionRequest, idempotencyKey: string): Promise<ActionOutcome> {

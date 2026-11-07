@@ -1,13 +1,12 @@
 import { connection } from "next/server";
 import { db } from "@/lib/db";
-import { readEnv } from "@/lib/env";
 import { formatUsd } from "@/lib/money";
-import { advanceSimulatedPayments } from "@/lib/pay";
+import { refreshPayments } from "@/lib/pay";
 import { statementLines } from "@/lib/statement";
 
 export default async function StatementPage() {
   await connection();
-  if (readEnv().BURSAR_MODE === "dry-run") await advanceSimulatedPayments(db());
+  await refreshPayments(db());
   const lines = await statementLines(db());
   const total = lines.filter((l) => l.status !== "Failed").reduce((a, l) => a + l.amountUsd, 0n);
 

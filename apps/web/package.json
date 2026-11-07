@@ -19,7 +19,9 @@
     "postinstall": "prisma generate",
     "rules:live": "tsx scripts/rules-live.ts",
     "readings:record": "tsx scripts/record-readings.ts",
-    "invoices:draw": "tsx scripts/make-sample-invoices.ts"
+    "invoices:draw": "tsx scripts/make-sample-invoices.ts",
+    "live:preview": "tsx scripts/live-preview.ts",
+    "fund": "tsx scripts/fund.ts"
   },
   "dependencies": {
     "@hot-labs/near-connect": "^0.12.0",
