@@ -11,6 +11,8 @@ import { getBusiness } from "./store";
 // Every alert has a key and is sent once (idempotent by key).
 
 const LINK_MS = 10 * 60 * 1000;
+/** Wrong codes allowed before the pending code is cancelled (stops guessing). */
+const MAX_LINK_ATTEMPTS = 5;
 const PENDING = "telegram_link_pending";
 const LINKED = "telegram_link";
 export const BOT_NAME = "telegram_bot_username";
@@ -30,15 +32,22 @@ export async function createLinkCode(db: PrismaClient, owner: OwnerSession, now 
   const business = await getBusiness(db);
   if (!business || business.ownerAccountId !== owner.accountId) throw new Error("Only the owner can connect Telegram.");
   const code = randomBytes(4).toString("hex").toUpperCase();
-  await setSetting(db, PENDING, { code, accountId: owner.accountId, expires: now + LINK_MS });
+  await setSetting(db, PENDING, { code, accountId: owner.accountId, expires: now + LINK_MS, wrong: 0 });
   return code;
 }
 
 /** Bot: `/link CODE` from a chat. Returns a reply for the chat. */
 export async function linkChat(db: PrismaClient, chatId: number, code: string, now = Date.now()): Promise<string> {
-  const pending = await getSetting<{ code: string; accountId: string; expires: number }>(db, PENDING);
-  if (!pending || pending.expires < now || pending.code !== code.trim().toUpperCase()) {
-    return "That code is wrong or expired. Get a new one on Bursar → Rules & account → Connect Telegram.";
+  const pending = await getSetting<{ code: string; accountId: string; expires: number; wrong: number }>(db, PENDING);
+  const again = "Get a new one on Bursar → Rules & account → Connect Telegram.";
+  if (!pending || pending.expires < now) return `That code is wrong or expired. ${again}`;
+  if (pending.code !== code.trim().toUpperCase()) {
+    if ((pending.wrong ?? 0) + 1 >= MAX_LINK_ATTEMPTS) {
+      await db.setting.delete({ where: { key: PENDING } });
+      return `Too many wrong codes; that code is cancelled. ${again}`;
+    }
+    await setSetting(db, PENDING, { ...pending, wrong: (pending.wrong ?? 0) + 1 });
+    return `That code is wrong or expired. ${again}`;
   }
   await setSetting(db, LINKED, { chatId, accountId: pending.accountId, at: new Date(now).toISOString() });
   await db.setting.delete({ where: { key: PENDING } });

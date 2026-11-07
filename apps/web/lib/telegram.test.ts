@@ -35,6 +35,13 @@ describe("Telegram", () => {
     expect(await linkChat(t.db, 222, code)).toMatch(/wrong or expired/); // used up
   });
 
+  it("five wrong codes cancel the pending code (no guessing)", async () => {
+    const code = await createLinkCode(t.db, owner);
+    for (let i = 0; i < 4; i++) expect(await linkChat(t.db, 999, "00000000")).toMatch(/wrong or expired/);
+    expect(await linkChat(t.db, 999, "00000000")).toMatch(/Too many wrong codes/);
+    expect(await linkChat(t.db, 111, code)).toMatch(/wrong or expired/); // the real code no longer works
+  });
+
   it("only the linked chat acts as the owner", async () => {
     await linkChat(t.db, 111, await createLinkCode(t.db, owner));
     expect(await ownerForChat(t.db, 222)).toBeNull();
