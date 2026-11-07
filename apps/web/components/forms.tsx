@@ -83,3 +83,43 @@ export function RuleTester({ action }: { action: (prev: RuleTestResult, f: FormD
     </div>
   );
 }
+
+/** A one-button form for a single plan item (approve on its own, remove). */
+export function ItemButton({ action, itemId, label, tone = "quiet" }: { action: Action; itemId: string; label: string; tone?: "primary" | "quiet" }) {
+  const [result, formAction, pending] = useActionState(action, null);
+  return (
+    <form action={formAction} className="inline-flex items-center gap-2">
+      <input type="hidden" name="itemId" value={itemId} />
+      <button
+        disabled={pending}
+        className={`rounded-md px-3 py-1.5 text-sm disabled:opacity-60 ${tone === "primary" ? "bg-ledger text-white hover:bg-ledger/90" : "border border-line bg-card hover:bg-paper"}`}
+      >
+        {pending ? "…" : label}
+      </button>
+      {result && !result.ok && <span className="text-xs text-refuse">{result.message}</span>}
+    </form>
+  );
+}
+
+/** PRD §9 step 6: push one payment above the cap straight at the account. */
+export function ForceTester({ action }: { action: () => Promise<RuleTestResult> }) {
+  const [result, formAction, pending] = useActionState(action, null);
+  return (
+    <div>
+      <form action={formAction}>
+        <button disabled={pending} className="rounded-md border-2 border-refuse/60 bg-card px-4 py-2 text-sm font-medium text-refuse hover:bg-refuse-soft disabled:opacity-60">
+          {pending ? "Trying…" : "Try to force a payment above your limit"}
+        </button>
+      </form>
+      {result && result.tried && (
+        <div role="status" className={`mt-4 rounded-md border-l-4 px-4 py-3 text-sm ${result.allowed ? "border-hold bg-hold-soft" : "border-refuse bg-refuse-soft"}`}>
+          <p className="text-muted">Tried: {result.tried}</p>
+          <p className="mt-1 font-medium">
+            {result.allowed ? "" : "Refused by the account. "}
+            {result.message}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

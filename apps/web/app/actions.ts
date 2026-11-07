@@ -9,7 +9,19 @@ import { demoEvmAddress, demoNearImplicit, demoTronAddress } from "@/lib/demo-ad
 import { PayeeCategory, type Payout, type PriceItem } from "@/lib/domain";
 import { readEnv } from "@/lib/env";
 import { formatUsd, parseUnits, rescale, USD_DECIMALS } from "@/lib/money";
-import { addPayee, changePayout, removePayee, setFrozen, updatePayeeDetails, updateRules } from "@/lib/owner-actions";
+import {
+  addPayee,
+  approvePlan,
+  approvePlanItem,
+  changePayout,
+  removePayee,
+  removePlanItem,
+  setFrozen,
+  updatePayeeDetails,
+  updateRules,
+} from "@/lib/owner-actions";
+import { payApprovedPlan } from "@/lib/pay";
+import { prepareWeeklyPlan } from "@/lib/plans";
 import { requireOwner } from "@/lib/session";
 import { getBusiness, getPayee, listPayees } from "@/lib/store";
 import { payoutTokens } from "@/lib/tokens";
@@ -240,4 +252,76 @@ export async function loadSampleInvoicesAction(): Promise<FormResult> {
     await loadSampleInvoices(db());
     return "The six sample invoices were read and checked again.";
   });
+}
+
+// --- The weekly plan ---------------------------------------------------------
+
+export async function preparePlanAction(): Promise<FormResult> {
+  return run(async () => {
+    await requireOwner();
+    const plan = await prepareWeeklyPlan(db());
+    const n = plan.items.filter((i) => i.placement === "in").length;
+    return `Plan ready: ${n} payment${n === 1 ? "" : "s"} to approve.`;
+  });
+}
+
+export async function approveItemAction(_prev: FormResult, f: FormData): Promise<FormResult> {
+  return run(async () => {
+    await approvePlanItem(db(), await requireOwner(), text(f, "itemId"));
+    return "Approved.";
+  });
+}
+
+export async function removeItemAction(_prev: FormResult, f: FormData): Promise<FormResult> {
+  return run(async () => {
+    await removePlanItem(db(), await requireOwner(), text(f, "itemId"));
+    return "Removed from this plan.";
+  });
+}
+
+/** One tap: approve the whole plan, then pay it through the agent account. */
+export async function approvePlanAction(_prev: FormResult, f: FormData): Promise<FormResult> {
+  return run(async () => {
+    const planId = text(f, "planId");
+    await approvePlan(db(), await requireOwner(), planId);
+    const results = await payApprovedPlan(db(), await agentAccount(db()), planId);
+    const sent = Object.values(results).filter((s) => s === "sent").length;
+    const failed = Object.values(results).filter((s) => s === "failed").length;
+    return `Plan approved. ${sent} payment${sent === 1 ? "" : "s"} sent${failed ? `, ${failed} failed (see the reasons below)` : ""}.`;
+  });
+}
+
+/**
+ * PRD §9 step 6: try to push one payment above the per-payment cap straight to
+ * the account, bypassing the plan. The account must refuse. Practice mode
+ * sends the request to the simulated account; live mode only previews it
+ * (a refused live request is recorded by `npm run rules:live`).
+ */
+export async function forceOverCapAction(): Promise<RuleTestResult> {
+  const business = await getBusiness(db());
+  const payees = await listPayees(db());
+  if (!business) return { tried: "", allowed: false, message: "Set up the business first." };
+  const payee = payees.find((p) => p.payout.token.assetId === business.rules.treasury.assetId) ?? payees[0];
+  if (!payee) return { tried: "", allowed: false, message: "Add a payee first." };
+  const over = BigInt(business.rules.perPaymentCapUsd) + parseUnits("1", USD_DECIMALS);
+  const token = payee.payout.token;
+  const req: ActionRequest = {
+    kind: "withdraw",
+    asset: token.assetId,
+    amount: rescale(over, USD_DECIMALS, token.decimals),
+    chain: token.chain,
+    recipient: payee.payout.address,
+    memo: payee.payout.memo,
+  };
+  const tried = `Send ${formatUsd(over)} to ${payee.name} directly, skipping the plan and approval`;
+  try {
+    const account = await agentAccount(db());
+    const out = readEnv().BURSAR_MODE === "dry-run" ? await account.execute(req, `forced-${Date.now()}`) : await account.preview(req);
+    revalidatePath("/", "layout");
+    return out.status === "refused"
+      ? { tried, allowed: false, message: out.refusal.message }
+      : { tried, allowed: true, message: "The account accepted it. Check the rules: this should not happen." };
+  } catch (e) {
+    return { tried, allowed: false, message: e instanceof Error ? e.message : "The account could not be reached." };
+  }
 }

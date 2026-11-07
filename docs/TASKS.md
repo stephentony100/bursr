@@ -35,11 +35,11 @@ Each milestone ends at a checkpoint: `/ship-check`, report, wait for OK.
 
 ## M3 — Plan, approval, payment (8–10 Nov)
 
-- [ ] Plan builder with cap maths and dry quotes
-- [ ] Web approvals: whole plan, per-item above threshold, remove item
-- [ ] Execution through `agent-account.ts`: same-chain transfer, cross-chain via 1Click; status tracking; refunds/failures back to plan
-- [ ] Dry-run mode: simulated payments with realistic status progression
-- [ ] Statement + CSV
+- [x] Plan builder with cap maths and dry quotes
+- [x] Web approvals: whole plan, per-item above threshold, remove item
+- [x] Execution through `agent-account.ts`: same-chain withdraw, cross-chain = swap + withdraw (Agent API, priced with 1Click dry quotes); status tracking (practice mode simulated; live status polling in M4); failures recorded with reasons and come back in the next plan
+- [x] Dry-run mode: simulated payments with realistic status progression
+- [x] Statement + CSV
 
 **Done when:** the full PRD §9 demo runs in dry-run from a fresh clone. → **10 Nov rule.**
 

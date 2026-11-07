@@ -34,6 +34,12 @@ Record each decision with date, reason and the doc line relied on.
 | 2026-11-06 | Invoices in other currencies go to "needs owner"; no exchange rates | AGENTS.md rule 5: never invent amounts. Naira support needs a rate source the owner trusts |
 | 2026-11-06 | Reader inputs: PNG/JPG/WebP photos and pasted text; PDFs are refused with "send a photo or screenshot" | NEAR AI Cloud's `/v1/files` is retired and PDF input is not documented (C2); no PDF rasteriser in the stack yet |
 | 2026-11-06 | Practice mode recognises the six sample invoices by sha256 (`fixtures/invoices/index.json`) and uses a recorded NEAR AI reading if present, else the hand-typed one, and labels which | Judges need no key; the UI never claims AI read something it did not |
+| 2026-11-07 | Plan order: staff regular pay first, then ready invoices by due date, until the weekly limit is used; the rest move to next week. Above the per-payment cap → held (the account would refuse). Own tap needed above the approval threshold or for payees added in the last 7 days; plan approval is refused until those are tapped or removed | PRD §5.5; staff are paid before suppliers when money is short |
+| 2026-11-07 | Approving the plan pays it at once, item by item, each through `agent-account.ts` with idempotency keys `<item>:swap` and `<item>:withdraw`; before paying, each item is re-checked against the payee record (removed, payout changed, 48h hold) and the account applies the current rules | PRD §5.6 and §8 "Owner approves, then the cap changes → re-check every item at payment time" |
+| 2026-11-07 | Payout cost shown in the plan = 1Click dry quote `EXACT_OUTPUT` from USDC in the Intents balance to the payee's token/chain/address; the swap is sized from a fresh quote at payment time | Payee receives exactly the amount owed (PRD §5.6) |
+| 2026-11-07 | Practice-mode payments: simulated account, "sent" → "delivered" after the quote's time estimate (8–30 s) | "Dry-run mode: simulated payments with realistic status progression" (TASKS M3) |
+| 2026-11-07 | CSV cells are always quoted and a leading = + - @ is prefixed with ' | Stops a payee name from running as a spreadsheet formula |
+| 2026-11-07 | "Try to force a payment above your limit" sends the request to the simulated account in practice mode, but only previews it in live mode | A real refused request is recorded by `npm run rules:live`; the UI button never sends real money requests |
 
 ## Answers to the M0 open questions (checked 5 Nov 2026)
 

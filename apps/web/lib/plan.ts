@@ -46,8 +46,9 @@ export interface DraftPlan {
 const day = (d: Date) => d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 
 function problemsOf(inv: InvoiceView): string {
-  const reasons = inv.results.filter((r) => r.status !== "pass" && r.status !== "flag").map((r) => r.reason);
-  if (inv.needsOwner) reasons.unshift(inv.needsOwner);
+  // Blocks first (fraud signals), then anything the owner must check, then holds.
+  const by = (status: string) => inv.results.filter((r) => r.status === status).map((r) => r.reason);
+  const reasons = [...by("block"), ...(inv.needsOwner ? [inv.needsOwner] : []), ...by("hold"), ...by("defer")];
   return reasons.join(" ") || "Needs your attention.";
 }
 

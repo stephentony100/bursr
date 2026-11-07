@@ -13,7 +13,7 @@ An AI that pays a small business's bills. It reads supplier invoices, checks the
 
 ## Status
 
-Milestones M0 (setup), M1 (owner, rules, payees, agent account) and M2 (invoices and checks) are done. The weekly plan and payments (M3) are next (`docs/TASKS.md`). The steps below are the ones that work today.
+Milestones M0–M3 are done: owner rules and payees, the agent account, invoices and checks, the weekly plan, payments and the statement. The whole demo below runs in practice mode. Next (M4): the Telegram bot, the NEAR AI "Verified" panel, and a live run on mainnet with tiny amounts (`docs/TASKS.md`).
 
 ## Try it (practice mode: no keys, no funds)
 
@@ -34,23 +34,30 @@ Requirements: Node.js 24 or newer (needed by the Agent API SDK), npm 11 or newer
    The readings are real NEAR AI Cloud readings of these images, recorded on 7 Nov 2026 (`fixtures/invoices/readings/`). Two "payout-changed" warnings are the model misreading one character of a 64-character address: an address that is not even valid as read is only a warning, because Bursar never pays an address taken from an invoice. All names are made up and all addresses are derived from a hash, so nobody holds a key for them.
 5. `npm run dev`, open http://localhost:3000 → **This week** shows "$2,500.00" left to spend this week, payments "Allowed", and $6000 of demo USDC to pay from.
 6. Open **Invoices** → "6 invoices · 2 ready · 4 need attention", each with its reason in plain words, for example "Name looks like Eko Fresh Foods but is not Eko Fresh Foods ("Ek0 Fresh Foods"). Possible fraud: do not pay.", "Possible duplicate of invoice #MPF-0412 …", "Payout details changed: the invoice asks for payment to …" and "Tomatoes (crate) billed at $23.40, agreed $18.00 (30% more).". **see the invoice** opens the original image; **What Bursar read** shows the lines and who read them ("NEAR AI Cloud, Qwen/Qwen3-VL-30B-A3B-Instruct (recorded 2026-11-07)").
-7. Open **Rules & account** → **Test the rules**:
+7. Open **Plan** → **Prepare this week's plan** → "$658.00" and "5 payments · costs about … USDC with network fees": the 3 staff's weekly pay (Bisi $220 in USDC on Base, Tunde $110 in USDT on Tron, Amaka $120 in USDC on Solana) and the 2 clean invoices (Mama Put Farms $118 in USDC on NEAR, Ikeja Gas $90 in USDC on Base). Each shows its network fee and time from a real **dry** 1Click quote (Tron is the dearest, about $1.6). **Not in this plan** lists the 4 problem invoices with their reasons. (Offline, the plan still builds and shows "no price quote".)
+8. Click **Approve plan and pay** → "Plan approved. 5 payments sent." Each payment shows "Sent, on its way…" and then "Delivered" within about 30 seconds (the page refreshes itself). In practice mode the payments go to the simulated account; nothing leaves your machine.
+9. On the same page click **Try to force a payment above your limit** → "Refused by the account. This payment is above the owner's per-payment cap of $900.00." The request went straight to the account, skipping the plan and the approval.
+10. Open **Statement** → 5 lines totalling $658.00, each with the payee's chain and address, who approved it and when, and the account's references. **Download CSV** saves the same as a spreadsheet file.
+11. Back on **This week** → "$1,842.00" left to spend this week; "What happened" lists the approval, each payment and the refused attempt.
+12. Open **Rules & account** → **Test the rules** (asks the account, pays nothing):
    - "A normal payment" → "Allowed. The account would allow this payment."
    - "Over the single-payment limit" → "Refused by the account. This payment is above the owner's per-payment cap of $900.00."
    - "To someone not on the list" → "Refused by the account. This address is not on the owner's list of payees. Only the owner can add it."
-8. On the same page click **Freeze all payments**, then **Test the rules** → "A normal payment" → "Refused by the account. The account is frozen…". Click **Unfreeze payments** to undo.
-9. Open **Payees** → **Eko Fresh Foods** → under "Where they are paid" replace the address with `TVKyuVBG5PYyZf8NoQPzN55doSmovLuAVR` (another made-up Tron address) → **Change payout details** → "Payout details changed. Payments to Eko Fresh Foods are on hold for 48 hours." Back on **Payees** they show "On hold until …", and **This week** → "What happened" logs the change. Typing a malformed address instead gives "That doesn't look like a valid address for this network".
-10. `npm run smoke:oneclick` → two real **dry** 1Click quotes from USDC held in a NEAR Intents balance: one paying exactly 50 USDT on Tron, one paying exactly 50 USDC on Base. `dry: true` creates no deposit address; nothing is spent.
-11. `npm run smoke:nearai` → confirms the invoice-reading model (`Qwen/Qwen3-VL-30B-A3B-Instruct`) accepts images. With `NEAR_AI_API_KEY` set and credits on the account it also reads `fixtures/invoices/smoke-invoice.svg`.
-12. `npm run smoke:agent-api` → shows the Agent API's network (`mainnet`, contract `outlayer.near`); with `AGENT_API_KEY` set, also the key's quota.
+13. On the same page click **Freeze all payments**, then **Test the rules** → "A normal payment" → "Refused by the account. The account is frozen…". Click **Unfreeze payments** to undo.
+14. Open **Payees** → **Eko Fresh Foods** → under "Where they are paid" replace the address with `TVKyuVBG5PYyZf8NoQPzN55doSmovLuAVR` (another made-up Tron address) → **Change payout details** → "Payout details changed. Payments to Eko Fresh Foods are on hold for 48 hours." Back on **Payees** they show "On hold until …", and **This week** → "What happened" logs the change. Typing a malformed address instead gives "That doesn't look like a valid address for this network".
+15. `npm run smoke:oneclick` → two real **dry** 1Click quotes from USDC held in a NEAR Intents balance: one paying exactly 50 USDT on Tron, one paying exactly 50 USDC on Base. `dry: true` creates no deposit address; nothing is spent.
+16. `npm run smoke:nearai` → confirms the invoice-reading model (`Qwen/Qwen3-VL-30B-A3B-Instruct`) accepts images. With `NEAR_AI_API_KEY` set and credits on the account it also reads `fixtures/invoices/smoke-invoice.svg`.
+17. `npm run smoke:agent-api` → shows the Agent API's network (`mainnet`, contract `outlayer.near`); with `AGENT_API_KEY` set, also the key's quota.
 
-In practice mode the agent account is a local simulator of the Agent API policy (`apps/web/lib/agent-account/evaluate.ts`): same rules, same refusal codes, demo money. The six sample invoices are recognised by their file hash and their readings come from `fixtures/invoices/readings/`, recorded from NEAR AI Cloud with `npm run readings:record` (if those files are deleted, the hand-typed values in `apps/web/lib/sample-invoices.ts` are used and the page says so). Reading any other invoice needs `NEAR_AI_API_KEY`. The checks themselves (`apps/web/lib/checks/`) are the same code in both modes. Nothing leaves your machine except the dry quotes.
+In practice mode the agent account is a local simulator of the Agent API policy (`apps/web/lib/agent-account/evaluate.ts`): same rules, same refusal codes, demo money. The six sample invoices are recognised by their file hash and their readings come from `fixtures/invoices/readings/`, recorded from NEAR AI Cloud with `npm run readings:record` (if those files are deleted, the hand-typed values in `apps/web/lib/sample-invoices.ts` are used and the page says so). Reading any other invoice needs `NEAR_AI_API_KEY`. The checks themselves (`apps/web/lib/checks/`) are the same code in both modes. Plan prices come from real 1Click dry quotes (`dry: true`: no deposit address, nothing can be spent); payments are simulated with the same idempotency keys a live payment uses. Nothing leaves your machine except those quote requests.
+
+To start again from scratch: `npm run demo`.
 
 ## Live mode (real account on NEAR mainnet; the owner's choice)
 
 Live mode uses a real NEAR Intents Agent API account. There is no testnet for it. Steps for the owner:
 
-1. In `.env`: `BURSAR_MODE=live`, `DATABASE_URL=file:./live.db`, `NEAR_AI_API_KEY` (with credits, to read invoices), `AGENT_API_KEY=naa_…` (from https://partners.demo.agentsonintents.com/dashboard), and a long random `BURSAR_SESSION_SECRET`. Then `npm run db:push` and `npm run dev`.
+1. In `.env`: `BURSAR_MODE=live`, `DATABASE_URL=file:./live.db` (run `npm run db:push` after each update), `NEAR_AI_API_KEY` (with credits, to read invoices), `AGENT_API_KEY=naa_…` (from https://partners.demo.agentsonintents.com/dashboard), and a long random `BURSAR_SESSION_SECRET`. Then `npm run db:push` and `npm run dev`.
 2. **Rules & account** → **Sign in with NEAR wallet** (HOT Wallet and others via `@hot-labs/near-connect`). The server checks the signed message and that the key is a full-access key of the account.
 3. Set up the business (starts at $20 a week, $10 a payment), add payees, then **Create the agent account with these rules**. The page shows the exact policy first; your wallet signs it (a gasless delegate action the Agent API relays).
 4. **Let Bursar pay inside these rules** → your wallet signs a grant; put the shown `AGENT_API_GRANT_TOKEN` line in `.env` and restart.

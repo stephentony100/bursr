@@ -63,6 +63,18 @@ describe("weekly plan", () => {
     expect(item.reason).toBe("Name looks like X but is not X.");
   });
 
+  it("shows a block reason before a 'needs you' note", () => {
+    const both = invoice({
+      id: "h",
+      status: "block",
+      needsOwner: "The reader was not sure about: supplierName.",
+      results: [{ check: "payout-changed", status: "block", reason: "Payout details changed." }],
+    });
+    expect(placement(buildPlan(input({ invoices: [both] })), "Invoice #H").reason).toBe(
+      "Payout details changed. The reader was not sure about: supplierName.",
+    );
+  });
+
   it("an AI warning alone does not keep a ready invoice out", () => {
     const flagged = invoice({ id: "f", status: "flag", results: [{ check: "urgency", status: "flag", reason: "x" }] });
     expect(placement(buildPlan(input({ invoices: [flagged] })), "Invoice #F").placement).toBe("in");
