@@ -26,6 +26,7 @@ export interface PlanItemView {
   ownTapReason: string | null;
   ownTapAt: Date | null;
   quote: PayoutQuote | null;
+  quoteError: string | null;
   payStatus: "planned" | "paying" | "sent" | "delivered" | "failed" | "refunded";
   payReason: string | null;
   sentAt: Date | null;
@@ -72,6 +73,7 @@ function planFromRow(r: PlanRow): PlanView {
       ownTapReason: i.ownTapReason,
       ownTapAt: i.ownTapAt,
       quote: i.quote ? (JSON.parse(i.quote) as PayoutQuote) : null,
+      quoteError: i.quoteError,
       payStatus: i.payStatus as PlanItemView["payStatus"],
       payReason: i.payReason,
       sentAt: i.sentAt,
@@ -122,13 +124,18 @@ export async function prepareWeeklyPlan(db: PrismaClient, now = new Date(), quot
   });
 
   // Price the payments that are in the plan (in parallel, a few at a time).
-  const quotes = new Map<number, PayoutQuote | null>();
+  const quotes = new Map<number, { quote: PayoutQuote | null; error: string | null }>();
   const inPlan = draft.items.map((it, i) => ({ it, i })).filter(({ it }) => it.placement === "in");
   for (let k = 0; k < inPlan.length; k += 3) {
     await Promise.all(
       inPlan.slice(k, k + 3).map(async ({ it, i }) => {
-        const q = await quote(business.rules.treasury, it.payout!, it.amountUsd);
-        quotes.set(i, q.ok ? q.quote : null);
+        let q = await quote(business.rules.treasury, it.payout!, it.amountUsd);
+        if (!q.ok) {
+          // One retry: 1Click sometimes fails a single request under load.
+          await new Promise((r) => setTimeout(r, 1500));
+          q = await quote(business.rules.treasury, it.payout!, it.amountUsd);
+        }
+        quotes.set(i, q.ok ? { quote: q.quote, error: null } : { quote: null, error: q.reason });
       }),
     );
   }
@@ -154,7 +161,8 @@ export async function prepareWeeklyPlan(db: PrismaClient, now = new Date(), quot
             reason: it.reason,
             needsOwnTap: it.needsOwnTap,
             ownTapReason: it.ownTapReason,
-            quote: quotes.get(i) ? JSON.stringify(quotes.get(i)) : null,
+            quote: quotes.get(i)?.quote ? JSON.stringify(quotes.get(i)!.quote) : null,
+            quoteError: quotes.get(i)?.error ?? null,
           })),
         },
       },

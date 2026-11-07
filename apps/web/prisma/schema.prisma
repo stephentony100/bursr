@@ -130,6 +130,8 @@ model PlanItem {
   ownTapAt       DateTime?
   /// Dry quote: { amountIn, amountOut, withdrawFee, timeEstimate, at } as JSON
   quote          String?
+  /// Why there is no quote (1Click unreachable, refused the pair, …)
+  quoteError     String?
   /// planned | paying | sent | delivered | failed | refunded
   payStatus      String    @default("planned")
   payReason      String?

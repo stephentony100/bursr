@@ -43,6 +43,7 @@ export default async function PlanPage() {
   const out = plan?.items.filter((i) => i.placement !== "in") ?? [];
   const total = inPlan.reduce((a, i) => a + i.amountUsd, 0n);
   const cost = inPlan.reduce((a, i) => a + (i.quote ? BigInt(i.quote.minAmountIn) : 0n), 0n);
+  const unquoted = inPlan.filter((i) => !i.quote).length;
   const waitingTaps = inPlan.filter((i) => i.needsOwnTap && !i.ownTapAt).length;
   const moving = inPlan.some((i) => i.payStatus === "paying" || i.payStatus === "sent");
 
@@ -71,7 +72,11 @@ export default async function PlanPage() {
               </p>
               <p className="num font-display text-4xl font-semibold">{formatUsd(total)}</p>
               <p className="text-sm text-muted">
-                {inPlan.length} payments · costs about {formatUnits(cost, treasury.decimals)} {treasury.symbol} with network fees ·{" "}
+                {inPlan.length} payments ·{" "}
+                {unquoted === 0
+                  ? `costs about ${formatUnits(cost, treasury.decimals)} ${treasury.symbol} with network fees`
+                  : `${unquoted} without a price quote (priced again when paid)`}{" "}
+                ·{" "}
                 {formatUsd(plan.capLeftUsd)} was left under your weekly limit
               </p>
             </div>
@@ -101,13 +106,14 @@ export default async function PlanPage() {
                   </p>
                   {i.ownTapReason && !i.ownTapAt && <p className="text-sm text-hold">{i.ownTapReason}</p>}
                   {i.payReason && <p className="text-sm text-refuse">{i.payReason}</p>}
+                  {!i.quote && i.quoteError && plan.status === "draft" && <p className="text-xs text-muted">{i.quoteError}</p>}
                 </div>
                 <div className="text-right">
                   <p className="num font-medium">{formatUsd(i.amountUsd)}</p>
                   <p className="num text-xs text-muted">
                     {i.quote
                       ? `fee ${formatUnits(BigInt(i.quote.withdrawFee), i.payout?.token.decimals ?? 6)} · ~${i.quote.timeEstimateSec}s`
-                      : "no price quote"}
+                      : "no price quote yet"}
                   </p>
                 </div>
                 <div className="flex w-56 justify-end gap-2">

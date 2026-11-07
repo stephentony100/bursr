@@ -128,6 +128,21 @@ describe("weekly plan → approval → payment (practice mode)", () => {
     expect(after.payReason).toContain("payout details changed after the plan was approved");
   });
 
+  it("a failed price quote is retried once; if it still fails, the reason is kept and payment still works", async () => {
+    let calls = 0;
+    const flaky: typeof quotePayout = async (...args) => (++calls === 1 ? { ok: false, reason: "No price quote: 503" } : fakeQuote(...args));
+    const once = await prepareWeeklyPlan(t.db, new Date(), flaky);
+    expect(once.items.filter((i) => i.placement === "in").every((i) => i.quote)).toBe(true);
+
+    const down: typeof quotePayout = async () => ({ ok: false, reason: "No price quote: 1Click unreachable" });
+    const plan = await prepareWeeklyPlan(t.db, new Date(), down);
+    const inPlan = plan.items.filter((i) => i.placement === "in");
+    expect(inPlan.every((i) => i.quote === null && i.quoteError === "No price quote: 1Click unreachable")).toBe(true);
+    await approvePlan(t.db, owner, plan.id);
+    await payApprovedPlan(t.db, await agentAccount(t.db), plan.id, fakeQuote); // priced again at payment time
+    expect((await getPlan(t.db, plan.id))!.items.filter((i) => i.placement === "in").every((i) => i.payStatus === "sent")).toBe(true);
+  }, 30_000);
+
   it("the agent cannot approve: approval needs the owner's session", async () => {
     const plan = await prepareWeeklyPlan(t.db, new Date(), fakeQuote);
     await expect(approvePlan(t.db, {} as never, plan.id)).rejects.toThrow(/Only the owner/);
