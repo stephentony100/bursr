@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { verifyReader, type AttestationResult } from "@/lib/attestation";
 import { aiSummary, monthFacts, type AiSummary } from "@/lib/summary";
+import { BOT_NAME, createLinkCode } from "@/lib/telegram";
 import { agentAccount, type ActionRequest } from "@/lib/agent-account";
 import { db } from "@/lib/db";
 import { loadSampleBusiness, loadSampleInvoices } from "@/lib/demo-loader";
@@ -336,4 +337,14 @@ export async function verifyReaderAction(): Promise<AttestationResult> {
 /** NEAR AI phrases this month's facts; rejected if it mentions any figure not in the records. */
 export async function aiSummaryAction(): Promise<AiSummary> {
   return aiSummary(await monthFacts(db()));
+}
+
+/** Owner only: a one-time code to link the owner's Telegram chat to the bot. */
+export async function telegramLinkAction(): Promise<FormResult> {
+  return run(async () => {
+    const code = await createLinkCode(db(), await requireOwner());
+    const row = await db().setting.findUnique({ where: { key: BOT_NAME } });
+    const name = row ? `@${JSON.parse(row.value)}` : "your Bursar bot (start it with npm run bot)";
+    return `Open ${name} in Telegram and send:  /link ${code}  (valid for 10 minutes)`;
+  });
 }

@@ -45,7 +45,7 @@ Each milestone ends at a checkpoint: `/ship-check`, report, wait for OK.
 
 ## M4 — P1 (10–12 Nov)
 
-- [ ] Telegram bot: plan summary + Approve / Review; alerts
+- [x] Telegram bot: plan summary + Approve / Review; alerts (chat linked with a one-time code from the owner's web session; alerts idempotent by key)
 - [x] NEAR AI Cloud Verified panel
 - [x] Monthly summary (Bursar computes the facts; NEAR AI only rephrases; any figure not in the records is rejected)
 - [x] Bursar fee: 0.5% per plan as one line paid through the account to a fee address on the owner's signed list (the Agent API has no app-fee field; see DECISIONS)

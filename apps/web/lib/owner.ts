@@ -25,6 +25,15 @@ export function demoOwner(): OwnerSession {
   return { [OWNER]: true, accountId: DEMO_OWNER_ID, publicKey: null, demo: true };
 }
 
+/**
+ * The owner acting from their linked Telegram chat. Only lib/telegram.ts calls
+ * this, after checking the chat is the one the owner linked with a one-time
+ * code from their signed-in web session.
+ */
+export function telegramOwnerSession(accountId: string): OwnerSession {
+  return { [OWNER]: true, accountId, publicKey: null, demo: accountId === DEMO_OWNER_ID };
+}
+
 export function isOwnerSession(x: unknown): x is OwnerSession {
   return typeof x === "object" && x !== null && (x as Record<symbol, unknown>)[OWNER] === true;
 }

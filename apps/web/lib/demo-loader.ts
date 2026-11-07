@@ -21,6 +21,7 @@ export async function loadSampleBusiness(db: PrismaClient) {
     throw new Error(`The database belongs to ${existing.ownerAccountId}. Point DATABASE_URL at another file to load the demo.`);
   }
   await db.$transaction([
+    db.telegramMessage.deleteMany(),
     db.planItem.deleteMany(),
     db.plan.deleteMany(),
     db.invoice.deleteMany(),

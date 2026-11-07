@@ -24,7 +24,8 @@
     "readings:record": "npm run readings:record -w apps/web",
     "live:preview": "npm run live:preview -w apps/web",
     "fund": "npm run fund -w apps/web --",
-    "verify:ai": "npm run verify:ai -w apps/web"
+    "verify:ai": "npm run verify:ai -w apps/web",
+    "bot": "npm run bot -w apps/web"
   },
   "allowScripts": {
     "@prisma/engines": true,

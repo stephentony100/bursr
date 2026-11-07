@@ -1,5 +1,6 @@
 import { connection } from "next/server";
-import { saveRules, testRule, toggleFreeze } from "@/app/actions";
+import { saveRules, telegramLinkAction, testRule, toggleFreeze } from "@/app/actions";
+import { linkedChat } from "@/lib/telegram";
 import { ActionForm, RuleTester } from "@/components/forms";
 import { WalletPanel } from "@/components/wallet-panel";
 import { agentAccount, type AccountStatus } from "@/lib/agent-account";
@@ -28,6 +29,7 @@ export default async function SetupPage() {
     }
   }
   const needsSigning = !dryRun && (await policyNeedsSigning(db()));
+  const telegram = env.TELEGRAM_BOT_TOKEN ? await linkedChat(db()) : null;
   const r = business?.rules;
   const usd = (micros: string) => formatUnits(BigInt(micros), USD_DECIMALS);
 
@@ -109,6 +111,18 @@ export default async function SetupPage() {
           <ActionForm action={toggleFreeze} submit={status.frozen ? "Unfreeze payments" : "Freeze all payments"} tone={status.frozen ? "primary" : "danger"}>
             <input type="hidden" name="freeze" value={status.frozen ? "0" : "1"} />
           </ActionForm>
+        </section>
+      )}
+
+      {r && env.TELEGRAM_BOT_TOKEN && (
+        <section className="rounded-xl border border-line bg-card p-6">
+          <h2 className="font-display text-xl font-semibold">Telegram</h2>
+          <p className="mt-1 max-w-2xl text-sm text-muted">
+            Get alerts about blocked or held invoices and approve the weekly plan from Telegram.{" "}
+            {telegram ? <strong className="text-ledger">Connected for {telegram.accountId}.</strong> : "Not connected yet."} Run{" "}
+            <code className="num">npm run bot</code> to start the bot.
+          </p>
+          <ActionForm action={telegramLinkAction} submit={telegram ? "Connect a different chat" : "Connect Telegram"} tone="quiet" />
         </section>
       )}
 

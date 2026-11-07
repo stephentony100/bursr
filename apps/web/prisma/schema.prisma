@@ -143,6 +143,19 @@ model PlanItem {
   references     String    @default("[]")
 }
 
+/// Small key/value settings (Telegram link, bot name).
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+/// Telegram messages already sent, by key, so each alert goes out once.
+model TelegramMessage {
+  key    String   @id
+  sentAt DateTime @default(now())
+}
+
 /// Every refusal, rule change and payment attempt, in order. Never edited.
 model AuditEvent {
   id      String   @id @default(cuid())

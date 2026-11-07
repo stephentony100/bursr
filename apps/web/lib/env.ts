@@ -61,7 +61,6 @@ const EnvSchema = z.object({
   NEAR_AI_MODEL: optional,
 
   TELEGRAM_BOT_TOKEN: optional,
-  TELEGRAM_OWNER_CHAT_ID: optional,
 });
 
 export type Env = z.infer<typeof EnvSchema>;

@@ -13,7 +13,7 @@ An AI that pays a small business's bills. It reads supplier invoices, checks the
 
 ## Status
 
-Milestones M0–M3 are done: owner rules and payees, the agent account, invoices and checks, the weekly plan, payments and the statement. M4 so far: the NEAR AI "Verified" panel, the live payment path and the monthly summary. The whole demo below runs in practice mode. Also done: the monthly plain-English summary and Bursar's fee (0.5% per plan, on the owner's signed list). Not done yet: a paid live run on mainnet and the Telegram bot (`docs/TASKS.md`).
+Milestones M0–M3 are done: owner rules and payees, the agent account, invoices and checks, the weekly plan, payments and the statement. M4 so far: the NEAR AI "Verified" panel, the live payment path and the monthly summary. The whole demo below runs in practice mode. Also done: the monthly plain-English summary, Bursar's fee (0.5% per plan, on the owner's signed list) and the Telegram bot. Not done yet: a paid live run on mainnet (`docs/TASKS.md`).
 
 ## Try it (practice mode: no keys, no funds)
 
@@ -65,6 +65,17 @@ Live mode uses a real NEAR Intents Agent API account. There is no testnet for it
 5. `npm run rules:live` → asks the live account for payments the rules forbid (an unlisted address; one unit over the per-payment cap) and saves its answers in `fixtures/live/`. Run it on an unfunded account: refused requests create no operation and move nothing.
 6. To pay for real: give payees a regular pay (or add invoices), **Plan → Prepare this week's plan**, then `npm run live:preview` (the account's own dry preview of every payment). Fund the account with `npm run fund -- <TOKEN> <chain>` (for example `npm run fund -- USDC near`), which prints a one-time deposit address and the minimum; send from your own wallet. Then approve the plan. Each payment is followed to its final status and the payee-side transaction is recorded on the statement.
 
+## Telegram (optional)
+
+Needs your own bot token (message @BotFather → `/newbot`), so it is not part of the steps above.
+
+1. Put the token in `.env` as `TELEGRAM_BOT_TOKEN`, run `npm run db:push` once, then `npm run bot` in a second terminal → "Bursar bot @… running".
+2. **Rules & account** → **Telegram** → **Connect Telegram** → "Open @… in Telegram and send: /link ABCD1234". Send that to the bot → "Connected. This chat now acts for …".
+3. In Telegram send `/plan` → this week's plan with each payment and what is held and why, and an **✅ Approve plan and pay** button. Payments that need their own tap must be approved in the web app first; the button then says so.
+4. Alerts arrive within about 20 seconds for blocked or held invoices, payments that could not be sent, and payments the agent account refused. Each is sent once.
+
+Only the chat linked with a one-time code from the owner's signed-in web session can approve; any other chat gets "This chat is not connected."
+
 ## Live run
 
 **6 Nov 2026: the rules are enforced by the live account.** Owner `stephentony.near` (HOT Wallet) created agent account `b51a22df90ed4516f318d926d383484489bba21f6c61dcdac80e376f58c9906a` on NEAR mainnet through the Agent API. Its policy was applied on-chain in transaction [`CYwUmJKvrCTyptM26Fp7SG2P3fa1QqZtVYGTDjwtD93C`](https://nearblocks.io/txns/CYwUmJKvrCTyptM26Fp7SG2P3fa1QqZtVYGTDjwtD93C): $20 a week, $10 a payment, USDC on NEAR only, one payee (`stephentony.near`). The account holds no funds. `npm run rules:live` then asked it for payments the rules forbid:
@@ -109,7 +120,7 @@ Details and the doc lines relied on: `docs/DECISIONS.md`.
 
 ## Built with
 
-Next.js, React, Tailwind CSS, TypeScript, Prisma (SQLite via better-sqlite3), zod, Vitest, tsx, the OpenAI SDK (pointed at NEAR AI Cloud), `@near-intents-agent-api/sdk`, near-api-js (NEP-413 sign-in check), `@hot-labs/near-connect` (wallet sign-in and signing), `@phala/dcap-qvl` (Intel TDX quote verification), sharp. Fonts: Bricolage Grotesque, Public Sans, IBM Plex Mono (Google Fonts via `next/font`). Scaffolded with `create-next-app`. Written with Claude Code (Anthropic); NEAR agent skills from `near/agent-skills`.
+Next.js, React, Tailwind CSS, TypeScript, Prisma (SQLite via better-sqlite3), zod, Vitest, tsx, the OpenAI SDK (pointed at NEAR AI Cloud), `@near-intents-agent-api/sdk`, near-api-js (NEP-413 sign-in check), `@hot-labs/near-connect` (wallet sign-in and signing), `@phala/dcap-qvl` (Intel TDX quote verification), grammY (Telegram bot), sharp. Fonts: Bricolage Grotesque, Public Sans, IBM Plex Mono (Google Fonts via `next/font`). Scaffolded with `create-next-app`. Written with Claude Code (Anthropic); NEAR agent skills from `near/agent-skills`.
 
 ## License
 

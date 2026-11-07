@@ -48,6 +48,7 @@ Record each decision with date, reason and the doc line relied on.
 | 2026-11-07 | Monthly summary: Bursar computes every figure from its own records (`lib/summary.ts`); NEAR AI may only rephrase them; a reply containing any number (digits or number words up to twenty) not in the facts is rejected and Bursar's own sentence is shown | AGENTS.md rule 5 "Never invent amounts" |
 | 2026-11-07 | Bursar fee via 1Click `appFees` does not fit: payments go through the Agent API (`swap`/`withdraw`), whose request types have no app-fee field (searched the SDK 0.8.0 types and the docs) | PRD B14 assumed direct 1Click deposits; open question for the owner |
 | 2026-11-07 | Bursar fee (owner chose option A): `rules.fee = {bps, payout}`; the plan adds one line "Bursar fee (0.5% of $X)" on the in-plan payments, reserved under the weekly limit, recomputed when the owner removes an item, paid through the agent account; the fee address is a `withdraw` destination in the signed policy, so the account refuses any other fee address and the per-payment cap still applies. Default 50 bps; practice mode pays a hash-derived account; live mode needs `BURSAR_FEE_ACCOUNT_ID` | Agent API has no app-fee field; keeping the fee inside the owner's signed rules keeps it visible and bounded |
+| 2026-11-07 | Telegram: grammY long polling (`npm run bot`); the owner links a chat by sending `/link CODE` with a one-time 10-minute code made in their signed-in web session; only that chat (and only while it belongs to the business owner) gets an owner session; approving from Telegram runs the same `approvePlan` + `payApprovedPlan`; alerts keyed `invoice:<id>`, `failed:<id>`, `refused:<id>` and recorded after sending | Web approvals stay the default for judges (DECISIONS open question); AGENTS.md: "Telegram messages idempotent by key" |
 
 ## Answers to the M0 open questions (checked 5 Nov 2026)
 
@@ -113,6 +114,6 @@ Record each decision with date, reason and the doc line relied on.
 - [x] Human: Agent API demo key in `.env` (checked 5 Nov: quota 100 agents/day); OK to create one unfunded mainnet agent owned by `stephentony.near` (HOT Wallet) for the M1 rule-rejection test
 - [ ] Human: NEAR AI Cloud credits (key is in `.env`; calls return 402 "No spending limit configured" until credits are added)
 - [x] Human: owner account `stephentony.near` (one FullAccess key on chain, 6 Nov; balance ~0 NEAR, fine because owner signing is gasless)
-- [ ] Telegram: bot token handling; web approvals remain the default for judges (P1)
+- [x] Telegram: token only in `.env`; chat linked by one-time code; web approvals remain the default for judges
 - [ ] Final name (Bursar is a working name)
 - [ ] M3: does Agent API `withdraw` to a NEAR account handle USDC storage registration?
