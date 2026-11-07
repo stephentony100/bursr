@@ -1,0 +1,40 @@
+{
+  "model": "Qwen/Qwen3-VL-30B-A3B-Instruct",
+  "recordedAt": "2026-11-07T08:52:04.178Z",
+  "chatId": "chatcmpl-2d3abba5-e20e-4f41-9f6a-668611af1795",
+  "extracted": {
+    "supplierName": "Mama Put Farms Ltd",
+    "invoiceNumber": "MPF-0412",
+    "invoiceDate": "2026-11-02",
+    "dueDate": "2026-11-09",
+    "currency": "USD",
+    "lines": [
+      {
+        "description": "Tomatoes (crate)",
+        "quantity": "4",
+        "unitPrice": "18.00",
+        "lineTotal": "72.00"
+      },
+      {
+        "description": "Fresh pepper (bag)",
+        "quantity": "2",
+        "unitPrice": "12.50",
+        "lineTotal": "25.00"
+      },
+      {
+        "description": "Onions (bag)",
+        "quantity": "1",
+        "unitPrice": "21.00",
+        "lineTotal": "21.00"
+      }
+    ],
+    "total": "118.00",
+    "payout": {
+      "chain": "NEAR",
+      "token": "USDC",
+      "address": "d55acc2289345e95a8c5b0328bd27b9646cca817a095be820b7eae9ad502179"
+    },
+    "urgencyNote": null,
+    "unsureFields": []
+  }
+}

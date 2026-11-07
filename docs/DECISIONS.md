@@ -80,6 +80,14 @@ Record each decision with date, reason and the doc line relied on.
 - Unfunded agent: a live `withdraw` to an unlisted address → `403 policy_destination_denied`, layer `policy`, before any balance check. Dry previews list rule warnings plus `insufficient_balance`.
 - Evidence: `fixtures/live/rules-live-2026-11-06.json`.
 
+## Observed with real NEAR AI readings (7 Nov 2026, `Qwen/Qwen3-VL-30B-A3B-Instruct`)
+
+- First run: the model dropped one character from a 64-character NEAR address on 3 of 6 invoices, put a non-field ("Bill to") in `unsureFields`, and called "Thank you for your business" and a "SENT AGAIN" stamp "urgency". Result: the two clean Mama Put invoices were wrongly blocked as "payout changed".
+- Changes: `unsureFields` is now an enum of the form's field names; the prompt says what counts as pressure and to copy addresses character by character; an address that is not valid for the payee's network as read (checksum/length) is a misreading → `flag`, while a valid different address is still `block` (similar-looking valid addresses are address poisoning). A 63-hex-character NEAR id is treated as invalid (implicit accounts are 64).
+- Second run: false urgency gone; invoice 01's address read exactly; 04 and 06 still drop a character (→ warning); the fraud invoice 05 came back with `unsureFields: ["supplierName"]`.
+- Change: checks always run, even when the owner must look; a block wins over "needs owner", so a fraud signal is never hidden behind "needs you".
+- Sample test now requires exact statuses and every expected problem, and allows extra findings only as warnings.
+
 ## Still open
 
 - [x] Human: Agent API demo key in `.env` (checked 5 Nov: quota 100 agents/day); OK to create one unfunded mainnet agent owned by `stephentony.near` (HOT Wallet) for the M1 rule-rejection test

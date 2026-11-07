@@ -14,6 +14,19 @@ describe("payout details changed", () => {
     expect(r.reason).toContain("by phone");
   });
 
+  it("only warns when the address as read is not even valid (a misread, not a new address)", () => {
+    const misread = EKO.payout.address.slice(0, 20) + EKO.payout.address.slice(21); // one character dropped
+    const r = payoutChanged(eko(misread), ctx());
+    expect(r.status).toBe("flag");
+    expect(r.reason).toContain("could not be read exactly");
+    expect(r.reason).toContain(EKO.payout.address);
+  });
+
+  it("still blocks a valid address that differs by one character (address poisoning)", () => {
+    // A different, checksum-valid Tron address is a different account, however similar it looks.
+    expect(payoutChanged(eko(demoTronAddress("eko-lookalike")), ctx()).status).toBe("block");
+  });
+
   it("passes when the printed address is the one on record", () => {
     expect(payoutChanged(eko(EKO.payout.address), ctx()).status).toBe("pass");
   });

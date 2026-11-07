@@ -24,5 +24,6 @@ describe("payout address checks", () => {
     expect(addressProblem("base", "0x123")).not.toBeNull();
     expect(addressProblem("sol", "abc")).not.toBeNull();
     expect(addressProblem("tron", "")).toBe("Enter their address.");
+    expect(addressProblem("near", demoNearImplicit("a").slice(1))).not.toBeNull(); // 63 hex chars
   });
 });

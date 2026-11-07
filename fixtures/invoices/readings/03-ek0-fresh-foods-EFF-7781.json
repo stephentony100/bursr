@@ -1,0 +1,34 @@
+{
+  "model": "Qwen/Qwen3-VL-30B-A3B-Instruct",
+  "recordedAt": "2026-11-07T08:52:01.685Z",
+  "chatId": "chatcmpl-182ffade-3bce-4468-81c7-fdb831905662",
+  "extracted": {
+    "supplierName": "Ek0 Fresh Foods",
+    "invoiceNumber": "EFF-7781",
+    "invoiceDate": "2026-11-03",
+    "dueDate": "2026-11-05",
+    "currency": "USD",
+    "lines": [
+      {
+        "description": "Chicken (carton)",
+        "quantity": "5",
+        "unitPrice": "45.00",
+        "lineTotal": "225.00"
+      },
+      {
+        "description": "Catfish (kg)",
+        "quantity": "10",
+        "unitPrice": "6.00",
+        "lineTotal": "60.00"
+      }
+    ],
+    "total": "285.00",
+    "payout": {
+      "chain": "TRON",
+      "token": "USDT",
+      "address": "TSReNsKXC1USVTv1QCW7n5KYuLVMqL8dV"
+    },
+    "urgencyNote": null,
+    "unsureFields": []
+  }
+}

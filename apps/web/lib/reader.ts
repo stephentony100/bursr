@@ -56,8 +56,9 @@ const SYSTEM = [
   "Amounts: plain decimal numbers without currency symbols or thousands separators (e.g. 1250.00).",
   "Dates: YYYY-MM-DD, or null if not printed.",
   "payout: the payment account printed on the invoice (chain, token, address), or null if none.",
-  "urgencyNote: quote any pressure or threat wording (e.g. 'pay today or…', 'bank details changed'), or null.",
-  "If any field is unreadable, smudged or missing, put its name in unsureFields. Do not guess.",
+  "Addresses and account numbers: copy them character by character; they are long and every character matters.",
+  "urgencyNote: quote only wording that pressures the payer to pay fast, threatens consequences (e.g. 'pay today or…'), or says payment details changed. Use null for thank-you lines, greetings, stamps such as COPY or SENT AGAIN, and ordinary due dates.",
+  "unsureFields: list a field of this form (supplierName, invoiceNumber, invoiceDate, dueDate, currency, lines, total, payout) only if you could not read it with certainty. Do not guess.",
 ].join(" ");
 
 export async function readWithNearAi(file: InvoiceFile): Promise<ReadResult> {

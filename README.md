@@ -27,13 +27,13 @@ Requirements: Node.js 24 or newer (needed by the Agent API SDK), npm 11 or newer
    invoice  Mama Put Farms Ltd #MPF-0412       READY
    invoice  Ikeja Gas & Charcoal #IGC-2291     READY
    invoice  Ek0 Fresh Foods #EFF-7781          BLOCK  look-alike
-   invoice  Mama Put Farms Ltd #MPF-0412       HOLD   duplicate
-   invoice  Eko Fresh Foods #EFF-7790          BLOCK  payout-changed, urgency
-   invoice  Mama Put Farms Ltd #MPF-0419       HOLD   overpriced
+   invoice  Mama Put Farms Ltd #MPF-0412       HOLD   duplicate (warning: payout-changed)
+   invoice  Eko Fresh Foods #EFF-7790          BLOCK  payout-changed (warning: urgency)
+   invoice  Mama Put Farms Ltd #MPF-0419       HOLD   overpriced (warning: payout-changed)
    ```
-   All names are made up and all addresses are derived from a hash, so nobody holds a key for them.
+   The readings are real NEAR AI Cloud readings of these images, recorded on 7 Nov 2026 (`fixtures/invoices/readings/`). Two "payout-changed" warnings are the model misreading one character of a 64-character address: an address that is not even valid as read is only a warning, because Bursar never pays an address taken from an invoice. All names are made up and all addresses are derived from a hash, so nobody holds a key for them.
 5. `npm run dev`, open http://localhost:3000 → **This week** shows "$2,500.00" left to spend this week, payments "Allowed", and $6000 of demo USDC to pay from.
-6. Open **Invoices** → "6 invoices · 2 ready · 4 need attention", each with its reason in plain words, for example "Name looks like Eko Fresh Foods but is not Eko Fresh Foods ("Ek0 Fresh Foods"). Possible fraud: do not pay.", "Possible duplicate of invoice #MPF-0412 …", "Payout details changed: the invoice asks for payment to …" and "Tomatoes (crate) billed at $23.40, agreed $18.00 (30% more).". **see the invoice** opens the original image; **What Bursar read** shows the lines and who read them.
+6. Open **Invoices** → "6 invoices · 2 ready · 4 need attention", each with its reason in plain words, for example "Name looks like Eko Fresh Foods but is not Eko Fresh Foods ("Ek0 Fresh Foods"). Possible fraud: do not pay.", "Possible duplicate of invoice #MPF-0412 …", "Payout details changed: the invoice asks for payment to …" and "Tomatoes (crate) billed at $23.40, agreed $18.00 (30% more).". **see the invoice** opens the original image; **What Bursar read** shows the lines and who read them ("NEAR AI Cloud, Qwen/Qwen3-VL-30B-A3B-Instruct (recorded 2026-11-07)").
 7. Open **Rules & account** → **Test the rules**:
    - "A normal payment" → "Allowed. The account would allow this payment."
    - "Over the single-payment limit" → "Refused by the account. This payment is above the owner's per-payment cap of $900.00."
@@ -44,7 +44,7 @@ Requirements: Node.js 24 or newer (needed by the Agent API SDK), npm 11 or newer
 11. `npm run smoke:nearai` → confirms the invoice-reading model (`Qwen/Qwen3-VL-30B-A3B-Instruct`) accepts images. With `NEAR_AI_API_KEY` set and credits on the account it also reads `fixtures/invoices/smoke-invoice.svg`.
 12. `npm run smoke:agent-api` → shows the Agent API's network (`mainnet`, contract `outlayer.near`); with `AGENT_API_KEY` set, also the key's quota.
 
-In practice mode the agent account is a local simulator of the Agent API policy (`apps/web/lib/agent-account/evaluate.ts`): same rules, same refusal codes, demo money. The six sample invoices are recognised by their file hash and their readings come from `fixtures/invoices/readings/` (recorded from NEAR AI Cloud with `npm run readings:record`) or, if none is recorded, from `apps/web/lib/sample-invoices.ts`, typed in by hand; the page says which ("Read by: …"). Reading any other invoice needs `NEAR_AI_API_KEY`. The checks themselves (`apps/web/lib/checks/`) are the same code in both modes. Nothing leaves your machine except the dry quotes.
+In practice mode the agent account is a local simulator of the Agent API policy (`apps/web/lib/agent-account/evaluate.ts`): same rules, same refusal codes, demo money. The six sample invoices are recognised by their file hash and their readings come from `fixtures/invoices/readings/`, recorded from NEAR AI Cloud with `npm run readings:record` (if those files are deleted, the hand-typed values in `apps/web/lib/sample-invoices.ts` are used and the page says so). Reading any other invoice needs `NEAR_AI_API_KEY`. The checks themselves (`apps/web/lib/checks/`) are the same code in both modes. Nothing leaves your machine except the dry quotes.
 
 ## Live mode (real account on NEAR mainnet; the owner's choice)
 
@@ -91,6 +91,8 @@ Details and the doc lines relied on: `docs/DECISIONS.md`.
 
 - NEAR Intents and the Agent API have no testnet. Live payments use mainnet with tiny amounts, only with the owner's approval.
 - The Agent API policy cannot stop a second payment to an allowed payee; Bursar's duplicate check covers that.
+- The invoice reader (an AI model) can misread long strings: in our recorded run it dropped one character of a 64-character address on 3 of 6 invoices and was unsure of one supplier name. Bursar treats an invalid address as a misreading (warning) and anything the model is unsure of as "needs you"; it never pays an address read from an invoice.
+- PDFs are not read yet; send a photo or screenshot.
 
 ## Built with
 

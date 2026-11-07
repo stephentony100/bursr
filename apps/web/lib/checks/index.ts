@@ -22,44 +22,60 @@ export interface Verdict {
   results: CheckResult[];
 }
 
-export function runChecks(invoice: InvoiceForChecks, ctx: CheckContext): Verdict {
+/**
+ * Runs every check. If the invoice also needs the owner (a field the Reader
+ * was unsure of, another currency, an unreadable amount), it still gets every
+ * check that can run, so a fraud signal is never hidden behind "needs you":
+ * a block wins, then "needs owner", then the worst other result.
+ */
+export function runChecks(invoice: InvoiceForChecks, ctx: CheckContext, needsOwner: string | null = null): Verdict {
   const results = CHECKS.map((c) => c(invoice, ctx));
   const worst = results.reduce<CheckStatus>((w, r) => (SEVERITY[r.status] > SEVERITY[w] ? r.status : w), "pass");
+  if (worst === "block") return { status: "block", results };
+  if (needsOwner) return { status: "needs_owner", results };
   // "flag" stays payable (an AI opinion never blocks on its own); the owner sees the reason.
   return { status: worst === "pass" ? "ready" : worst, results };
 }
 
-export type Prepared = { ok: true; invoice: InvoiceForChecks } | { ok: false; reason: string };
+export interface Prepared {
+  invoice: InvoiceForChecks;
+  /** Why the owner must look at it, or null. */
+  needsOwner: string | null;
+}
 
 /**
- * Turns the Reader's fields into integer amounts. Never guesses: anything the
+ * Turns the Reader's fields into integer amounts. Never guesses: a field the
  * Reader was unsure of, a currency Bursar cannot pay in, or an amount that is
- * not a plain number sends the invoice to "needs owner" with the reason.
+ * not a plain number gives a "needs owner" reason. Without trustworthy USD
+ * amounts, the amount-based checks are skipped (amountsKnown: false).
  */
 export function prepareForChecks(id: string, extracted: ExtractedInvoice, receivedAt: Date): Prepared {
+  const reasons: string[] = [];
   if (extracted.unsureFields.length > 0) {
-    return { ok: false, reason: `The reader was not sure about: ${extracted.unsureFields.join(", ")}. Check the invoice and enter it yourself.` };
+    reasons.push(`The reader was not sure about: ${extracted.unsureFields.join(", ")}. Check the invoice yourself.`);
   }
+  const unknownAmounts: InvoiceForChecks = { id, extracted, totalUsd: 0n, lines: [], receivedAt, amountsKnown: false };
   if (extracted.currency.toUpperCase() !== "USD") {
-    return { ok: false, reason: `This invoice is in ${extracted.currency}. Bursar only pays US-dollar invoices for now and never converts amounts itself.` };
+    reasons.push(`This invoice is in ${extracted.currency}. Bursar only pays US-dollar invoices for now and never converts amounts itself.`);
+    return { invoice: unknownAmounts, needsOwner: reasons.join(" ") };
   }
   try {
-    return {
-      ok: true,
-      invoice: {
-        id,
-        extracted,
-        totalUsd: parseUnits(extracted.total, USD_DECIMALS),
-        lines: extracted.lines.map((l) => ({
-          description: l.description,
-          quantity: l.quantity,
-          unitPriceUsd: parseUnits(l.unitPrice, USD_DECIMALS),
-          lineTotalUsd: parseUnits(l.lineTotal, USD_DECIMALS),
-        })),
-        receivedAt,
-      },
+    const invoice: InvoiceForChecks = {
+      id,
+      extracted,
+      totalUsd: parseUnits(extracted.total, USD_DECIMALS),
+      lines: extracted.lines.map((l) => ({
+        description: l.description,
+        quantity: l.quantity,
+        unitPriceUsd: parseUnits(l.unitPrice, USD_DECIMALS),
+        lineTotalUsd: parseUnits(l.lineTotal, USD_DECIMALS),
+      })),
+      receivedAt,
+      amountsKnown: true,
     };
+    return { invoice, needsOwner: reasons.length ? reasons.join(" ") : null };
   } catch (e) {
-    return { ok: false, reason: `An amount could not be read as a number (${e instanceof Error ? e.message : e}).` };
+    reasons.push(`An amount could not be read as a number (${e instanceof Error ? e.message : e}).`);
+    return { invoice: unknownAmounts, needsOwner: reasons.join(" ") };
   }
 }

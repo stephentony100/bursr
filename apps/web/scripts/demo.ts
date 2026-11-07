@@ -13,7 +13,9 @@ async function main() {
   console.log(`Loaded "${name}" (dry-run, demo money only).`);
   for (const p of payees) console.log(`  payee    ${p.name.padEnd(28)} ${p.payout.token.symbol} on ${chainName(p.payout.token.chain)}`);
   for (const i of invoices) {
-    const why = i.results.filter((r) => r.status !== "pass").map((r) => r.check).join(", ");
+    const problems = i.results.filter((r) => !["pass", "flag"].includes(r.status)).map((r) => r.check);
+    const warnings = i.results.filter((r) => r.status === "flag").map((r) => r.check);
+    const why = [problems.join(", "), warnings.length ? `(warning: ${warnings.join(", ")})` : ""].filter(Boolean).join(" ");
     console.log(`  invoice  ${`${i.supplierName} #${i.invoiceNumber}`.padEnd(34)} ${i.status.toUpperCase().padEnd(6)} ${why}`);
   }
   console.log("Next: npm run dev, then open http://localhost:3000");

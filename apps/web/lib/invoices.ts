@@ -77,15 +77,20 @@ export async function ingestInvoice(db: PrismaClient, file: InvoiceFile, receive
   };
 
   const prepared = prepareForChecks("new", read.extracted, receivedAt);
-  if (!prepared.ok) {
-    const row = await db.invoice.create({ data: { ...common, status: "needs_owner", needsOwner: prepared.reason } });
-    return invoiceFromRow(row);
-  }
-
   // The weekly limit is applied again when the plan is built (M3); here nothing is committed yet.
-  const verdict = runChecks(prepared.invoice, { payees, history: await history(db), rules: business.rules, committedThisWeekUsd: 0n });
+  const verdict = runChecks(
+    prepared.invoice,
+    { payees, history: await history(db), rules: business.rules, committedThisWeekUsd: 0n },
+    prepared.needsOwner,
+  );
   const row = await db.invoice.create({
-    data: { ...common, totalUsd: prepared.invoice.totalUsd.toString(), status: verdict.status, results: JSON.stringify(verdict.results) },
+    data: {
+      ...common,
+      totalUsd: prepared.invoice.totalUsd.toString(),
+      status: verdict.status,
+      results: JSON.stringify(verdict.results),
+      needsOwner: prepared.needsOwner,
+    },
   });
   return invoiceFromRow(row);
 }

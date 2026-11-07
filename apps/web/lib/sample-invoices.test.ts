@@ -20,7 +20,11 @@ describe("the six sample invoices", () => {
     const inv = invoices.find((i) => i.fileName === file)!;
     expect(inv.readBy).toMatch(/Practice mode|NEAR AI Cloud/);
     expect(inv.status).toBe(s.expected.status);
-    expect(inv.results.filter((r) => r.status !== "pass").map((r) => r.check)).toEqual(s.expected.problems);
+    // Every expected problem is found. A real AI reading may add warnings
+    // (e.g. a misread address is flagged), but never another hold or block.
+    const found = inv.results.filter((r) => r.status !== "pass");
+    expect(found.map((r) => r.check)).toEqual(expect.arrayContaining(s.expected.problems));
+    expect(found.filter((r) => !s.expected.problems.includes(r.check)).every((r) => r.status === "flag")).toBe(true);
   });
 
   it("gives the reasons in plain words", () => {

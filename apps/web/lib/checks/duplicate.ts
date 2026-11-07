@@ -22,7 +22,7 @@ export const duplicate: Check = (invoice, { payees, history }) => {
       reason: `Possible duplicate of invoice #${byNumber.invoiceNumber} from ${supplierName}, received ${byNumber.receivedAt.toISOString().slice(0, 10)}.`,
     };
   }
-  const byAmount = history.find(
+  const byAmount = !invoice.amountsKnown ? undefined : history.find(
     (h) =>
       sameSupplier(h) &&
       h.totalUsd === invoice.totalUsd &&

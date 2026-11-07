@@ -25,6 +25,8 @@ export interface InvoiceForChecks {
   /** Each line's quantity × unit price and line total, in micro-dollars, as printed. */
   lines: { description: string; quantity: string; unitPriceUsd: bigint; lineTotalUsd: bigint }[];
   receivedAt: Date;
+  /** False when the amounts can't be trusted as USD (other currency, unreadable); amount checks then pass. */
+  amountsKnown: boolean;
 }
 
 /** Earlier invoices this business received (not this one). */

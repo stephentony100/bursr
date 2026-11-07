@@ -3,6 +3,7 @@ import { pass, type Check } from "./types";
 
 /** Each line's quantity × unit price must equal its line total, and the lines must add up to the total. */
 export const arithmetic: Check = (invoice) => {
+  if (!invoice.amountsKnown) return pass("arithmetic");
   const problems: string[] = [];
   for (const line of invoice.lines) {
     // quantity has up to 6 decimals; price × qty in micro-dollars, exact.

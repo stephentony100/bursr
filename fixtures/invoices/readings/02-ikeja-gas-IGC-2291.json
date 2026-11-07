@@ -1,0 +1,24 @@
+{
+  "model": "Qwen/Qwen3-VL-30B-A3B-Instruct",
+  "recordedAt": "2026-11-07T08:51:59.650Z",
+  "chatId": "chatcmpl-d4ca6adc-c841-4f38-a03e-932b215cb777",
+  "extracted": {
+    "supplierName": "Ikeja Gas & Charcoal",
+    "invoiceNumber": "IGC-2291",
+    "invoiceDate": "2026-11-03",
+    "dueDate": "2026-11-10",
+    "currency": "USD",
+    "lines": [
+      {
+        "description": "Cooking gas refill (12.5kg)",
+        "quantity": "6",
+        "unitPrice": "15.00",
+        "lineTotal": "90.00"
+      }
+    ],
+    "total": "90.00",
+    "payout": null,
+    "urgencyNote": null,
+    "unsureFields": []
+  }
+}

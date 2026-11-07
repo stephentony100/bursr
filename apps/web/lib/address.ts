@@ -32,7 +32,10 @@ const isEvm = (a: string) => /^0x[0-9a-fA-F]{40}$/.test(a);
 
 // NEAR account ids: the same pattern HACKATHON.md gives for nearAddress, 2–64 chars.
 const NEAR_ACCOUNT = /^(([a-z\d]+[-_])*[a-z\d]+\.)*([a-z\d]+[-_])*[a-z\d]+$/;
-const isNear = (a: string) => a.length >= 2 && a.length <= 64 && NEAR_ACCOUNT.test(a);
+// A long all-hex id is an implicit account, which is exactly 64 hex characters
+// (a 63-character one is almost certainly a misread or mistyped address).
+const isNear = (a: string) =>
+  a.length >= 2 && a.length <= 64 && NEAR_ACCOUNT.test(a) && !(/^[0-9a-f]{40,}$/.test(a) && a.length !== 64);
 
 function isSolana(a: string): boolean {
   if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) return false;

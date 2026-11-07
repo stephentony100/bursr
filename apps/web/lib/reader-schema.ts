@@ -16,6 +16,9 @@ export const ExtractedLineSchema = z.object({
   lineTotal: DecimalString,
 });
 
+/** The only names allowed in unsureFields: fields of this form, so the model cannot invent others. */
+export const INVOICE_FIELDS = ["supplierName", "invoiceNumber", "invoiceDate", "dueDate", "currency", "lines", "total", "payout"] as const;
+
 export const ExtractedInvoiceSchema = z.object({
   supplierName: z.string().min(1),
   invoiceNumber: z.string().min(1),
@@ -32,7 +35,10 @@ export const ExtractedInvoiceSchema = z.object({
     })
     .nullable()
     .describe("payment details printed on the invoice, if any"),
-  urgencyNote: z.string().nullable().describe("any pressure or threat wording, quoted"),
-  unsureFields: z.array(z.string()).describe("names of fields you could not read with certainty"),
+  urgencyNote: z
+    .string()
+    .nullable()
+    .describe("quoted wording that pressures the payer to pay fast, threatens consequences, or says payment details changed; null for thanks, greetings, stamps or ordinary due dates"),
+  unsureFields: z.array(z.enum(INVOICE_FIELDS)).describe("fields of this form you could not read with certainty; empty if all were clear"),
 });
 export type ExtractedInvoice = z.infer<typeof ExtractedInvoiceSchema>;

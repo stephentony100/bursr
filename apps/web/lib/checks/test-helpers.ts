@@ -40,7 +40,7 @@ export const NOW = new Date("2026-11-06T10:00:00Z");
 
 export function inv(over: Partial<ExtractedInvoice> = {}, receivedAt = NOW): InvoiceForChecks {
   const p = prepareForChecks("new", extracted(over), receivedAt);
-  if (!p.ok) throw new Error(p.reason);
+  if (p.needsOwner) throw new Error(p.needsOwner);
   return p.invoice;
 }
 
