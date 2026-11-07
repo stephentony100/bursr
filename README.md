@@ -13,7 +13,7 @@ An AI that pays a small business's bills. It reads supplier invoices, checks the
 
 ## Status
 
-Milestones M0–M3 are done: owner rules and payees, the agent account, invoices and checks, the weekly plan, payments and the statement. M4 so far: the NEAR AI "Verified" panel and the live payment path. The whole demo below runs in practice mode. Not done yet: a paid live run on mainnet, the monthly summary, the Bursar fee and the Telegram bot (`docs/TASKS.md`).
+Milestones M0–M3 are done: owner rules and payees, the agent account, invoices and checks, the weekly plan, payments and the statement. M4 so far: the NEAR AI "Verified" panel, the live payment path and the monthly summary. The whole demo below runs in practice mode. Also done: the monthly plain-English summary. Not done yet: a paid live run on mainnet, the Bursar fee and the Telegram bot (`docs/TASKS.md`).
 
 ## Try it (practice mode: no keys, no funds)
 
@@ -37,7 +37,7 @@ Requirements: Node.js 24 or newer (needed by the Agent API SDK), npm 11 or newer
 7. Open **Plan** → **Prepare this week's plan** → "$658.00" and "5 payments · costs about … USDC with network fees": the 3 staff's weekly pay (Bisi $220 in USDC on Base, Tunde $110 in USDT on Tron, Amaka $120 in USDC on Solana) and the 2 clean invoices (Mama Put Farms $118 in USDC on NEAR, Ikeja Gas $90 in USDC on Base). Each shows its network fee and time from a real **dry** 1Click quote (Tron is the dearest, about $1.6). **Not in this plan** lists the 4 problem invoices with their reasons. (Offline, the plan still builds and shows "no price quote".)
 8. Click **Approve plan and pay** → "Plan approved. 5 payments sent." Each payment shows "Sent, on its way…" and then "Delivered" within about 30 seconds (the page refreshes itself). In practice mode the payments go to the simulated account; nothing leaves your machine.
 9. On the same page click **Try to force a payment above your limit** → "Refused by the account. This payment is above the owner's per-payment cap of $900.00." The request went straight to the account, skipping the plan and the approval.
-10. Open **Statement** → 5 lines totalling $658.00, each with the payee's chain and address, who approved it and when, and the account's references. **Download CSV** saves the same as a spreadsheet file.
+10. Open **Statement** → "In November 2026 Bursar paid $658.00 in 5 payments: $450.00 to staff and $208.00 to suppliers. …" (Bursar's own summary, computed from its records; with `NEAR_AI_API_KEY`, **Have NEAR AI write it in friendlier words** rewrites it and rejects the result if it mentions any figure that is not in the records). Below it, 5 lines totalling $658.00, each with the payee's chain and address, who approved it and when, and the account's references. **Download CSV** saves the same as a spreadsheet file.
 11. Back on **This week** → "$1,842.00" left to spend this week; "What happened" lists the approval, each payment and the refused attempt.
 12. Open **Rules & account** → **Test the rules** (asks the account, pays nothing):
    - "A normal payment" → "Allowed. The account would allow this payment."

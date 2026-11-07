@@ -45,6 +45,8 @@ Record each decision with date, reason and the doc line relied on.
 | 2026-11-07 | "Verified" panel = NEAR AI Cloud docs' Node.js reference, step by step, for the gateway and every model candidate, plus NVIDIA NRAS for GPU evidence; TCB policy accepts only `UpToDate` (the docs' example) | docs.near.ai …/model-attestations: "Perform these checks on every returned candidate before sending a completion" |
 | 2026-11-07 | Quote collateral: `dcap-qvl` default (Phala PCCS), falling back to Intel PCS (`getCollateralFromPcs`) | Phala's PCCS timed out from the builder's network; Intel PCS answered. Both are collateral sources `dcap-qvl` supports |
 | 2026-11-07 | Paid live run deferred by the owner (no stablecoins on hand); README says so | AGENTS.md rule 2: no spending without the human's OK; honesty in README |
+| 2026-11-07 | Monthly summary: Bursar computes every figure from its own records (`lib/summary.ts`); NEAR AI may only rephrase them; a reply containing any number (digits or number words up to twenty) not in the facts is rejected and Bursar's own sentence is shown | AGENTS.md rule 5 "Never invent amounts" |
+| 2026-11-07 | Bursar fee via 1Click `appFees` does not fit: payments go through the Agent API (`swap`/`withdraw`), whose request types have no app-fee field (searched the SDK 0.8.0 types and the docs) | PRD B14 assumed direct 1Click deposits; open question for the owner |
 
 ## Answers to the M0 open questions (checked 5 Nov 2026)
 

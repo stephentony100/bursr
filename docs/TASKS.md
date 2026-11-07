@@ -47,7 +47,8 @@ Each milestone ends at a checkpoint: `/ship-check`, report, wait for OK.
 
 - [ ] Telegram bot: plan summary + Approve / Review; alerts
 - [x] NEAR AI Cloud Verified panel
-- [ ] Monthly summary; appFees
+- [x] Monthly summary (Bursar computes the facts; NEAR AI only rephrases; any figure not in the records is rejected)
+- [ ] appFees: the Agent API has no app-fee field; see DECISIONS
 - [ ] **With the human:** live mainnet run with tiny amounts (one same-chain, one cross-chain payment); save links for README. 7 Nov: payees + rules signed (revision 3), live dry preview clean; paused because the account is not funded (owner chose to defer)
 
 ## M5 — Submission (12–14 Nov)

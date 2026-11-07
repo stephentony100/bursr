@@ -8,6 +8,7 @@ import { prepareWeeklyPlan } from "./plans";
 import { amountOutFor, type quotePayout } from "./quotes";
 import { statementCsv, statementLines, type StatementLine } from "./statement";
 import { createTestDb } from "./test-db";
+import { monthFacts, plainSummary } from "./summary";
 
 const t = createTestDb();
 afterAll(() => t.close());
@@ -44,6 +45,13 @@ describe("statement", () => {
     expect(rows).toHaveLength(6);
     expect(rows[0]).toBe('"Date (UTC)","Payee","For","Amount (USD)","Sent from account","Payee received","Received as","Status","Approval","Plan","References","Note"');
     expect(csv).toContain('"Mama Put Farms Ltd","Invoice #MPF-0412","118.00"');
+  });
+
+  it("the monthly summary is computed from the records, not by the AI", async () => {
+    const f = await monthFacts(t.db);
+    expect([f.paidUsd, f.staffUsd, f.suppliersUsd]).toEqual([658_000_000n, 450_000_000n, 208_000_000n]);
+    expect([f.payments, f.invoices, f.invoicesReady, f.invoicesBlocked, f.invoicesHeld]).toEqual([5, 6, 2, 2, 2]);
+    expect(plainSummary(f)).toContain("Bursar paid $658.00 in 5 payments: $450.00 to staff and $208.00 to suppliers.");
   });
 
   it("cannot be turned into a spreadsheet formula", () => {

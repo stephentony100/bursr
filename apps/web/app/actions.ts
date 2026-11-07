@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { verifyReader, type AttestationResult } from "@/lib/attestation";
+import { aiSummary, monthFacts, type AiSummary } from "@/lib/summary";
 import { agentAccount, type ActionRequest } from "@/lib/agent-account";
 import { db } from "@/lib/db";
 import { loadSampleBusiness, loadSampleInvoices } from "@/lib/demo-loader";
@@ -330,4 +331,9 @@ export async function forceOverCapAction(): Promise<RuleTestResult> {
 /** Runs the NEAR AI Cloud TEE verification (docs' steps) with a fresh nonce. Needs no key. */
 export async function verifyReaderAction(): Promise<AttestationResult> {
   return verifyReader();
+}
+
+/** NEAR AI phrases this month's facts; rejected if it mentions any figure not in the records. */
+export async function aiSummaryAction(): Promise<AiSummary> {
+  return aiSummary(await monthFacts(db()));
 }

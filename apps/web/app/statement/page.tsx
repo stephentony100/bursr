@@ -3,12 +3,16 @@ import { db } from "@/lib/db";
 import { formatUsd } from "@/lib/money";
 import { refreshPayments } from "@/lib/pay";
 import { statementLines } from "@/lib/statement";
+import { monthFacts, plainSummary } from "@/lib/summary";
+import { aiSummaryAction } from "@/app/actions";
+import { AiSummaryButton } from "@/components/ai-summary";
 
 export default async function StatementPage() {
   await connection();
   await refreshPayments(db());
   const lines = await statementLines(db());
   const total = lines.filter((l) => l.status !== "Failed").reduce((a, l) => a + l.amountUsd, 0n);
+  const facts = await monthFacts(db());
 
   return (
     <div className="space-y-8">
@@ -24,6 +28,12 @@ export default async function StatementPage() {
           Download CSV
         </a>
       </div>
+
+      <section className="rounded-xl border border-line bg-card p-6">
+        <h2 className="font-display text-xl font-semibold">{facts.month} in plain words</h2>
+        <p className="mt-2 max-w-3xl">{plainSummary(facts)}</p>
+        <AiSummaryButton action={aiSummaryAction} />
+      </section>
 
       {lines.length === 0 ? (
         <p className="text-muted">No payments yet. Approve a plan on the Plan page.</p>
