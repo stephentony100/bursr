@@ -9,7 +9,7 @@ An AI that pays a small business's bills. It reads supplier invoices, checks the
 
 ## The problem
 
-<!-- Two or three sentences with real, checked numbers (to add before submission). -->
+Fake payment instructions are one of the costliest frauds a business faces. Business email compromise, a scam that targets "businesses … working with suppliers and/or … regularly performing wire transfer payments", cost victims $3.05 billion in 2025, second only to investment fraud ([FBI IC3 Internet Crime Report 2025](https://www.ic3.gov/AnnualReport/Reports/2025_IC3Report.pdf)), and 74% of US organizations were hit by it that year ([AFP Payments Fraud and Control Survey 2026](https://www.financialprofessionals.org/about/learn-more/press-releases/Details/over-75-percent-of-us-firms-experienced-payments-fraud-in-2025-while-ai-adoption-for-fraud-mitigation-lags)). Small firms suffer most: organizations with fewer than 100 employees have the highest median loss to occupational fraud, USD 126,000, and billing schemes (fake or inflated invoices) are among the frauds that hit them far more often than larger firms ([ACFE Report to the Nations 2026](https://www.acfe.com/-/media/files/acfe/pdfs/rttn/2026/2026-report-to-the-nations.pdf)). In Nigeria, Lagos accounts for 63% of digital payment fraud activity ([NIBSS, 2025 data](https://nibss-plc.com.ng/nibss-digital-payment-fraud-drops-51-to-%E2%82%A625-85b-in-2025/)). Bursar is for the owner who pays suppliers and staff every week and cannot afford one wrong payment.
 
 ## Status
 
@@ -74,7 +74,7 @@ Needs your own bot token (message @BotFather → `/newbot`), so it is not part o
 3. In Telegram send `/plan` → this week's plan with each payment and what is held and why, and an **✅ Approve plan and pay** button. Payments that need their own tap must be approved in the web app first; the button then says so.
 4. Alerts arrive within about 20 seconds for blocked or held invoices, payments that could not be sent, and payments the agent account refused. Each is sent once.
 
-Only the chat linked with a one-time code from the owner's signed-in web session can approve; any other chat gets "This chat is not connected."
+Only the chat linked with a one-time code from the owner's signed-in web session can approve; any other chat gets "This chat is not connected." Five wrong codes cancel the pending code. Tested on 7 Nov 2026 with @bursrbot: linking, `/plan`, the four sample alerts, and approving and paying the practice plan from Telegram.
 
 ## Live run
 
