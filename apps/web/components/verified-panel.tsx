@@ -22,10 +22,10 @@ export function VerifiedPanel({ action, model }: { action: () => Promise<Attesta
     <section className="rounded-xl border border-line bg-card p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="max-w-2xl">
-          <h2 className="text-xl font-bold [font-stretch:110%]">
+          <h2 className="text-xl font-bold">
             Your invoices stay private{" "}
             {result && (
-              <span className={`field-label ml-2 inline-flex items-center gap-1 rounded-[3px] border-[1.5px] px-2 py-1 align-middle ${result.verified ? "border-ledger text-ledger" : "border-refuse text-refuse"}`}>
+              <span className={`ml-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 align-middle text-xs font-medium ${result.verified ? "bg-ledger-soft text-ledger" : "bg-refuse-soft text-refuse"}`}>
                 {result.verified ? <CheckCircle size={13} weight="fill" aria-hidden /> : <XCircle size={13} weight="fill" aria-hidden />}
                 {result.verified ? "Proof checked" : "Proof not confirmed"}
               </span>

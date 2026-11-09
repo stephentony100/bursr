@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef } from "react";
-import { catches } from "./catch-pills";
+import { Badge } from "@/components/ui/badge";
+import { catches } from "./catches";
 import { gsap, prefersReducedMotion, useGSAP } from "./gsap";
-import { Stamp } from "./paper";
 
 // "What Bursar checks" as a pinned accordion, the way New Engen builds its
 // services list: a tall section with a sticky full-screen panel; as you scroll,
@@ -58,7 +58,7 @@ export function ChecksAccordion({ usualAddress, newAddress }: { usualAddress: st
           {list.map((c, i) => (
             <li key={c.title} className="border-b border-card/15">
               <div className="mx-auto w-full max-w-7xl px-5">
-                <h3 className="js-acc-title py-5 text-2xl font-bold [font-stretch:108%] sm:text-3xl">{c.title}</h3>
+                <h3 className="js-acc-title py-5 text-2xl font-bold sm:text-3xl">{c.title}</h3>
                 <div className="js-acc-body overflow-hidden">
                   <div className="grid gap-8 pb-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:items-start">
                     <div>
@@ -71,12 +71,10 @@ export function ChecksAccordion({ usualAddress, newAddress }: { usualAddress: st
                         ))}
                       </ul>
                       <div className="mt-6">
-                        <span className="inline-block rounded-[4px] bg-card px-2 py-1.5">
-                          <Stamp verdict={c.verdict} note={c.verdict === "block" ? "Not paid" : "Waits for you"} tilt={-4} />
-                        </span>
+                        <Badge tone={c.tone}>{c.outcome}</Badge>
                       </div>
                     </div>
-                    <div className="hidden rounded-xl bg-night-2 p-5 text-ink sm:block">{c.show}</div>
+                    <div className="hidden rounded-xl border border-card/10 bg-night-2 p-5 sm:block">{c.show}</div>
                   </div>
                 </div>
               </div>

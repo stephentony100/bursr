@@ -61,11 +61,11 @@ export default async function PayeesPage() {
             </div>
             <div className="w-44 text-right text-sm">
               {isOnPayoutHold(p, now) ? (
-                <span className="field-label inline-block -rotate-1 rounded-[3px] border-2 border-current px-2 py-0.5 text-hold">
+                <span className="inline-flex w-fit items-center gap-1 rounded-full bg-hold-soft px-2 py-0.5 text-xs font-medium text-hold">
                   Safety hold until {payoutHoldEndsAt(p)!.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                 </span>
               ) : isNewPayee(p, now) ? (
-                <span className="field-label inline-block -rotate-1 rounded-[3px] border-2 border-current px-2 py-0.5 text-muted">New: needs your OK</span>
+                <span className="inline-flex w-fit items-center rounded-full bg-paper-2 px-2 py-0.5 text-xs font-medium text-muted">New: needs your OK</span>
               ) : null}
             </div>
           </li>
@@ -73,7 +73,7 @@ export default async function PayeesPage() {
       </ul>
 
       <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="text-xl font-bold [font-stretch:110%]">Add someone you pay</h2>
+        <h2 className="text-xl font-bold">Add someone you pay</h2>
         <ActionForm action={addPayeeAction} submit="Add them" className="mt-4 space-y-5">
           <DetailFields />
           <PayoutFields tokens={business.rules.payoutTokens} />

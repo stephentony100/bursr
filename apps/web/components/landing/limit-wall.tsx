@@ -3,7 +3,7 @@
 import { ArrowsClockwise, Prohibit } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion, useSeen } from "./motion";
-import { Crossing, GuillocheBand, Stamp } from "./paper";
+import { Badge } from "@/components/ui/badge";
 
 // A $5,000 cheque tries to get past the $900-a-payment limit and bounces.
 // It plays once when scrolled into view; the button replays it. The message
@@ -47,14 +47,14 @@ export function LimitWall() {
 
   return (
     <div ref={ref}>
-      <div className="relative h-52 overflow-hidden rounded-[12px] border border-ink/15 bg-card [--bounce:36px] [--wall:66cqw] [container-type:inline-size] sm:[--bounce:64px]">
+      <div className="relative h-52 overflow-hidden rounded-xl border border-line bg-paper [--bounce:36px] [--wall:66cqw] [container-type:inline-size] sm:[--bounce:64px]">
         {/* Past the line: the zone no payment may enter */}
         <div className="absolute inset-y-0 left-[var(--wall)] right-0 bg-refuse-soft" />
         <div className={`absolute inset-y-0 left-[var(--wall)] w-[3px] bg-refuse ${phase === "hit" ? "shake" : ""}`} />
-        <p className="field-label absolute bottom-3 left-[calc(var(--wall)+10px)] right-2 leading-snug text-refuse">
+        <p className="absolute bottom-3 left-[calc(var(--wall)+10px)] right-2 text-xs font-medium leading-snug text-refuse">
           <span className="whitespace-nowrap">Your limit</span>
           <br />
-          <span className="num normal-case">$900.00</span>
+          <span className="num">$900.00</span>
           <br />
           <span className="whitespace-nowrap">a payment</span>
         </p>
@@ -64,17 +64,15 @@ export function LimitWall() {
           style={{ transform: `translateY(-50%) translateX(${atWall ? "calc(var(--wall) - 100% - 16px)" : bounced ? "calc(var(--wall) - 100% - var(--bounce))" : "0px"})` }}
         >
           <div className={`relative ${phase === "hit" ? "shake" : ""}`}>
-            <div className="relative overflow-hidden rounded-[4px] border border-ink/25 bg-card px-3 pb-2 pt-3 sm:px-4">
-              <GuillocheBand className="pointer-events-none absolute inset-x-0 top-0 h-8 w-full" opacity={0.3} />
-              <p className="field-label relative text-muted">Pay</p>
-              <p className="hand relative truncate border-b border-ink/30 text-sm leading-[2]">Eko Fresh Foods</p>
-              <p className="num relative mt-2 inline-block rounded-[3px] border-2 border-ink px-2 py-0.5 text-base font-semibold sm:text-lg">$5,000.00</p>
-              <p className="num relative mt-2 whitespace-nowrap border-t border-ink/15 pt-1 text-[0.56rem] tracking-[0.08em] text-ink/60 sm:tracking-[0.16em]">000519 5000 00 TRON</p>
-              <Crossing still className="absolute right-1 top-2 w-[46%]" />
+            <div className="rounded-lg border border-line bg-card p-3 shadow-sm sm:p-4">
+              <p className="text-xs font-medium text-muted">Payment request</p>
+              <p className="mt-1 truncate text-sm font-semibold">Eko Fresh Foods</p>
+              <p className="num mt-2 text-lg font-semibold sm:text-xl">$5,000.00</p>
+              <p className="mt-1 text-xs text-muted">USDT on Tron</p>
             </div>
             {bounced && (
-              <span className="stamp-in absolute -right-4 -top-6 inline-block" style={{ ["--tilt" as string]: "9deg" }}>
-                <Stamp verdict="block" word="Bounced" note="Over your limit" tilt={0} />
+              <span className="absolute -right-3 -top-3">
+                <Badge tone="block">Refused</Badge>
               </span>
             )}
           </div>
@@ -91,7 +89,7 @@ export function LimitWall() {
         <button
           type="button"
           onClick={play}
-          className="press inline-flex shrink-0 items-center gap-2 rounded-[6px] border border-ink/30 bg-card px-4 py-2.5 text-sm font-semibold hover:border-ink"
+          className="press inline-flex shrink-0 items-center gap-2 rounded-lg border border-line bg-card px-4 py-2.5 text-sm font-semibold hover:border-ink/40"
         >
           <ArrowsClockwise size={16} weight="bold" aria-hidden /> Try to sneak $5,000 past it
         </button>

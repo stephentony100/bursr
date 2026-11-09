@@ -27,13 +27,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const business = await getBusiness(db());
   return (
     <div className="min-h-[100dvh] lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
       {/* Sidebar (large screens) */}
       <div className="hidden bg-night lg:block">
       <aside className="sticky top-0 flex h-[100dvh] flex-col px-3 py-5 text-card">
         <Link href="/this-week" aria-label="Bursar, this week" className="px-3">
           <Logo tone="light" />
         </Link>
-        <p className="mt-6 px-3 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-card/40">Workspace</p>
+        <p className="mt-6 px-3 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-card/65">Workspace</p>
         <div className="mt-2">
           <AppNav variant="sidebar" />
         </div>
@@ -76,7 +79,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 [overflow-wrap:anywhere] sm:px-8">{children}</main>
+        <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 [overflow-wrap:anywhere] sm:px-8">{children}</main>
       </div>
     </div>
   );

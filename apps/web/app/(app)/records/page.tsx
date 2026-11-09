@@ -30,7 +30,7 @@ export default async function StatementPage() {
       </div>
 
       <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="text-xl font-bold [font-stretch:110%]">{facts.month} in plain words</h2>
+        <h2 className="text-xl font-bold">{facts.month} in plain words</h2>
         <p className="mt-2 max-w-3xl">{plainSummary(facts)}</p>
         <AiSummaryButton action={aiSummaryAction} />
       </section>
@@ -38,9 +38,9 @@ export default async function StatementPage() {
       {lines.length === 0 ? (
         <p className="text-muted">No payments yet. Approve this week&apos;s payments on the Payments page and they&apos;ll appear here.</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-line bg-card">
+        <div className="overflow-x-auto rounded-xl border border-line bg-card" tabIndex={0} role="region" aria-label="Payments this month">
           <table className="w-full min-w-[56rem] text-left text-sm">
-            <thead className="border-b border-line text-muted">
+            <thead className="whitespace-nowrap [overflow-wrap:normal] border-b border-line text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Date</th>
                 <th className="px-4 py-3 font-medium">Paid to</th>

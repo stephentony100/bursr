@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { approveItemAction, approvePlanAction, forceOverCapAction, preparePlanAction, removeItemAction } from "@/app/actions";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { ActionForm, ForceTester, ItemButton } from "@/components/forms";
+import { Badge, type Tone } from "@/components/ui/badge";
 import { db } from "@/lib/db";
 import { readEnv } from "@/lib/env";
 import { shortenAddresses } from "@/lib/address";
@@ -13,13 +14,13 @@ import { getLatestPlan, type PlanItemView } from "@/lib/plans";
 import { getBusiness } from "@/lib/store";
 import { chainName } from "@/lib/tokens";
 
-const PAY_STATUS: Record<PlanItemView["payStatus"], { label: string; tone: string }> = {
-  planned: { label: "Waiting for your OK", tone: "text-muted" },
-  paying: { label: "Paying…", tone: "text-hold" },
-  sent: { label: "Sent, on its way…", tone: "text-hold" },
-  delivered: { label: "Paid", tone: "text-ledger" },
-  failed: { label: "Not paid", tone: "text-refuse" },
-  refunded: { label: "Money returned to your wallet", tone: "text-hold" },
+const PAY_STATUS: Record<PlanItemView["payStatus"], { label: string; tone: Tone }> = {
+  planned: { label: "Waiting for your OK", tone: "neutral" },
+  paying: { label: "Paying…", tone: "hold" },
+  sent: { label: "Sent, on its way…", tone: "hold" },
+  delivered: { label: "Paid", tone: "ready" },
+  failed: { label: "Not paid", tone: "block" },
+  refunded: { label: "Money returned to your wallet", tone: "hold" },
 };
 
 /** A transfer fee in the payout token's units, to the cent; tiny fees say so instead of rounding to $0.00. */
@@ -112,68 +113,91 @@ export default async function PlanPage() {
             )}
           </div>
 
-          <ul className="mt-6 divide-y divide-line border-t border-line">
-            {inPlan.map((i) => (
-              <li key={i.id} className="flex flex-wrap items-center gap-x-6 gap-y-1 py-3">
-                <div className="min-w-56 flex-1">
-                  <p className="font-medium">{i.payeeName}</p>
-                  <p className="text-sm text-muted">
-                    {i.forWhat}
-                    {i.payout && (
-                      <>
-                        {" "}
-                        · gets {i.payout.token.symbol} on {chainName(i.payout.token.chain)}
-                      </>
-                    )}
-                  </p>
-                  {i.ownTapReason && !i.ownTapAt && <p className="text-sm text-hold">{i.ownTapReason}</p>}
-                  {i.payReason && <p className="text-sm text-refuse">{i.payReason}</p>}
-                  {!i.quote && i.quoteError && plan.status === "draft" && <p className="text-xs text-muted">{i.quoteError}</p>}
-                </div>
-                <div className="text-right">
-                  <p className="num font-medium">{formatUsd(i.amountUsd)}</p>
-                  <p className="text-xs tabular-nums text-muted">
-                    {i.quote ? (
-                      <>
-                        fee <FeeText raw={BigInt(i.quote.withdrawFee)} decimals={i.payout?.token.decimals ?? 6} />, arrives in about {i.quote.timeEstimateSec}s
-                      </>
-                    ) : (
-                      "fee worked out when paid"
-                    )}
-                  </p>
-                </div>
-                <div className="flex w-56 justify-end gap-2">
-                  {plan.status === "draft" ? (
-                    <>
-                      {i.needsOwnTap && !i.ownTapAt && <ItemButton action={approveItemAction} itemId={i.id} label="OK this one" tone="primary" />}
-                      {i.kind !== "fee" && <ItemButton action={removeItemAction} itemId={i.id} label="Not this week" />}
-                    </>
-                  ) : (
-                    <span className={`text-sm font-medium ${PAY_STATUS[i.payStatus].tone}`}>{PAY_STATUS[i.payStatus].label}</span>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <div className="-mx-6 mt-6 overflow-x-auto border-t border-line" tabIndex={0} role="region" aria-label="This week's payments">
+            <table className="w-full min-w-[40rem] text-sm">
+              <thead className="whitespace-nowrap [overflow-wrap:normal] bg-paper text-left text-xs text-muted">
+                <tr>
+                  <th scope="col" className="px-6 py-2.5 font-medium">Pay</th>
+                  <th scope="col" className="px-3 py-2.5 font-medium">Paid in</th>
+                  <th scope="col" className="px-3 py-2.5 text-right font-medium">Amount</th>
+                  <th scope="col" className="px-6 py-2.5 text-right font-medium">{plan.status === "draft" ? "Actions" : "Status"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {inPlan.map((i) => (
+                  <tr key={i.id} className="align-top hover:bg-paper/60">
+                    <td className="px-6 py-3">
+                      <p className="font-medium">{i.payeeName}</p>
+                      <p className="text-muted">{i.forWhat}</p>
+                      {i.ownTapReason && !i.ownTapAt && <p className="text-hold">{i.ownTapReason}</p>}
+                      {i.payReason && <p className="text-refuse">{i.payReason}</p>}
+                      {!i.quote && i.quoteError && plan.status === "draft" && <p className="text-xs text-muted">{i.quoteError}</p>}
+                    </td>
+                    <td className="px-3 py-3 text-muted">{i.payout ? `gets ${i.payout.token.symbol} on ${chainName(i.payout.token.chain)}` : "Not set"}</td>
+                    <td className="px-3 py-3 text-right">
+                      <p className="num font-medium">{formatUsd(i.amountUsd)}</p>
+                      <p className="text-xs tabular-nums text-muted">
+                        {i.quote ? (
+                          <>
+                            fee <FeeText raw={BigInt(i.quote.withdrawFee)} decimals={i.payout?.token.decimals ?? 6} />, arrives in about {i.quote.timeEstimateSec}s
+                          </>
+                        ) : (
+                          "fee worked out when paid"
+                        )}
+                      </p>
+                    </td>
+                    <td className="px-6 py-3">
+                      <div className="flex justify-end gap-2">
+                        {plan.status === "draft" ? (
+                          <>
+                            {i.needsOwnTap && !i.ownTapAt && <ItemButton action={approveItemAction} itemId={i.id} label="OK this one" tone="primary" />}
+                            {i.kind !== "fee" && <ItemButton action={removeItemAction} itemId={i.id} label="Not this week" />}
+                          </>
+                        ) : (
+                          <Badge tone={PAY_STATUS[i.payStatus].tone}>{PAY_STATUS[i.payStatus].label}</Badge>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 
       {out.length > 0 && (
         <section>
-          <h2 className="text-xl font-bold [font-stretch:110%]">Not paid this week, and why</h2>
-          <ul className="mt-3 divide-y divide-line rounded-xl border border-line bg-card">
-            {out.map((i) => (
-              <li key={i.id} className="flex flex-wrap gap-x-6 gap-y-1 px-5 py-3 text-sm">
-                <div className="min-w-56 flex-1">
-                  <p className="font-medium">
-                    {i.payeeName} <span className="font-normal text-muted">· {i.forWhat}</span>
-                  </p>
-                  <p className={i.placement !== "held" ? "text-muted" : i.invoiceId && invoiceStatus.get(i.invoiceId) === "block" ? "text-refuse" : "text-hold"}>{i.reason && shortenAddresses(i.reason)}</p>
-                </div>
-                <p className="num">{i.amountUsd > 0n ? formatUsd(i.amountUsd) : "Not read"}</p>
-              </li>
-            ))}
-          </ul>
+          <h2 className="text-xl font-bold">Not paid this week, and why</h2>
+          <div className="mt-3 overflow-x-auto rounded-xl border border-line bg-card" tabIndex={0} role="region" aria-label="Not paid this week">
+            <table className="w-full min-w-[36rem] text-sm">
+              <thead className="whitespace-nowrap [overflow-wrap:normal] bg-paper text-left text-xs text-muted">
+                <tr>
+                  <th scope="col" className="px-5 py-2.5 font-medium">Invoice</th>
+                  <th scope="col" className="px-3 py-2.5 font-medium">Why it&apos;s not paid</th>
+                  <th scope="col" className="px-5 py-2.5 text-right font-medium">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {out.map((i) => {
+                  const blocked = i.placement === "held" && i.invoiceId && invoiceStatus.get(i.invoiceId) === "block";
+                  return (
+                    <tr key={i.id} className="align-top">
+                      <td className="px-5 py-3">
+                        <p className="font-medium">{i.payeeName}</p>
+                        <p className="text-muted">{i.forWhat}</p>
+                      </td>
+                      <td className="px-3 py-3">
+                        <Badge tone={i.placement !== "held" ? "neutral" : blocked ? "block" : "hold"}>{i.placement !== "held" ? "Not this week" : blocked ? "Blocked" : "On hold"}</Badge>
+                        <p className={`mt-1 ${i.placement !== "held" ? "text-muted" : blocked ? "text-refuse" : "text-hold"}`}>{i.reason && shortenAddresses(i.reason)}</p>
+                      </td>
+                      <td className="num px-5 py-3 text-right">{i.amountUsd > 0n ? formatUsd(i.amountUsd) : "Not read"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 
@@ -187,7 +211,7 @@ export default async function PlanPage() {
       )}
 
       <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="text-xl font-bold [font-stretch:110%]">Can anyone get around your limits?</h2>
+        <h2 className="text-xl font-bold">Can anyone get around your limits?</h2>
         <p className="mt-1 max-w-2xl text-sm text-muted">
           Try it yourself: Bursar sends one payment bigger than your limit straight to your wallet, skipping this list and your approval.
           Your spending rules live in the wallet itself, so it should be stopped there.{" "}

@@ -51,11 +51,11 @@ export function AppNav({ variant }: { variant: "sidebar" | "bar" }) {
             aria-current={active ? "page" : undefined}
             className={`group relative flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors duration-150 ${active ? "bg-night-2 text-card" : "text-card/70 hover:bg-night-2/60 hover:text-card"}`}
           >
-            {active && <span aria-hidden className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-[#7fc4b8]" />}
-            <Glyph size={19} weight={active ? "fill" : "regular"} aria-hidden className={active ? "text-[#7fc4b8]" : ""} />
+            {active && <span aria-hidden className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-[#6ee7b7]" />}
+            <Glyph size={19} weight={active ? "fill" : "regular"} aria-hidden className={active ? "text-[#6ee7b7]" : ""} />
             <span className="min-w-0">
               <span className="block text-sm font-semibold leading-tight">{n.label}</span>
-              <span className="block text-[0.7rem] leading-tight text-card/45">{n.hint}</span>
+              <span className="block text-[0.7rem] leading-tight text-card/65">{n.hint}</span>
             </span>
           </Link>
         );

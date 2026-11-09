@@ -38,14 +38,14 @@ export default async function Home() {
           {STEPS.map((s, i) => (
             <li key={s.title} className="rounded-xl border border-line bg-card p-5">
               <p className="text-sm tabular-nums text-muted">Step {i + 1}</p>
-              <p className="mt-1 text-lg font-bold [font-stretch:110%]">{s.title}</p>
+              <p className="mt-1 text-lg font-bold">{s.title}</p>
               <p className="mt-1 text-sm text-muted">{s.body}</p>
             </li>
           ))}
         </ol>
         {dryRun ? (
           <div className="rounded-xl border border-line bg-card p-6">
-            <h2 className="text-xl font-bold [font-stretch:110%]">See it with a sample restaurant</h2>
+            <h2 className="text-xl font-bold">See it with a sample restaurant</h2>
             <p className="mt-1 text-muted">
               Meet Bukka Corner, a Lagos restaurant with three suppliers, three staff and a week of invoices, including a few tricky ones. You
               play the owner. All the money is practice money.
@@ -163,13 +163,13 @@ export default async function Home() {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <section className="overflow-hidden rounded-xl border border-line bg-card">
           <div className="flex items-center justify-between border-b border-line px-5 py-4">
-            <h2 className="text-base font-bold [font-stretch:110%]">Latest activity</h2>
+            <h2 className="text-base font-bold">Latest activity</h2>
             <Link href="/records" className="text-sm text-indigo underline">
               All records
             </Link>
           </div>
           <table className="w-full text-sm">
-            <thead className="bg-paper-2/60 text-left text-xs text-muted">
+            <thead className="whitespace-nowrap [overflow-wrap:normal] bg-paper-2/60 text-left text-xs text-muted">
               <tr>
                 <th scope="col" className="w-36 px-5 py-2.5 font-semibold">When</th>
                 <th scope="col" className="px-5 py-2.5 font-semibold">What happened</th>
@@ -201,7 +201,7 @@ export default async function Home() {
         <aside className="space-y-6">
           <section className="rounded-xl border border-line bg-card p-5">
             <div className="flex items-baseline justify-between">
-              <h2 className="text-base font-bold [font-stretch:110%]">People you pay</h2>
+              <h2 className="text-base font-bold">People you pay</h2>
               <Link href="/people" className="text-sm text-indigo underline">
                 See everyone
               </Link>
@@ -223,7 +223,7 @@ export default async function Home() {
             </p>
           </section>
           <section className="rounded-xl border border-line bg-card p-5">
-            <h2 className="text-base font-bold [font-stretch:110%]">Invoices this week</h2>
+            <h2 className="text-base font-bold">Invoices this week</h2>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between">
                 <dt className="text-muted">Received</dt>

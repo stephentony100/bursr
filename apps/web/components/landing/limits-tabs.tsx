@@ -22,7 +22,7 @@ function Meter() {
   return (
     <div className="rounded-xl border border-ink/15 bg-card p-6">
       <p className="text-sm text-muted">Left to spend this week</p>
-      <p className="num mt-1 text-5xl font-semibold">$1,838.71</p>
+      <p className="num mt-1 text-4xl font-semibold sm:text-5xl">$1,838.71</p>
       <div className="mt-5 h-2.5 rounded-[2px] bg-paper-2">
         <div className="h-full w-[26%] rounded-[2px] bg-ledger" />
       </div>
@@ -122,7 +122,7 @@ export function LimitsTabs() {
   );
 
   return (
-    <div ref={root} className="grid items-start gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+    <div ref={root} className="grid grid-cols-[minmax(0,1fr)] items-start gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
       <div className="lg:sticky lg:top-24">
         {RULES.map((r, i) => (
           <div key={r.label} className={i === current ? "block" : "hidden"} aria-hidden={i !== current}>
@@ -138,7 +138,7 @@ export function LimitsTabs() {
             <li key={r.label} className="relative border-b border-ink/15">
               <button type="button" aria-expanded={on} className="js-dt flex w-full items-center gap-4 py-5 text-left">
                 <Glyph size={20} weight={on ? "fill" : "regular"} className={on ? "text-ledger" : "text-muted"} aria-hidden />
-                <span className={`flex-1 text-lg font-bold [font-stretch:108%] ${on ? "text-ink" : "text-ink/60"}`}>{r.label}</span>
+                <span className={`flex-1 text-lg font-bold ${on ? "text-ink" : "text-ink/60"}`}>{r.label}</span>
                 <span className={`text-sm ${r.value.startsWith("$") ? "num" : "font-semibold"} ${on ? "text-ledger" : "text-muted"}`}>{r.value}</span>
               </button>
               <div className="js-dd overflow-hidden">

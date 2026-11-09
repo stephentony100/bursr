@@ -1,33 +1,37 @@
 @import "tailwindcss";
 
-/* Bursar: a crossed cheque. Security paper, blue-black ink, one teal for
-   "safe to go", ochre for "held", red for "void". Flat colour only. */
+/* Bursar design tokens. Cool neutral greys (one family), white surfaces,
+   one emerald accent for actions and "paid". Amber = held, red = blocked.
+   Status is always shown with text or an icon too, never colour alone. */
 @theme {
-  --color-paper: #edf1ea; /* security paper, the page ground */
-  --color-paper-2: #e1e8de; /* counterfoil and banded areas */
-  --color-card: #f8faf5; /* the white of a filled-in field */
-  --color-ink: #16202a; /* blue-black printing ink */
-  --color-muted: #4c5963;
-  --color-line: #c3cec5;
-  --color-ledger: #1d6a60; /* the one accent: cleared, ready, primary action */
-  --color-ledger-soft: #d5e7e0;
-  --color-indigo: #17544c; /* links and focus, a deeper turn of the accent */
-  --color-hold: #95580a;
-  --color-hold-soft: #f1e3c9;
-  --color-refuse: #b3261e;
-  --color-refuse-soft: #f6ddd9;
-  --color-guilloche: #2f6f6a; /* security linework */
+  /* Surfaces and text */
+  --color-paper: #f5f6f8; /* app background */
+  --color-paper-2: #eceef2; /* subtle fill: table heads, tiles */
+  --color-card: #ffffff; /* cards, tables, inputs */
+  --color-ink: #101828; /* primary text */
+  --color-muted: #535d6e; /* secondary text, 4.5:1+ on white and paper */
+  --color-line: #e2e5ea; /* borders, dividers */
 
-  /* Ink band (nav), kept under its old name so app code reads unchanged */
-  --color-night: #16202a;
-  --color-night-2: #23303b;
-  --color-cream: #f8faf5;
-  --color-stamp: #b3261e;
+  /* The one accent */
+  --color-ledger: #0b7a57; /* primary action, active, paid */
+  --color-ledger-soft: #e3f4ec;
+  --color-indigo: #086347; /* accent hover, links, focus */
 
-  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-martian), ui-monospace, monospace;
-  --font-hand: var(--font-hand-apple), cursive;
+  /* Status */
+  --color-hold: #9a5a07;
+  --color-hold-soft: #fdf1dd;
+  --color-refuse: #c4271c;
+  --color-refuse-soft: #fde8e6;
+
+  /* Dark chrome: sidebar, nav band, closing section */
+  --color-night: #0f1623;
+  --color-night-2: #1b2433;
+  --color-cream: #ffffff;
+  --color-stamp: #c4271c;
+
+  --font-display: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
@@ -38,16 +42,16 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
   caret-color: var(--color-ledger);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Browser surfaces carry the design too. */
 ::selection {
   background: var(--color-ledger);
-  color: var(--color-card);
+  color: #fff;
 }
 :focus-visible {
   outline: 2px solid var(--color-indigo);
-  outline-offset: 3px;
+  outline-offset: 2px;
   border-radius: 4px;
 }
 a {
@@ -55,17 +59,16 @@ a {
   text-decoration-thickness: 1px;
 }
 html {
-  scrollbar-color: var(--color-line) var(--color-paper);
+  scrollbar-color: #c9ced6 var(--color-paper);
   scrollbar-width: thin;
 }
 
-/* Every button answers a press; base layer, so utility classes still win. */
 @layer base {
   button {
-    transition: transform 140ms var(--ease-out), background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+    transition: transform 140ms var(--ease-out), background-color 150ms ease, color 150ms ease, border-color 150ms ease;
   }
   button:not(:disabled):not([aria-expanded]):active {
-    transform: scale(0.97);
+    transform: scale(0.98);
   }
   button:disabled {
     cursor: not-allowed;
@@ -78,57 +81,49 @@ html {
 }
 
 @layer components {
-/* Amounts, account numbers and codes: printed figures, never decoration. */
-.num {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.92em;
-  letter-spacing: -0.01em;
+  /* Amounts and account numbers. */
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  /* Small label above a value or a table column. */
+  .field-label,
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+  /* Page and section headings. */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  .press {
+    transition: transform 140ms var(--ease-out), background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  }
+  .press:active {
+    transform: scale(0.98);
+  }
 }
 
-/* Printed field labels on a cheque ("PAY", "THE SUM OF", table heads). */
-.field-label {
-  font-family: var(--font-sans);
-  font-stretch: 125%;
+/* Skip link: hidden until focused from the keyboard. */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 100;
+  border-radius: 8px;
+  background: var(--color-ink);
+  color: #fff;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  font-size: 0.66rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
-
-/* Legacy name used across the app for the same printed-label voice. */
-.eyebrow {
-  font-family: var(--font-sans);
-  font-stretch: 125%;
-  font-weight: 600;
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-/* The owner's own hand: payee line and signature only. */
-.hand {
-  font-family: var(--font-hand);
-  font-weight: 400;
-  letter-spacing: 0;
-}
-
-/* Headings: wide, heavy, printed. */
-.display {
-  font-family: var(--font-display);
-  font-stretch: 112%;
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  text-wrap: balance;
-}
-
-/* Press feedback for anything clickable that looks like a button. */
-.press {
-  transition: transform 140ms var(--ease-out), background-color 160ms ease, color 160ms ease, border-color 160ms ease;
-}
-.press:active {
-  transform: scale(0.97);
-}
+.skip-link:focus {
+  top: 1rem;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -136,15 +131,9 @@ html {
     transition-duration: 1ms !important;
     animation-duration: 1ms !important;
   }
-  /* Looping motion stops outright: a 1ms infinite loop would flicker. */
-  .marquee {
-    animation: none !important;
-  }
 }
 
-/* ---- Home page (app/(site)) ---- */
-
-/* Reading progress along the top edge (Chromium scroll timelines; hidden elsewhere). */
+/* Reading progress along the top edge of the home page (Chromium scroll timelines; hidden elsewhere). */
 .scroll-progress { display: none; }
 @supports (animation-timeline: scroll()) {
   .scroll-progress {
@@ -159,39 +148,10 @@ html {
   }
 }
 
-/* Pen strokes draw themselves (paths use pathLength="1"). */
-@keyframes draw {
-  from { stroke-dashoffset: 1; }
-  to { stroke-dashoffset: 0; }
-}
-.draw {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: draw 700ms var(--ease-out) forwards;
-}
-
-@keyframes tick-in {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: none; }
-}
-.tick-in { animation: tick-in 260ms var(--ease-out) both; }
-
-/* The clearing tape loops: content is doubled, so -50% is seamless. */
-@keyframes marquee { to { transform: translateX(-50%); } }
-.marquee { animation: marquee 60s linear infinite; }
-
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-10px) rotate(-1.5deg); }
-  40% { transform: translateX(7px) rotate(1deg); }
-  60% { transform: translateX(-4px); }
-  80% { transform: translateX(2px); }
+  25% { transform: translateX(-8px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
 }
-.shake { animation: shake 420ms var(--ease-out); }
-
-@keyframes stamp {
-  0% { transform: scale(1.5) rotate(var(--tilt, -8deg)); opacity: 0; }
-  70% { transform: scale(0.97) rotate(var(--tilt, -8deg)); opacity: 1; }
-  100% { transform: scale(1) rotate(var(--tilt, -8deg)); opacity: 1; }
-}
-.stamp-in { animation: stamp 320ms var(--ease-out) both; }
+.shake { animation: shake 360ms var(--ease-out); }

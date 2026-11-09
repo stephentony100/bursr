@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import { Archivo, Homemade_Apple, Martian_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// Archivo carries its width axis: expanded for printed cheque fields, normal for reading.
-const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"], axes: ["wdth"] });
-const martian = Martian_Mono({ variable: "--font-martian", subsets: ["latin"] });
-// The owner's own hand, used only for the payee line and the signature.
-const hand = Homemade_Apple({ variable: "--font-hand-apple", subsets: ["latin"], weight: "400" });
+const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Bursar: pay everyone, never the wrong person",
@@ -15,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${archivo.variable} ${martian.variable} ${hand.variable} h-full antialiased`}>
+    <html lang="en" className={`${geist.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

@@ -58,12 +58,12 @@ export default async function InvoicesPage() {
       <VerifiedPanel action={verifyReaderAction} model={readEnv().NEAR_AI_MODEL ?? DEFAULT_READER_MODEL} />
 
       <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="text-xl font-bold [font-stretch:110%]">Add an invoice</h2>
+        <h2 className="text-xl font-bold">Add an invoice</h2>
         <p className="mt-1 text-sm text-muted">Got a bill by WhatsApp, email or on paper? Add it here and Bursar checks it in seconds.</p>
         <ActionForm action={uploadInvoiceAction} submit="Check this invoice" className="mt-4 space-y-4">
           <label className="block text-sm font-medium">
             A photo or screenshot of the invoice
-            <input type="file" name="file" accept="image/png,image/jpeg,image/webp,text/plain" className="mt-1 block text-sm" />
+            <input type="file" name="file" accept="image/png,image/jpeg,image/webp,text/plain" className="mt-1 block w-full max-w-full text-sm" />
           </label>
           <label className="block text-sm font-medium">
             Or paste the text of the message
@@ -129,7 +129,7 @@ export default async function InvoicesPage() {
                   <details className="mt-2 text-sm">
                     <summary className="cursor-pointer text-muted">What Bursar read from it</summary>
                     <table className="mt-2 w-full max-w-xl text-left text-xs">
-                      <thead className="text-muted">
+                      <thead className="whitespace-nowrap [overflow-wrap:normal] text-muted">
                         <tr>
                           <th className="py-1 pr-3 font-medium">Item</th>
                           <th className="py-1 pr-3 text-right font-medium">Qty</th>

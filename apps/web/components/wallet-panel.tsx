@@ -122,7 +122,7 @@ export function WalletPanel(props: {
 
   return (
     <section className="rounded-xl border-2 border-indigo/30 bg-card p-6">
-      <h2 className="text-xl font-bold [font-stretch:110%]">Your Bursar wallet</h2>
+      <h2 className="text-xl font-bold">Your Bursar wallet</h2>
 
       {!props.ownerAccountId ? (
         <div className="mt-3">
