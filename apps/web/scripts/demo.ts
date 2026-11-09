@@ -18,7 +18,7 @@ async function main() {
     const why = [problems.join(", "), warnings.length ? `(warning: ${warnings.join(", ")})` : ""].filter(Boolean).join(" ");
     console.log(`  invoice  ${`${i.supplierName} #${i.invoiceNumber}`.padEnd(34)} ${i.status.toUpperCase().padEnd(6)} ${why}`);
   }
-  console.log("Next: npm run dev, then open http://localhost:3000 and click \"Try it with a sample restaurant\"");
+  console.log("Next: npm run dev, then open http://localhost:3000/this-week and watch your agent pay this week's payments by itself");
 }
 
 main()

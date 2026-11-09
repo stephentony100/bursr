@@ -34,6 +34,7 @@ function feedLook(e: FeedEntry) {
       return { Icon: Clock, tone: "text-hold", bg: "bg-hold-soft" };
     case "payment_failed":
     case "agent_blocked":
+    case "account_refused":
       return { Icon: WarningCircle, tone: "text-refuse", bg: "bg-refuse-soft" };
     case "needs_owner":
     case "needs_money":

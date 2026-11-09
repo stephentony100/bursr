@@ -57,7 +57,8 @@ export async function agentFeed(db: PrismaClient, take = 30): Promise<FeedEntry[
       } catch {
         itemId = null;
       }
-      return { id: r.id, itemId, at: r.at, by: r.actor === "agent" ? "agent" : "owner", kind: r.kind, message: r.message };
+      const message = r.kind === "account_refused" ? `Your spending rules blocked a payment: ${r.message}` : r.message;
+      return { id: r.id, itemId, at: r.at, by: r.actor === "agent" ? "agent" : "owner", kind: r.kind, message };
     });
   // "Paying X…" is only interesting until the payment has an outcome; then the outcome tells the story.
   const settled = new Set(entries.filter((e) => e.itemId && e.kind !== "payment_started").map((e) => e.itemId));

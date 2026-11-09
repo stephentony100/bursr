@@ -87,7 +87,7 @@ export default async function PlanPage() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-sm text-muted">
-                {plan.status === "draft" ? "Ready for your OK" : `You approved this on ${plan.approvedAt?.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`}
+                {plan.status === "draft" ? "Ready for your OK" : `${plan.approvedBy === "agent" ? "Your agent paid these on its own on" : "You approved this on"} ${plan.approvedAt?.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`}
               </p>
               <p className="num whitespace-nowrap text-4xl font-semibold">{formatUsd(total)}</p>
               {plan.status !== "draft" && moving && (
