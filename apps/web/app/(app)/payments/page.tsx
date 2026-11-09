@@ -61,6 +61,8 @@ export default async function PlanPage() {
   const unquoted = inPlan.filter((i) => !i.quote).length;
   const waitingTaps = inPlan.filter((i) => i.needsOwnTap && !i.ownTapAt).length;
   const moving = inPlan.some((i) => i.payStatus === "paying" || i.payStatus === "sent");
+  // The approve form disappears once the list is approved, so the page itself says what happened.
+  const going = inPlan.filter((i) => i.payStatus !== "failed").length;
 
   return (
     <div className="space-y-10">
@@ -86,6 +88,11 @@ export default async function PlanPage() {
                 {plan.status === "draft" ? "Ready for your OK" : `You approved this on ${plan.approvedAt?.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`}
               </p>
               <p className="num whitespace-nowrap text-4xl font-semibold">{formatUsd(total)}</p>
+              {plan.status !== "draft" && moving && (
+                <p role="status" className="font-semibold text-ledger">
+                  Done. {going} payment{going === 1 ? "" : "s"} on the way.
+                </p>
+              )}
               <p className="text-sm text-muted">
                 {inPlan.length} payments ·{" "}
                 {unquoted === 0
