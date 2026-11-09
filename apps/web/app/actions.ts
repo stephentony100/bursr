@@ -25,6 +25,7 @@ import {
   updatePayeeDetails,
   updateRules,
 } from "@/lib/owner-actions";
+import { chat, confirmCard, type ChatReply, type ChatTurn } from "@/lib/agent/chat";
 import { runAgent } from "@/lib/agent/engine";
 import { followPayments, kickAgent } from "@/lib/agent/loop";
 import { payApprovedPlan } from "@/lib/pay";
@@ -428,4 +429,28 @@ export async function practiceMoneyAction(_prev: FormResult, f: FormData): Promi
 export async function noticeTopUpAction(): Promise<void> {
   await requireOwner();
   kickAgent();
+}
+
+// --- Talking to the agent ----------------------------------------------------
+
+export async function chatAction(history: ChatTurn[]): Promise<ChatReply> {
+  try {
+    const owner = await requireOwner();
+    const clean = history
+      .filter((h) => (h.role === "user" || h.role === "assistant") && typeof h.content === "string")
+      .map((h) => ({ role: h.role, content: h.content.slice(0, 2000) }))
+      .slice(-12);
+    return await chat(db(), owner, clean);
+  } catch (e) {
+    return { reply: e instanceof Error ? e.message : "Something went wrong.", cards: [], ai: false };
+  }
+}
+
+export async function confirmCardAction(token: string): Promise<FormResult> {
+  return run(async () => {
+    const message = await confirmCard(db(), await requireOwner(), token);
+    followPayments();
+    revalidatePath("/", "layout");
+    return message;
+  });
 }

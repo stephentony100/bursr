@@ -56,6 +56,23 @@ function mac(body: string): string {
   return createHmac("sha256", secret()).update(body).digest("base64url");
 }
 
+/** Signs a small server-made payload (the agent's action cards), so the browser can hand it back but not alter it. */
+export function sealPayload(payload: object, ttlMs: number, now = Date.now()): string {
+  const body = Buffer.from(JSON.stringify({ p: payload, e: now + ttlMs, t: "card" })).toString("base64url");
+  return `${body}.${mac(body)}`;
+}
+
+export function openPayload<T>(token: string, now = Date.now()): T | null {
+  const [body, sig] = token.split(".");
+  if (!body || !sig) return null;
+  const expected = Buffer.from(mac(body));
+  const given = Buffer.from(sig);
+  if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
+  const { p, e, t } = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as { p: T; e: number; t?: string };
+  if (t !== "card" || typeof e !== "number" || now > e) return null;
+  return p;
+}
+
 /** Called only after the NEP-413 signature has been verified. */
 export function issueSessionCookie(accountId: string, publicKey: string, now = Date.now()): string {
   const body = Buffer.from(JSON.stringify({ a: accountId, k: publicKey, e: now + SESSION_MS })).toString("base64url");
@@ -70,7 +87,8 @@ export function sessionFromCookie(value: string | undefined, now = Date.now()): 
   const given = Buffer.from(sig);
   if (expected.length !== given.length || !timingSafeEqual(expected, given)) return null;
   const { a, k, e } = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as { a: string; k: string; e: number };
-  if (typeof e !== "number" || now > e) return null;
+  // Only session payloads: an action card (signed with the same key) has no account and is refused here.
+  if (typeof e !== "number" || now > e || typeof a !== "string" || !a || typeof k !== "string") return null;
   return { [OWNER]: true, accountId: a, publicKey: k, demo: false };
 }
 

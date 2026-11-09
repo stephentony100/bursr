@@ -62,6 +62,8 @@ const EnvSchema = z.object({
   NEAR_AI_BASE_URL: z.string().default("https://cloud-api.near.ai/v1"),
   NEAR_AI_API_KEY: optional,
   NEAR_AI_MODEL: optional,
+  // The agent you chat with (needs tool calling). Default: Qwen/Qwen3.6-35B-A3B-FP8, which runs in a verifiable TEE.
+  NEAR_AI_CHAT_MODEL: optional,
 
   TELEGRAM_BOT_TOKEN: optional,
 });

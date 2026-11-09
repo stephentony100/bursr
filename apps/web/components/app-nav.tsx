@@ -1,11 +1,12 @@
 "use client";
 
-import { Books, CalendarCheck, PaperPlaneTilt, Receipt, ShieldCheck, UsersThree, type Icon, Wallet } from "@phosphor-icons/react";
+import { Books, CalendarCheck, PaperPlaneTilt, Receipt, ShieldCheck, UsersThree, type Icon, Robot, Wallet } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV: { href: string; label: string; icon: Icon; hint: string }[] = [
   { href: "/this-week", label: "This week", icon: CalendarCheck, hint: "Overview" },
+  { href: "/agent", label: "Agent", icon: Robot, hint: "Chat and activity" },
   { href: "/invoices", label: "Invoices", icon: Receipt, hint: "Checked bills" },
   { href: "/payments", label: "Payments", icon: PaperPlaneTilt, hint: "This week's list" },
   { href: "/records", label: "Records", icon: Books, hint: "For your accountant" },

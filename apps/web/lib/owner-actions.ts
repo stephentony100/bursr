@@ -1,4 +1,5 @@
 import type { Policy } from "@near-intents-agent-api/sdk";
+import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
 import { normaliseAddress, PayoutSchema, PriceItemSchema, RulesSchema, type Payee, type Payout, type PriceItem, type Rules } from "./domain";
 import { addressProblem } from "./address";
@@ -6,7 +7,7 @@ import type { PrismaClient } from "./generated/prisma/client";
 import { isOwnerSession, type OwnerSession } from "./owner";
 import { formatUsd } from "./money";
 import { buildPolicy } from "./policy";
-import { getAccountRecord, getBusiness, listPayees } from "./store";
+import { getAccountRecord, getBusiness, getPayee, listPayees } from "./store";
 
 // Everything that changes the owner's rules or payees. Each function needs an
 // OwnerSession (lib/owner.ts), and the session must belong to the business's
@@ -259,4 +260,45 @@ export async function approvePlan(db: PrismaClient, owner: OwnerSession, planId:
   await db.plan.update({ where: { id: planId }, data: { status: "approved", approvedAt: new Date(), approvedBy: owner.accountId } });
   await trust(db, inPlan.map((i) => i.payeeId));
   await audit(db, owner, "plan_approved", `You approved this week's payments (${inPlan.length})`, { planId });
+}
+
+/**
+ * "Pay Bisi $20 now": a one-off payment the owner asked for (from chat or a
+ * button) to someone already on their list. The owner's own confirmation is
+ * the approval; the agent pays it at once, and the account's limits still apply.
+ */
+export async function requestOneOffPayment(db: PrismaClient, owner: OwnerSession, input: { payeeId: string; amountUsd: bigint; note: string }) {
+  await assertOwner(db, owner);
+  const payee = await getPayee(db, input.payeeId);
+  if (!payee) throw new Error("That person isn't on your list. Only you can add someone, on the People page.");
+  if (input.amountUsd <= 0n) throw new Error("The amount must be more than zero.");
+  const forWhat = input.note.trim().slice(0, 80) || "One-off payment";
+  const now = new Date();
+  const plan = await db.plan.create({
+    data: {
+      status: "approved",
+      approvedAt: now,
+      approvedBy: owner.accountId,
+      capLeftUsd: "0",
+      items: {
+        create: [
+          {
+            kind: "one_off",
+            payeeId: payee.id,
+            payeeName: payee.name,
+            forWhat,
+            amountUsd: input.amountUsd.toString(),
+            payout: JSON.stringify(payee.payout),
+            placement: "in",
+            needsOwnTap: false,
+            dueKey: `oneoff:${randomUUID()}`,
+            dueOn: now.toISOString().slice(0, 10),
+          },
+        ],
+      },
+    },
+  });
+  await trust(db, [payee.id]);
+  await audit(db, owner, "plan_item_approved", `You asked the agent to pay ${payee.name} ${formatUsd(input.amountUsd)} (${forWhat})`, { planId: plan.id });
+  return plan.id;
 }

@@ -64,7 +64,12 @@ export function AgentStatus({ autopilot, frozen, nextPayday }: { autopilot: bool
           <p className="text-sm text-white/75">{state.text}</p>
         </div>
       </div>
-      {!frozen && <ActionForm action={runPaydayNowAction} submit="Run payday now" tone="quiet" className="[&_[role=status]]:!text-white/85 [&_button]:bg-white [&_button]:text-ink" />}
+      <div className="flex flex-wrap items-center gap-3">
+        <Link href="/agent" className="rounded-lg border border-white/30 px-4 py-2 text-sm font-semibold text-white hover:border-white/60">
+          Ask your agent
+        </Link>
+        {!frozen && <ActionForm action={runPaydayNowAction} submit="Run payday now" tone="quiet" className="[&_[role=status]]:!text-white/85 [&_button]:bg-white [&_button]:text-ink" />}
+      </div>
     </section>
   );
 }
