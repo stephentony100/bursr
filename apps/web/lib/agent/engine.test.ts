@@ -4,6 +4,7 @@ import { approvePlanItem, setFrozen } from "../owner-actions";
 import { demoOwner } from "../owner";
 import type { quotePayout } from "../quotes";
 import { amountOutFor } from "../quotes";
+import { addPracticeMoney } from "../funding";
 import { getBusiness } from "../store";
 import { createTestDb } from "../test-db";
 import { runAgent } from "./engine";
@@ -91,5 +92,19 @@ describe("the agent on autopilot", () => {
     await t.db.agentAccount.update({ where: { id: "main" }, data: { simBalances: JSON.stringify({ [treasury]: "6000000000" }) } }); // money arrives
     const paid = await run(new Date(now.getTime() + 6 * 60_000));
     expect(paid.sent).toBe(waiting.length);
+  });
+
+  it("warns before payday when the wallet is short, and says when money arrives", async () => {
+    const treasury = (await getBusiness(t.db))!.rules.treasury.assetId;
+    await t.db.agentAccount.update({ where: { id: "main" }, data: { simBalances: JSON.stringify({ [treasury]: "1000000" }) } }); // $1
+    await t.db.business.update({ where: { id: "main" }, data: { rules: JSON.stringify({ ...(await getBusiness(t.db))!.rules, autopilot: false }) } });
+    const wednesday = new Date("2026-11-11T09:00:00Z"); // payday is Friday 13 Nov
+    await runAgent(t.db, { now: wednesday, quote: fakeQuote });
+    const warn = (await agentLog()).find((e) => e.kind === "needs_money");
+    expect(warn?.message).toMatch(/Payday \(Fri 13 Nov\) needs \$\d.* holds \$1\.00\. Please add/);
+
+    await addPracticeMoney(t.db, "500");
+    await runAgent(t.db, { now: wednesday, quote: fakeQuote });
+    expect((await agentLog()).some((e) => e.kind === "money_in" && e.message.startsWith("Your Bursar wallet received $500.00"))).toBe(true);
   });
 });

@@ -150,7 +150,12 @@ export default async function Home() {
             </p>
           </Kpi>
           <Kpi label="Money in your Bursar wallet" value={<span className="num">{formatUsd(rescale(status.balances[treasury.assetId] ?? 0n, treasury.decimals, 6))}</span>}>
-            <p className="mt-3 text-xs text-muted">{treasury.symbol} held for payouts</p>
+            <p className="mt-3 flex items-center justify-between text-xs text-muted">
+              {treasury.symbol} held for payouts
+              <Link href="/add-money" className="font-semibold text-indigo underline">
+                Add money
+              </Link>
+            </p>
           </Kpi>
           <Kpi label="Largest single payment allowed" value={<span className="num">{formatUsd(BigInt(business.rules.perPaymentCapUsd))}</span>}>
             <p className="mt-3 text-xs text-muted">Bigger payments are refused by the wallet</p>

@@ -2,7 +2,7 @@ import { agentAccount } from "../agent-account";
 import { db as defaultDb } from "../db";
 import { PayoutSchema } from "../domain";
 import type { PrismaClient } from "../generated/prisma/client";
-import { formatUsd } from "../money";
+import { formatUsd, rescale, USD_DECIMALS } from "../money";
 import { closeFinishedPlans, payItem, refreshPayments } from "../pay";
 import { getPlan, prepareAgentRun } from "../plans";
 import { quotePayout } from "../quotes";
@@ -10,6 +10,7 @@ import { localDay, paydayOnOrAfter } from "../schedule";
 import { getBusiness } from "../store";
 import { chainName } from "../tokens";
 import { say, sayOnce } from "./say";
+import { paydayNeed } from "./view";
 
 // Bursar's agent. It wakes every minute (lib/agent/loop.ts) and on events,
 // and does the routine work on its own: follows payments on their way, works
@@ -33,6 +34,8 @@ export interface AgentRunReport {
 const EMPTY: AgentRunReport = { ran: false, newPayments: 0, attempted: 0, sent: 0, waiting: 0, failed: 0, delivered: 0, needsOwner: 0 };
 const HOUR = 60 * 60_000;
 const LEASE_MS = 10 * 60_000;
+const daysUntil = (from: string, to: string) => Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+const dayWords = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 
 export interface AgentRunOptions {
   now?: Date;
@@ -99,13 +102,32 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
     }
   }
 
-  // 2. Paused by the owner: do nothing else.
+  // 2. Money: say when a top-up arrives, and warn before payday if the wallet is short.
+  const treasury = rules.treasury;
+  const held = rescale((await account.status()).balances[treasury.assetId] ?? 0n, treasury.decimals, USD_DECIMALS);
+  const last = await db.setting.findUnique({ where: { key: "agent_last_balance" } });
+  if (last && held > BigInt(last.value)) {
+    await say(db, "money_in", `Your Bursar wallet received ${formatUsd(held - BigInt(last.value))}. It now holds ${formatUsd(held)}.`);
+  }
+  await db.setting.upsert({ where: { key: "agent_last_balance" }, update: { value: held.toString() }, create: { key: "agent_last_balance", value: held.toString() } });
+  const need = await paydayNeed(db, held, now);
+  if (need && need.short > 0n && daysUntil(localDay(now, rules.timeZone), need.payday) <= 3) {
+    await sayOnce(
+      db,
+      `short:${need.payday}`,
+      20 * HOUR,
+      "needs_money",
+      `Payday (${dayWords(need.payday)}) needs ${formatUsd(need.due)} and your Bursar wallet holds ${formatUsd(held)}. Please add ${formatUsd(need.short)} so nobody waits.`,
+    );
+  }
+
+  // 3. Paused by the owner: do nothing else.
   if (rules.frozen) {
     await sayOnce(db, "paused", 12 * HOUR, "agent_paused", "Payments are paused, so I'm not paying anyone. Turn them back on in Spending rules when you're ready.");
     return report;
   }
 
-  // 3. What is due: a new run of payments (autopilot), approved by the agent for routine ones.
+  // 4. What is due: a new run of payments (autopilot), approved by the agent for routine ones.
   if (rules.autopilot) {
     const today = localDay(now, rules.timeZone);
     const dueBy = options.dueBy === "payday" ? paydayOnOrAfter(today, rules.paydayWeekday) : today;
@@ -132,7 +154,7 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
     }
   }
 
-  // 4. Pay what is approved and due for a try: new ones, and waiting ones whose retry time has come.
+  // 5. Pay what is approved and due for a try: new ones, and waiting ones whose retry time has come.
   const ready = await db.planItem.findMany({
     where: {
       placement: "in",

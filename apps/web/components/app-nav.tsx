@@ -1,6 +1,6 @@
 "use client";
 
-import { Books, CalendarCheck, PaperPlaneTilt, Receipt, ShieldCheck, UsersThree, type Icon } from "@phosphor-icons/react";
+import { Books, CalendarCheck, PaperPlaneTilt, Receipt, ShieldCheck, UsersThree, type Icon, Wallet } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -11,6 +11,7 @@ const NAV: { href: string; label: string; icon: Icon; hint: string }[] = [
   { href: "/records", label: "Records", icon: Books, hint: "For your accountant" },
   { href: "/people", label: "People", icon: UsersThree, hint: "Who you pay" },
   { href: "/spending-rules", label: "Spending rules", icon: ShieldCheck, hint: "Limits and stop" },
+  { href: "/add-money", label: "Add money", icon: Wallet, hint: "Top up your agent" },
 ];
 
 const isActive = (path: string, href: string) => path === href || path.startsWith(`${href}/`);

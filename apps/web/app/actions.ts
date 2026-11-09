@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import QRCode from "qrcode";
 import { verifyReader, type AttestationResult } from "@/lib/attestation";
 import { aiSummary, monthFacts, type AiSummary } from "@/lib/summary";
 import { BOT_NAME, createLinkCode } from "@/lib/telegram";
@@ -10,6 +11,7 @@ import { loadSampleBusiness, loadSampleInvoices } from "@/lib/demo-loader";
 import { ingestInvoice } from "@/lib/invoices";
 import { demoEvmAddress, demoNearImplicit, demoTronAddress } from "@/lib/demo-addresses";
 import { PayeeCategory, type Payout, type PriceItem } from "@/lib/domain";
+import { addPracticeMoney, depositAddress, oneTapDeposit, type DepositAddress, type OneTapDeposit } from "@/lib/funding";
 import { readEnv } from "@/lib/env";
 import { formatUsd, parseUnits, rescale, USD_DECIMALS } from "@/lib/money";
 import {
@@ -380,4 +382,50 @@ export async function runPaydayNowAction(): Promise<FormResult> {
     ].filter(Boolean);
     return parts.length ? `The agent ${parts.join(", ")}. See what it did below.` : "Nothing is due yet. The agent will pay each payment on its day.";
   });
+}
+
+// --- Adding money to the agent's wallet --------------------------------------
+
+export type DepositResult = { ok: true; address: DepositAddress; qrSvg: string } | { ok: false; message: string };
+
+/** A one-time deposit address on another chain, with a QR code (live mode). */
+export async function depositAddressAction(symbol: string, chain: string): Promise<DepositResult> {
+  try {
+    await requireOwner();
+    if (readEnv().BURSAR_MODE === "dry-run") throw new Error("In practice mode, use \"Add practice money\".");
+    const address = await depositAddress(db(), symbol, chain);
+    const qrSvg = await QRCode.toString(address.address, { type: "svg", margin: 1, width: 192 });
+    return { ok: true, address, qrSvg };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Couldn't get an address just now." };
+  }
+}
+
+/** What the owner's NEAR wallet signs for a one-tap top-up (live mode). */
+export async function oneTapDepositAction(): Promise<{ ok: true; deposit: OneTapDeposit } | { ok: false; message: string }> {
+  try {
+    await requireOwner();
+    return { ok: true, deposit: await oneTapDeposit(db()) };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Couldn't prepare the top-up." };
+  }
+}
+
+export async function practiceMoneyAction(_prev: FormResult, f: FormData): Promise<FormResult> {
+  return run(async () => {
+    await requireOwner();
+    if (readEnv().BURSAR_MODE !== "dry-run") throw new Error("Practice money is for practice mode only.");
+    const amount = text(f, "amount") || "500";
+    if (!/^\d{1,6}(\.\d{1,2})?$/.test(amount)) throw new Error("Enter an amount like 500.");
+    await addPracticeMoney(db(), amount);
+    kickAgent();
+    revalidatePath("/", "layout");
+    return `Added $${amount} of practice money. The agent will use it for anything waiting.`;
+  });
+}
+
+/** After the owner's wallet sent a one-tap top-up: wake the agent so it notices the money. */
+export async function noticeTopUpAction(): Promise<void> {
+  await requireOwner();
+  kickAgent();
 }

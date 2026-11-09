@@ -6,6 +6,7 @@ import {
   PaperPlaneTilt,
   Robot,
   UserCircle,
+  Wallet,
   WarningCircle,
 } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
@@ -35,7 +36,10 @@ function feedLook(e: FeedEntry) {
     case "agent_blocked":
       return { Icon: WarningCircle, tone: "text-refuse", bg: "bg-refuse-soft" };
     case "needs_owner":
+    case "needs_money":
       return { Icon: HandWaving, tone: "text-hold", bg: "bg-hold-soft" };
+    case "money_in":
+      return { Icon: Wallet, tone: "text-ledger", bg: "bg-ledger-soft" };
     default:
       return { Icon: Robot, tone: "text-ink", bg: "bg-paper-2" };
   }
@@ -87,7 +91,7 @@ export function NeedsYouList({ items }: { items: NeedsYou[] }) {
               </ActionForm>
             )}
             {n.kind === "funds" && (
-              <Link href="/spending-rules#add-money" className="rounded-md bg-ledger px-3 py-2 text-sm font-semibold text-card hover:bg-indigo">
+              <Link href="/add-money" className="rounded-md bg-ledger px-3 py-2 text-sm font-semibold text-card hover:bg-indigo">
                 Add money
               </Link>
             )}

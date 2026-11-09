@@ -128,3 +128,12 @@ export function nextPayday(now: Date, timeZone: string, paydayWeekday: number): 
   return paydayOnOrAfter(localDay(now, timeZone), paydayWeekday);
 }
 
+
+/** What the coming payday needs against what the Bursar wallet holds (USD, 6 decimals). */
+export async function paydayNeed(db: PrismaClient, balanceUsd: bigint, now = new Date()) {
+  const business = await getBusiness(db);
+  if (!business) return null;
+  const payday = nextPayday(now, business.rules.timeZone, business.rules.paydayWeekday);
+  const due = (await comingUp(db, now)).filter((u) => u.dueOn <= payday).reduce((a, u) => a + u.amountUsd, 0n);
+  return { payday, due, short: due > balanceUsd ? due - balanceUsd : 0n };
+}
