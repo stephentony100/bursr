@@ -2,9 +2,12 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { addPayeeAction } from "@/app/actions";
 import { ActionForm } from "@/components/forms";
+import { InvitesList } from "@/components/invites-list";
+import { InviteForm } from "@/components/onboarding";
 import { DetailFields, PayoutFields } from "@/components/payee-fields";
 import { db } from "@/lib/db";
 import { isOnPayoutHold, payoutHoldEndsAt } from "@/lib/domain";
+import { listInvites } from "@/lib/invites";
 import { formatUsd } from "@/lib/money";
 import { scheduleWords } from "@/lib/schedule";
 import { getBusiness, listPayees } from "@/lib/store";
@@ -12,7 +15,7 @@ import { chainName } from "@/lib/tokens";
 
 export default async function PayeesPage() {
   await connection();
-  const [business, payees] = await Promise.all([getBusiness(db()), listPayees(db())]);
+  const [business, payees, invites] = await Promise.all([getBusiness(db()), listPayees(db()), listInvites(db())]);
   if (!business) {
     return (
       <p className="text-muted">
@@ -72,6 +75,15 @@ export default async function PayeesPage() {
           </li>
         ))}
       </ul>
+
+      <section className="space-y-4 rounded-xl border border-line bg-card p-6">
+        <div>
+          <h2 className="text-xl font-bold">Invite someone</h2>
+          <p className="mt-1 text-sm text-muted">Don&apos;t know their wallet address? Send them a link; they choose how they want to be paid, and you approve it before they can be paid.</p>
+        </div>
+        <InvitesList invites={invites} />
+        <InviteForm />
+      </section>
 
       <section className="rounded-xl border border-line bg-card p-6">
         <h2 className="text-xl font-bold">Add someone you pay</h2>

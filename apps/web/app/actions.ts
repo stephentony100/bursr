@@ -1,23 +1,29 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import QRCode from "qrcode";
 import { verifyReader, type AttestationResult } from "@/lib/attestation";
 import { aiSummary, monthFacts, type AiSummary } from "@/lib/summary";
 import { BOT_NAME, createLinkCode } from "@/lib/telegram";
 import { agentAccount, type ActionRequest } from "@/lib/agent-account";
 import { db } from "@/lib/db";
-import { loadSampleBusiness, loadSampleInvoices } from "@/lib/demo-loader";
+import { clearPracticeBusiness, loadSampleBusiness, loadSampleInvoices } from "@/lib/demo-loader";
 import { ingestInvoice } from "@/lib/invoices";
 import { demoEvmAddress, demoNearImplicit, demoTronAddress } from "@/lib/demo-addresses";
 import { PayeeCategory, type Payout, type PriceItem } from "@/lib/domain";
 import { addPracticeMoney, depositAddress, oneTapDeposit, type DepositAddress, type OneTapDeposit } from "@/lib/funding";
 import { readEnv } from "@/lib/env";
+import { approveInvite, createInvite, declineInvite, submitInvite } from "@/lib/invites";
+import { clearOnboarding, markOnboarding } from "@/lib/onboarding";
+import { starterRules } from "@/lib/starter-rules";
 import { formatUsd, parseUnits, rescale, USD_DECIMALS } from "@/lib/money";
 import {
   addPayee,
   approvePlan,
   approvePlanItem,
+  NotOwnerError,
+  setupBusiness,
   changePayout,
   removePayee,
   removePlanItem,
@@ -452,5 +458,146 @@ export async function confirmCardAction(token: string): Promise<FormResult> {
     followPayments();
     revalidatePath("/", "layout");
     return message;
+  });
+}
+
+// --- Onboarding (/welcome) ----------------------------------------------------
+// Each step saves and goes back to /welcome, which shows the next step.
+
+async function step(fn: () => Promise<void>): Promise<FormResult> {
+  try {
+    await fn();
+  } catch (e) {
+    return { ok: false, message: e instanceof NotOwnerError ? e.message : e instanceof Error ? e.message : "Something went wrong." };
+  }
+  revalidatePath("/", "layout");
+  redirect("/welcome");
+}
+
+const WANTED_NETWORKS: [string, string][] = [
+  ["USDC", "near"],
+  ["USDC", "base"],
+  ["USDC", "sol"],
+  ["USDT", "tron"],
+  ["USDC", "sui"],
+  ["USDC", "arb"],
+  ["USDC", "eth"],
+];
+
+export async function onboardBusinessAction(_prev: FormResult, f: FormData): Promise<FormResult> {
+  return step(async () => {
+    const owner = await requireOwner();
+    const name = text(f, "name");
+    if (name.length < 2) throw new Error("Add your business name.");
+    const timeZone = text(f, "timeZone") || "Africa/Lagos";
+    try {
+      new Intl.DateTimeFormat("en", { timeZone });
+    } catch {
+      throw new Error("Pick your time zone from the list.");
+    }
+    const tokens = await payoutTokens();
+    const base = starterRules(tokens);
+    const networks = WANTED_NETWORKS.map(([sym, chain]) => tokens.find((t) => t.symbol === sym && t.chain === chain)).filter((t): t is NonNullable<typeof t> => Boolean(t));
+    const existing = await getBusiness(db());
+    const rules = existing
+      ? { ...existing.rules, timeZone, paydayWeekday: Number(text(f, "payday")) }
+      : { ...base, timeZone, paydayWeekday: Number(text(f, "payday")), payoutTokens: networks.length ? networks : base.payoutTokens };
+    await setupBusiness(db(), owner, { name: name.slice(0, 80), rules });
+  });
+}
+
+export async function onboardLimitsAction(_prev: FormResult, f: FormData): Promise<FormResult> {
+  return step(async () => {
+    const owner = await requireOwner();
+    const business = await getBusiness(db());
+    if (!business) throw new Error("Add your business first.");
+    const allowed = new Set(f.getAll("payoutToken").map(String));
+    const chosen = (await payoutTokens()).filter((t) => allowed.has(t.assetId));
+    if (chosen.length === 0) throw new Error("Pick at least one way to pay people.");
+    await updateRules(db(), owner, {
+      ...business.rules,
+      weeklyCapUsd: dollars(f, "weeklyCap", "Weekly limit"),
+      perPaymentCapUsd: dollars(f, "perPaymentCap", "Largest single payment"),
+      approvalThresholdUsd: dollars(f, "approvalThreshold", "Ask me first above"),
+      payoutTokens: chosen,
+      autopilot: f.get("autopilot") === "on",
+      invoiceTiming: text(f, "invoiceTiming") === "asap" ? "asap" : "due",
+    });
+    await markOnboarding(db(), "limits");
+  });
+}
+
+/** Marks a skippable step as seen (people, money), the practice agent as on, or the whole flow as finished. */
+export async function onboardNextAction(_prev: FormResult, f: FormData): Promise<FormResult> {
+  const what = text(f, "step");
+  if (what === "finished") {
+    try {
+      await requireOwner();
+      await markOnboarding(db(), "finished");
+    } catch (e) {
+      return { ok: false, message: e instanceof Error ? e.message : "Something went wrong." };
+    }
+    kickAgent();
+    revalidatePath("/", "layout");
+    redirect("/this-week");
+  }
+  return step(async () => {
+    await requireOwner();
+    if (what === "agent" && readEnv().BURSAR_MODE !== "dry-run") throw new Error("Your wallet turns the agent on: use the buttons above.");
+    if (what !== "people" && what !== "money" && what !== "agent") throw new Error("Unknown step.");
+    await markOnboarding(db(), what);
+  });
+}
+
+/** Practice mode: start an empty business of your own (the sample restaurant is cleared). */
+export async function startOwnPracticeAction(): Promise<FormResult> {
+  if (readEnv().BURSAR_MODE !== "dry-run") return { ok: false, message: "This is for practice mode." };
+  try {
+    await clearPracticeBusiness(db());
+    await clearOnboarding(db());
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Something went wrong." };
+  }
+  revalidatePath("/", "layout");
+  redirect("/welcome");
+}
+
+export type InviteResult = { ok: true; link: string; name: string } | { ok: false; message: string };
+
+export async function createInviteAction(f: FormData): Promise<InviteResult> {
+  try {
+    const owner = await requireOwner();
+    const category = PayeeCategory.parse(text(f, "category") || "staff");
+    const invite = await createInvite(db(), owner, { name: text(f, "name"), category, recurring: recurringFrom(f) });
+    revalidatePath("/", "layout");
+    return { ok: true, link: `${readEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/join/${invite.token}`, name: invite.name };
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Couldn't make the link." };
+  }
+}
+
+export async function approveInviteAction(_prev: FormResult, f: FormData): Promise<FormResult> {
+  return run(async () => {
+    await approveInvite(db(), await requireOwner(), text(f, "inviteId"));
+    revalidatePath("/", "layout");
+    return readEnv().BURSAR_MODE === "dry-run"
+      ? "Added. Their first payment will still ask for your OK."
+      : "Added. Now confirm the updated list with your wallet (Spending rules) so they can be paid.";
+  });
+}
+
+export async function declineInviteAction(_prev: FormResult, f: FormData): Promise<FormResult> {
+  return run(async () => {
+    await declineInvite(db(), await requireOwner(), text(f, "inviteId"));
+    revalidatePath("/", "layout");
+    return "Declined. Nothing was added.";
+  });
+}
+
+/** The invited person's form (no sign-in: the link is the key). */
+export async function submitInviteAction(_prev: FormResult, f: FormData): Promise<FormResult> {
+  return run(async () => {
+    await submitInvite(db(), text(f, "token"), { assetId: text(f, "token_asset"), address: text(f, "address"), memo: text(f, "memo") });
+    return "Thanks! Sent. You'll be paid once the business confirms your details.";
   });
 }

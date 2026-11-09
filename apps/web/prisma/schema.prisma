@@ -178,3 +178,24 @@ model AuditEvent {
   message String
   data    String?
 }
+
+/// A link the owner sends to someone they will pay, so that person enters how
+/// they want to be paid. What they send waits for the owner's OK; only then are
+/// they added to the payee list (and, live, signed into the account's policy).
+model PayeeInvite {
+  id          String    @id @default(cuid())
+  /// Random, unguessable; the only key in the link.
+  token       String    @unique
+  name        String
+  category    String
+  /// Regular pay set by the owner (JSON, same shape as Payee.recurring), or "null".
+  recurring   String    @default("null")
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  /// What they sent (JSON payout), when.
+  payout      String?
+  submittedAt DateTime?
+  /// open | submitted | approved | declined
+  status      String    @default("open")
+  payeeId     String?
+}

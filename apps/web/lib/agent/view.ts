@@ -18,7 +18,7 @@ export interface FeedEntry {
 
 export interface NeedsYou {
   itemId: string;
-  kind: "approve" | "failed" | "funds" | "payee";
+  kind: "approve" | "failed" | "funds" | "payee" | "invite";
   payeeName: string;
   forWhat: string;
   amountUsd: bigint;
@@ -79,14 +79,23 @@ export async function needsYou(db: PrismaClient): Promise<NeedsYou[]> {
     },
     orderBy: { id: "asc" },
   });
-  return rows.map((r) => ({
+  const invites = await db.payeeInvite.findMany({ where: { status: "submitted" }, orderBy: { submittedAt: "asc" } });
+  const fromInvites: NeedsYou[] = invites.map((i) => ({
+    itemId: i.id,
+    kind: "invite",
+    payeeName: i.name,
+    forWhat: "New person",
+    amountUsd: 0n,
+    reason: "Sent how they want to be paid. Check it with them, then approve on People.",
+  }));
+  return fromInvites.concat(rows.map((r) => ({
     itemId: r.id,
     kind: r.payStatus === "failed" ? "failed" : r.payStatus === "waiting" ? (r.payCode as "funds" | "payee") : "approve",
     payeeName: r.payeeName,
     forWhat: r.forWhat,
     amountUsd: BigInt(r.amountUsd),
     reason: r.payStatus === "planned" ? (r.ownTapReason ?? "Needs your OK.") : (r.payReason ?? ""),
-  }));
+  })));
 }
 
 /** The next payments the agent will make by itself, over the coming two weeks. */

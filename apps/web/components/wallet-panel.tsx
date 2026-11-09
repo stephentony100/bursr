@@ -38,13 +38,14 @@ export function WalletPanel(props: {
   /** ISO date the payment pass ends, when it ends within 3 days. */
   grantRenewBy: string | null;
   frozen: boolean;
+  /** Inside /welcome: no heading, sign-out or pause; the two confirmations are counted. */
+  onboarding?: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [prepared, setPrepared] = useState<Prepared | null>(null);
-  const [name, setName] = useState("");
 
   async function guard(fn: () => Promise<void>) {
     setBusy(true);
@@ -67,12 +68,6 @@ export function WalletPanel(props: {
   const signOut = () =>
     guard(async () => {
       await walletSignOut();
-      router.refresh();
-    });
-
-  const setup = () =>
-    guard(async () => {
-      await post("/api/owner/setup", { name });
       router.refresh();
     });
 
@@ -121,8 +116,8 @@ export function WalletPanel(props: {
         : null;
 
   return (
-    <section className="rounded-xl border-2 border-indigo/30 bg-card p-6">
-      <h2 className="text-xl font-bold">Your Bursar wallet</h2>
+    <section className={props.onboarding ? "" : "rounded-xl border-2 border-indigo/30 bg-card p-6"}>
+      {!props.onboarding && <h2 className="text-xl font-bold">Your Bursar wallet</h2>}
 
       {!props.ownerAccountId ? (
         <div className="mt-3">
@@ -133,24 +128,28 @@ export function WalletPanel(props: {
         </div>
       ) : (
         <div className="mt-3 space-y-4 text-sm">
-          <p>
-            Signed in as <span className="num font-medium">{props.ownerAccountId}</span>{" "}
-            <button onClick={signOut} className="text-indigo underline">
-              Sign out
-            </button>
-          </p>
+          {!props.onboarding && (
+            <p>
+              Signed in as <span className="num font-medium">{props.ownerAccountId}</span>{" "}
+              <button onClick={signOut} className="text-indigo underline">
+                Sign out
+              </button>
+            </p>
+          )}
 
           {!props.businessExists && (
-            <div>
-              <label className="block font-medium">
-                Business name
-                <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 block w-full max-w-sm rounded-md border border-line px-3 py-2" />
-              </label>
-              <p className="mt-1 text-muted">You start with small limits ($20 a week, $10 a payment) and can raise them any time.</p>
-              <button onClick={setup} disabled={busy || name.trim().length < 2} className="mt-3 rounded-md bg-ledger px-4 py-2 font-medium text-card disabled:opacity-60">
-                Set up my business
-              </button>
-            </div>
+            <p>
+              <a href="/welcome" className="font-medium text-indigo underline">
+                Set up your business
+              </a>{" "}
+              <span className="text-muted">(a few short steps: your business, your limits, who you pay, then your wallet turns the agent on).</span>
+            </p>
+          )}
+
+          {props.onboarding && next && (
+            <p className="font-medium">
+              Confirmation {next === "grant_issue" ? 2 : 1} of 2: {next === "grant_issue" ? "let your agent pay inside your limits." : "create your agent's wallet with your limits and the people you pay."}
+            </p>
           )}
 
           {props.businessExists && (
@@ -169,7 +168,7 @@ export function WalletPanel(props: {
                     {next === "grant_issue" && props.hasGrant ? "Renew Bursar's permission to pay" : LABELS[next]}…
                   </button>
                 )}
-                {props.agentId && (
+                {props.agentId && !props.onboarding && (
                   <button
                     onClick={() => prepare(props.frozen ? "agent_unfreeze" : "agent_freeze")}
                     disabled={busy}

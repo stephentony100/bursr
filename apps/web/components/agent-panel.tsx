@@ -87,7 +87,14 @@ export function NeedsYouList({ items }: { items: NeedsYou[] }) {
           <li key={n.itemId} className="flex flex-wrap items-start justify-between gap-3 py-3">
             <div className="min-w-0 flex-1">
               <p className="font-medium">
-                {n.payeeName} · <span className="num">{formatUsd(n.amountUsd)}</span> <span className="text-muted">({n.forWhat})</span>
+                {n.payeeName}
+                {n.kind !== "invite" && (
+                  <>
+                    {" "}
+                    · <span className="num">{formatUsd(n.amountUsd)}</span>
+                  </>
+                )}{" "}
+                <span className="text-muted">({n.forWhat})</span>
               </p>
               <p className="text-sm text-muted">{n.reason}</p>
             </div>
@@ -95,6 +102,11 @@ export function NeedsYouList({ items }: { items: NeedsYou[] }) {
               <ActionForm action={approveItemAction} submit="OK, pay it">
                 <input type="hidden" name="itemId" value={n.itemId} />
               </ActionForm>
+            )}
+            {n.kind === "invite" && (
+              <Link href="/people" className="rounded-md bg-ledger px-3 py-2 text-sm font-semibold text-card hover:bg-indigo">
+                Review
+              </Link>
             )}
             {n.kind === "funds" && (
               <Link href="/add-money" className="rounded-md bg-ledger px-3 py-2 text-sm font-semibold text-card hover:bg-indigo">

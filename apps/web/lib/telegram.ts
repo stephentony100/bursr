@@ -108,6 +108,8 @@ export async function pendingAlerts(db: PrismaClient): Promise<Alert[]> {
   for (const p of failed) alerts.push({ key: `failed:${p.id}`, text: `❌ Not paid: ${p.payeeName}, ${p.forWhat}.\n${p.payReason ?? ""}` });
   const refused = await db.auditEvent.findMany({ where: { kind: "account_refused" }, orderBy: { at: "asc" } });
   for (const r of refused) alerts.push({ key: `refused:${r.id}`, text: `🛡 Your spending rules blocked a payment: ${r.message}` });
+  const sentDetails = await db.auditEvent.findMany({ where: { kind: "invite_submitted", at: { gte: new Date(Date.now() - 24 * 60 * 60_000) } }, orderBy: { at: "asc" } });
+  for (const e of sentDetails) alerts.push({ key: `invite:${e.id}`, text: `👤 ${e.message} Approve it on People.` });
   // What the agent did or needs, from the last day (older news isn't sent when a chat is first linked).
   const agentEvents = await db.auditEvent.findMany({
     where: { actor: "agent", kind: { in: Object.keys(AGENT_ALERT_KINDS) }, at: { gte: new Date(Date.now() - 24 * 60 * 60_000) } },

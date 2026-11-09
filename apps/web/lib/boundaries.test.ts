@@ -10,7 +10,22 @@ const LIB = import.meta.dirname;
 const OWNER_ONLY = ["owner-actions", "owner"];
 
 /** Agent-side modules: everything the AI and the payment loop run. */
-const AGENT_SIDE = ["agent-account", "agent-account.ts", "checks", "reader.ts", "reader-schema.ts", "invoices.ts", "plan.ts", "pay.ts", "oneclick.ts"];
+// lib/agent/chat.ts is not here on purpose: the model only proposes cards; confirming one runs an owner action with the owner's session.
+const AGENT_SIDE = [
+  "agent-account",
+  "agent-account.ts",
+  "checks",
+  "reader.ts",
+  "reader-schema.ts",
+  "invoices.ts",
+  "plan.ts",
+  "pay.ts",
+  "oneclick.ts",
+  "agent/engine.ts",
+  "agent/loop.ts",
+  "agent/view.ts",
+  "agent/say.ts",
+];
 
 function files(p: string): string[] {
   const full = path.join(LIB, p);

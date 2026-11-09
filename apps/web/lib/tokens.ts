@@ -6,21 +6,8 @@ import { getTokens, type Token } from "./oneclick";
 // dry-run falls back to fixtures/tokens.snapshot.json (saved from the same
 // endpoint on 5 Nov 2026), so the demo works offline.
 
-export const CHAIN_NAMES: Record<string, string> = {
-  near: "NEAR",
-  tron: "Tron",
-  base: "Base",
-  arb: "Arbitrum",
-  sol: "Solana",
-  eth: "Ethereum",
-  pol: "Polygon",
-  bsc: "BNB Chain",
-  op: "Optimism",
-  avax: "Avalanche",
-  sui: "Sui",
-};
-
-export const chainName = (id: string) => CHAIN_NAMES[id] ?? id.toUpperCase();
+export { CHAIN_NAMES, chainName } from "./chains";
+import { CHAIN_NAMES, chainName } from "./chains";
 
 /** USDC and USDT, one entry per chain; any symbol+chain listed twice is left out rather than guessed. */
 export function stablecoinsFrom(tokens: Token[]): PayoutToken[] {

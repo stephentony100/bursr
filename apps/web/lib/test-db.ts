@@ -22,6 +22,7 @@ export function createTestDb(): { db: PrismaClient; reset: () => Promise<void>; 
         db.invoice.deleteMany(),
         db.accountAction.deleteMany(),
         db.auditEvent.deleteMany(),
+        db.payeeInvite.deleteMany(),
         db.payee.deleteMany(),
         db.agentAccount.deleteMany(),
         db.business.deleteMany(),

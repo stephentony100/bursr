@@ -1,5 +1,6 @@
 import { ArrowRight, Lock } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { loadSample } from "@/app/actions";
 import { AgentFeed, AgentStatus, ComingUp, NeedsYouList } from "@/components/agent-panel";
@@ -12,6 +13,8 @@ import { readEnv } from "@/lib/env";
 import { listInvoices } from "@/lib/invoices";
 import { formatUsd, rescale } from "@/lib/money";
 import { getLatestPlan } from "@/lib/plans";
+import { onboardingState, STEP_TITLES } from "@/lib/onboarding";
+import { getOwner } from "@/lib/session";
 import { getBusiness, listPayees } from "@/lib/store";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -26,6 +29,9 @@ export default async function Home() {
   await connection();
   const dryRun = readEnv().BURSAR_MODE === "dry-run";
   const business = await getBusiness(db());
+  // A new live owner starts with the guided setup.
+  if (!business && !dryRun) redirect("/welcome");
+  const setup = business && !dryRun ? await onboardingState(db(), await getOwner()) : null;
 
   if (!business) {
     return (
@@ -53,17 +59,14 @@ export default async function Home() {
               Meet Bukka Corner, a Lagos restaurant with three suppliers, three staff and a week of invoices, including a few tricky ones. You
               play the owner. All the money is practice money.
             </p>
-            <ActionForm action={loadSample} submit="Open the sample restaurant" />
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <ActionForm action={loadSample} submit="Open the sample restaurant" />
+              <Link href="/welcome" className="rounded-lg border border-line px-4 py-2 text-sm font-semibold hover:border-ink/40">
+                Set up my own business
+              </Link>
+            </div>
           </div>
-        ) : (
-          <p className="text-muted">
-            To begin, press <strong>Sign in</strong> at the top right, then open{" "}
-            <Link href="/spending-rules" className="text-indigo underline">
-              Spending rules
-            </Link>{" "}
-            to set up your business.
-          </p>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -117,6 +120,14 @@ export default async function Home() {
       </div>
 
       <AutoRefresh active everyMs={5000} />
+      {setup && !setup.done.agent && (
+        <Link href="/welcome" className="flex items-center justify-between gap-3 rounded-xl border border-ledger/40 bg-ledger-soft px-5 py-4">
+          <span>
+            <span className="font-semibold">Finish setting up: {STEP_TITLES[setup.current].toLowerCase()}.</span> Your agent starts paying once it&apos;s on.
+          </span>
+          <ArrowRight size={16} weight="bold" aria-hidden />
+        </Link>
+      )}
       <AgentStatus autopilot={business.rules.autopilot} frozen={business.rules.frozen} nextPayday={nextPayday(new Date(), business.rules.timeZone, business.rules.paydayWeekday)} />
       <NeedsYouList items={waitingOnYou} />
 

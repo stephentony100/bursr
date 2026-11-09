@@ -62,7 +62,13 @@ export function Hero() {
           <p className="mt-6 max-w-[38ch] text-lg leading-relaxed text-muted">
             Bursar checks every supplier invoice, then pays your suppliers and staff after one OK. Never past your limits.
           </p>
-          <TryButton className="mt-8" />
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            <TryButton />
+            <Link href="/welcome" className="group inline-flex items-center gap-1.5 font-semibold text-ink hover:text-indigo">
+              Set up your business
+              <ArrowRight size={16} weight="bold" aria-hidden className="transition-transform duration-200 group-hover:translate-x-0.5" />
+            </Link>
+          </div>
         </div>
         <HeroPreview />
       </div>
