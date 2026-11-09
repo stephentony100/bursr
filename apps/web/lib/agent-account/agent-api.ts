@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { AgentApiError, createAgentApi, type AgentApi } from "@near-intents-agent-api/sdk";
 import { parseUnits, USD_DECIMALS } from "../money";
 import type { ActionRequest, RefusalCode } from "./evaluate";
@@ -16,14 +17,26 @@ export interface AgentApiConfig {
 }
 
 function refusalFrom(e: AgentApiError): ActionOutcome {
-  return {
-    status: "refused",
-    refusal: {
-      code: e.code as RefusalCode,
-      layer: (e.layer === "budget" || e.layer === "balance" ? e.layer : e.layer === "request" ? "request" : "policy"),
-      message: e.detail ?? e.title,
-    },
-  };
+  const layer = e.layer === "policy" || e.layer === "budget" || e.layer === "balance" ? e.layer : "request";
+  // Keep the API's own words: code, the fields it objected to, and its request id for support.
+  const fields = e.errors
+    .map((x) => [x.source?.pointer, x.detail ?? x.title].filter(Boolean).join(": "))
+    .filter(Boolean)
+    .join("; ");
+  const message = layer === "request" ? `${e.code}${fields ? ` (${fields})` : ""}${e.requestId ? ` [request ${e.requestId}]` : ""}` : (e.detail ?? e.title);
+  return { status: "refused", refusal: { code: e.code as RefusalCode, layer, message } };
+}
+
+// The SDK makes UUID keys; Bursar's keys are "<plan item>:<step>" so a retry can
+// never pay twice. Sent as a name-based UUID (v5) of that key: the same payment
+// step always sends the same Idempotency-Key.
+const KEY_NAMESPACE = Buffer.from("6ba7b8119dad11d180b400c04fd430c8", "hex"); // RFC 4122 URL namespace
+export function apiIdempotencyKey(key: string): string {
+  const h = createHash("sha1").update(Buffer.concat([KEY_NAMESPACE, Buffer.from(key, "utf8")])).digest().subarray(0, 16);
+  h[6] = (h[6] & 0x0f) | 0x50;
+  h[8] = (h[8] & 0x3f) | 0x80;
+  const x = h.toString("hex");
+  return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20)}`;
 }
 
 export class AgentApiAccount implements AgentAccount {
@@ -57,7 +70,7 @@ export class AgentApiAccount implements AgentAccount {
   }
 
   private async call(req: ActionRequest, idempotencyKey: string | undefined, dry: boolean): Promise<ActionOutcome> {
-    const opts = idempotencyKey ? { idempotencyKey } : {};
+    const opts = idempotencyKey ? { idempotencyKey: apiIdempotencyKey(idempotencyKey) } : {};
     try {
       if (req.kind === "withdraw") {
         const body = { asset: req.asset, amount: req.amount.toString(), chain: req.chain, recipient: req.recipient, ...(req.memo ? { memo: req.memo } : {}), confidential: true };

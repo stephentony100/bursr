@@ -31,7 +31,10 @@ function samePayout(a: Payout, b: Payout) {
 }
 
 function refusedText(o: ActionOutcome): string | null {
-  return o.status === "refused" ? `Blocked by your spending rules: ${o.refusal.message}` : null;
+  if (o.status !== "refused") return null;
+  return o.refusal.layer === "request"
+    ? `The payment service didn't accept this request, so nothing was sent. Details: ${o.refusal.message}`
+    : `Blocked by your spending rules: ${o.refusal.message}`;
 }
 
 export async function payItem(
