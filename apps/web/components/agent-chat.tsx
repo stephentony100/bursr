@@ -20,7 +20,10 @@ export function AgentChat({ businessName, quickQuestions, privateModel }: { busi
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Record<string, string>>({});
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({ block: "nearest" }), [lines, busy]);
+  useEffect(() => {
+    // Braces matter: newer browsers return a Promise from scrollIntoView, which must not be the effect's return value.
+    end.current?.scrollIntoView({ block: "nearest" });
+  }, [lines, busy]);
 
   async function ask(question: string) {
     const q = question.trim();
