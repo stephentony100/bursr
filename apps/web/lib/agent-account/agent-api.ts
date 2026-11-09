@@ -9,6 +9,14 @@ import type { AccountStatus, ActionOutcome, AgentAccount, Outcome } from "./type
 // limits, freeze) refuse anything outside the owner's signed policy.
 // The agent acts with a grant token only; it never holds the owner's key.
 
+// Private (confidential) payments are switched off: on 9 Nov 2026 every
+// confidential swap and withdrawal was refused by the wallet provider ("1Click's
+// intent is not the transfer that was quoted": the private balance holds
+// imt:…:nep141:USDC, the order was authorised in nep141:USDC; never submitted).
+// Public payments use the agent's public balance. See docs/DECISIONS.md.
+export const PRIVATE_PAYMENTS = false;
+export const BALANCE_SOURCE = PRIVATE_PAYMENTS ? "confidential" : "public";
+
 export interface AgentApiConfig {
   apiKey: string;
   baseUrl: string;
@@ -52,8 +60,8 @@ export class AgentApiAccount implements AgentAccount {
   async status(): Promise<AccountStatus> {
     const [view, balances] = await Promise.all([
       this.api.getPolicy(this.cfg.agentId),
-      // Deposits and payments use the confidential balance; the default (public) one stays empty.
-      this.api.getBalances(this.cfg.agentId, { source: "confidential" }),
+      // The balance payments spend from (see PRIVATE_PAYMENTS).
+      this.api.getBalances(this.cfg.agentId, { source: BALANCE_SOURCE }),
     ]);
     if (!view.policy) throw new Error("The agent has no applied policy yet.");
     const weekly = view.usage.budget.weekly;
@@ -73,7 +81,7 @@ export class AgentApiAccount implements AgentAccount {
     const opts = idempotencyKey ? { idempotencyKey: apiIdempotencyKey(idempotencyKey) } : {};
     try {
       if (req.kind === "withdraw") {
-        const body = { asset: req.asset, amount: req.amount.toString(), chain: req.chain, recipient: req.recipient, ...(req.memo ? { memo: req.memo } : {}), confidential: true };
+        const body = { asset: req.asset, amount: req.amount.toString(), chain: req.chain, recipient: req.recipient, ...(req.memo ? { memo: req.memo } : {}), confidential: PRIVATE_PAYMENTS };
         if (dry) {
           const q = await this.agent.withdraw(this.cfg.agentId, { ...body, dry: true }, opts);
           return fromWarnings(q.warnings);
@@ -82,8 +90,7 @@ export class AgentApiAccount implements AgentAccount {
         return { status: "accepted", correlationId: r.correlation_id, simulated: false };
       }
       if (req.kind === "swap") {
-        // Confidential, like the policy and the withdrawals: the swap uses the private balance.
-        const body = { origin_asset: req.asset, destination_asset: req.destinationAsset, amount: req.amount.toString(), confidential: true };
+        const body = { origin_asset: req.asset, destination_asset: req.destinationAsset, amount: req.amount.toString(), confidential: PRIVATE_PAYMENTS };
         if (dry) {
           const q = await this.agent.swap(this.cfg.agentId, { ...body, dry: true });
           return fromWarnings(q.warnings);

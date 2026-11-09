@@ -1,10 +1,12 @@
 // npm run fund -- <SYMBOL> <chain>   e.g.  npm run fund -- USDC base
 // Creates a deposit address for the LIVE agent account. Funds sent there in
 // that token on that chain are converted to the account's treasury token
-// (USDC on NEAR) and credited to its confidential balance. Creating the
+// (USDC on NEAR) and credited to the balance payments spend from (public while
+// PRIVATE_PAYMENTS is off). Creating the
 // address spends nothing; only send money after the owner has agreed to it.
 import "./load-env";
 import { createAgentApi, createIdempotencyKey } from "@near-intents-agent-api/sdk";
+import { PRIVATE_PAYMENTS } from "../lib/agent-account/agent-api";
 import { db } from "../lib/db";
 import { readEnv } from "../lib/env";
 import { formatUnits } from "../lib/money";
@@ -22,7 +24,7 @@ if (tokens.length !== 1) throw new Error(`Expected one ${symbol} on ${chain} in 
 const origin = tokens[0];
 const d = await api.deposit(
   agentId,
-  { origin_asset: origin.asset_id, ...(origin.asset_id !== treasury.assetId ? { destination_asset: treasury.assetId } : {}), confidential: true },
+  { origin_asset: origin.asset_id, ...(origin.asset_id !== treasury.assetId ? { destination_asset: treasury.assetId } : {}), confidential: PRIVATE_PAYMENTS },
   { idempotencyKey: createIdempotencyKey() },
 );
 const det = d.details as { deposit_address?: string | null; memo?: string | null; min_amount?: string | null; expires_at?: string | null };

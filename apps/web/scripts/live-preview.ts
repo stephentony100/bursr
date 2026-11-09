@@ -11,6 +11,7 @@ import { getLatestPlan } from "../lib/plans";
 import { amountOutFor } from "../lib/quotes";
 import { getBusiness } from "../lib/store";
 import { liveAgentConfig } from "../lib/agent-account";
+import { BALANCE_SOURCE, PRIVATE_PAYMENTS } from "../lib/agent-account/agent-api";
 
 const env = readEnv();
 if (env.BURSAR_MODE !== "live") throw new Error("Set BURSAR_MODE=live (and DATABASE_URL to the live database) first.");
@@ -22,7 +23,7 @@ const treasury = business.rules.treasury;
 const plan = await getLatestPlan(db());
 if (!plan || plan.status !== "draft") throw new Error("Prepare a plan on the Plan page first (it must not be approved yet).");
 
-const balances = await api.getBalances(agentId, { source: "confidential" });
+const balances = await api.getBalances(agentId, { source: BALANCE_SOURCE });
 console.log(`Agent ${agentId}`);
 console.log(`Balances: ${balances.balances.map((b) => `${b.asset_id} ${b.available_raw}`).join(", ") || "none"}`);
 
@@ -33,10 +34,10 @@ for (const i of plan.items.filter((x) => x.placement === "in" && x.payout)) {
   total += i.amountUsd;
   console.log(`\n${i.payeeName}: ${i.forWhat}, ${formatUsd(i.amountUsd)} as ${token.symbol} on ${token.chain} to ${i.payout!.address}`);
   if (token.assetId !== treasury.assetId) {
-    const swap = await agent.swap(agentId, { origin_asset: treasury.assetId, destination_asset: token.assetId, amount: out.toString(), confidential: true, dry: true });
+    const swap = await agent.swap(agentId, { origin_asset: treasury.assetId, destination_asset: token.assetId, amount: out.toString(), confidential: PRIVATE_PAYMENTS, dry: true });
     console.log(`  swap preview: ${JSON.stringify({ amount_out: swap.quote?.amount_out ?? null, fee: swap.fee ?? null, warnings: swap.warnings ?? [] })}`);
   }
-  const w = await agent.withdraw(agentId, { asset: token.assetId, amount: out.toString(), chain: token.chain, recipient: i.payout!.address, ...(i.payout!.memo ? { memo: i.payout!.memo } : {}), confidential: true, dry: true });
+  const w = await agent.withdraw(agentId, { asset: token.assetId, amount: out.toString(), chain: token.chain, recipient: i.payout!.address, ...(i.payout!.memo ? { memo: i.payout!.memo } : {}), confidential: PRIVATE_PAYMENTS, dry: true });
   console.log(`  withdraw preview: ${JSON.stringify({ amount_out: w.quote?.amount_out ?? null, fee: w.fee ?? null, warnings: w.warnings ?? [] })}`);
 }
 console.log(`\nPlan total ${formatUsd(total)} (${formatUnits(total, 6)} in USD terms). Nothing was moved.`);

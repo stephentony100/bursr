@@ -11,6 +11,7 @@ import { AgentApiError, createAgentApi, createIdempotencyKey, type Policy } from
 import { db } from "../lib/db";
 import { demoEvmAddress, demoNearImplicit, demoSolanaAddress, demoTronAddress } from "../lib/demo-addresses";
 import { liveAgentConfig } from "../lib/agent-account";
+import { BALANCE_SOURCE } from "../lib/agent-account/agent-api";
 
 type Step = { name: string; expect: string; got: string; pass: boolean; detail: unknown };
 
@@ -22,7 +23,7 @@ async function main() {
   const view = await api.getPolicy(agentId);
   const policy = view.policy as Policy | null;
   if (!policy) throw new Error("The agent has no applied policy.");
-  const balances = await api.getBalances(agentId, { source: "confidential" });
+  const balances = await api.getBalances(agentId, { source: BALANCE_SOURCE });
   console.log(`Agent ${agentId}, policy revision ${view.revision}, frozen=${policy.frozen}`);
   console.log(`Balances: ${JSON.stringify(balances.balances.map((b) => [b.asset_id, b.available_raw]))}`);
 

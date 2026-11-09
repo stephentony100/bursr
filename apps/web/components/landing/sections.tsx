@@ -51,7 +51,7 @@ export function Privacy() {
           </h2>
           <p className="mt-5 max-w-[56ch] text-lg leading-relaxed text-muted">
             Bursar reads invoices with NEAR AI, on computers built so that no one, not even the people running them, can see what&apos;s inside. Press <strong className="font-semibold text-ink">Check the proof</strong> and
-            Bursar checks the hardware&apos;s signed report in front of you. The amounts you pay stay private too.
+            Bursar checks the hardware&apos;s signed report in front of you.
           </p>
         </div>
         <div className="rounded-xl border border-line bg-card p-6">

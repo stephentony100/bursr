@@ -96,7 +96,7 @@ Full responses: `fixtures/live/rules-live-2026-11-06.json`. Bursar's code did no
 | --- | --- | --- |
 | Rules the AI cannot break | NEAR Intents **Agent API** policy | Weekly USD budget, per-payment cap, payee allowlist (exact chain + address), allowed tokens, freeze |
 | Paying anyone on any chain | NEAR Intents (Agent API `swap` + `withdraw`, priced with 1Click quotes) | USDC held on NEAR Intents pays out in the payee's chosen chain and token |
-| Private payments | Confidential Intents | Swaps settle on NEAR's private shard; deposits and withdrawals cannot be linked to each other |
+| Private payments (switched off for now) | Confidential Intents | Built and wired (`PRIVATE_PAYMENTS` in `apps/web/lib/agent-account/agent-api.ts`), but on 9 Nov 2026 the wallet provider refused every confidential swap and withdrawal ("1Click's intent is not the transfer that was quoted"; nothing was signed), so live payments use the agent's public balance until that is fixed upstream |
 | Reading and judging invoices | NEAR AI Cloud | Inference in TEEs, with attestation |
 
 Details and the doc lines relied on: `docs/DECISIONS.md`.
