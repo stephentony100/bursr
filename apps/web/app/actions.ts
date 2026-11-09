@@ -23,6 +23,8 @@ import {
   updatePayeeDetails,
   updateRules,
 } from "@/lib/owner-actions";
+import { runAgent } from "@/lib/agent/engine";
+import { followPayments, kickAgent } from "@/lib/agent/loop";
 import { payApprovedPlan } from "@/lib/pay";
 import { prepareWeeklyPlan } from "@/lib/plans";
 import { requireOwner } from "@/lib/session";
@@ -59,6 +61,7 @@ async function run(fn: () => Promise<string>): Promise<FormResult> {
 export async function loadSample(): Promise<FormResult> {
   return run(async () => {
     await loadSampleBusiness(db());
+    kickAgent();
     return "Welcome to Bukka Corner. Have a look around.";
   });
 }
@@ -81,7 +84,10 @@ export async function saveRules(_prev: FormResult, f: FormData): Promise<FormRes
       approvalThresholdUsd: dollars(f, "approvalThreshold", "Ask me first above"),
       paydayWeekday: Number(text(f, "payday")),
       payoutTokens: chosen,
+      autopilot: f.get("autopilot") === "on",
+      invoiceTiming: text(f, "invoiceTiming") === "asap" ? "asap" : "due",
     });
+    kickAgent();
     return readEnv().BURSAR_MODE === "dry-run" ? "Saved. Your new limits apply straight away." : "Saved. Now confirm them with your wallet above so they take effect.";
   });
 }
@@ -241,6 +247,7 @@ export async function uploadInvoiceAction(_prev: FormResult, f: FormData): Promi
       throw new Error("Add a photo of the invoice or paste its text.");
     }
     const v = await ingestInvoice(db(), input);
+    kickAgent();
     const label = v.supplierName ? `${v.supplierName} #${v.invoiceNumber}` : input.name;
     const words: Record<string, string> = {
       ready: "looks good and is ready to pay",
@@ -278,7 +285,8 @@ export async function preparePlanAction(): Promise<FormResult> {
 export async function approveItemAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
     await approvePlanItem(db(), await requireOwner(), text(f, "itemId"));
-    return "OK'd.";
+    kickAgent();
+    return "OK'd. The agent is paying it now.";
   });
 }
 
@@ -353,5 +361,23 @@ export async function telegramLinkAction(): Promise<FormResult> {
     const row = await db().setting.findUnique({ where: { key: BOT_NAME } });
     const name = row ? `@${JSON.parse(row.value)}` : "your Bursar bot (start it with npm run bot)";
     return `Open ${name} in Telegram and send:  /link ${code}  (valid for 10 minutes)`;
+  });
+}
+
+/** "Run payday now": the agent pays everything due by the coming payday, right away (routine ones), and reports. */
+export async function runPaydayNowAction(): Promise<FormResult> {
+  return run(async () => {
+    await requireOwner();
+    const r = await runAgent(db(), { dueBy: "payday" });
+    followPayments();
+    revalidatePath("/", "layout");
+    if (!r.ran) return r.note ?? "The agent is busy; try again in a moment.";
+    const parts = [
+      r.sent ? `sent ${r.sent}` : "",
+      r.waiting ? `${r.waiting} waiting (it will retry)` : "",
+      r.needsOwner ? `${r.needsOwner} need your OK` : "",
+      r.failed ? `${r.failed} need you` : "",
+    ].filter(Boolean);
+    return parts.length ? `The agent ${parts.join(", ")}. See what it did below.` : "Nothing is due yet. The agent will pay each payment on its day.";
   });
 }

@@ -117,15 +117,21 @@ export interface PlanOptions {
   listHeld?: boolean;
   /** Replace an earlier draft (the owner's list) or leave it alone (the agent's own runs). */
   replaceDraft?: boolean;
+  /** The agent's run: only payments to make (no held lines), no pre-trim to the weekly limit, nothing saved if nothing is due. */
+  agentRun?: boolean;
 }
 
 /** Builds this week's plan as a draft (replacing any earlier draft) and prices each payment with a dry quote. */
-export async function prepareWeeklyPlan(
-  db: PrismaClient,
-  now = new Date(),
-  quote: typeof quotePayout = quotePayout,
-  options: PlanOptions = {},
-): Promise<PlanView> {
+export async function prepareWeeklyPlan(db: PrismaClient, now = new Date(), quote: typeof quotePayout = quotePayout, options: PlanOptions = {}): Promise<PlanView> {
+  return (await buildAndSavePlan(db, now, quote, { ...options, agentRun: false }))!;
+}
+
+/** The agent's run for what is due by `dueBy`: saved only if something is due. */
+export function prepareAgentRun(db: PrismaClient, now: Date, dueBy: string, quote: typeof quotePayout = quotePayout): Promise<PlanView | null> {
+  return buildAndSavePlan(db, now, quote, { dueBy, listHeld: false, replaceDraft: false, agentRun: true });
+}
+
+async function buildAndSavePlan(db: PrismaClient, now: Date, quote: typeof quotePayout, options: PlanOptions): Promise<PlanView | null> {
   const business = await getBusiness(db);
   if (!business) throw new Error("Set up the business first.");
   const account = await agentAccount(db);
@@ -148,8 +154,14 @@ export async function prepareWeeklyPlan(
     now,
     dueBy: options.dueBy,
     listHeld: options.listHeld,
+    ignoreCap: options.agentRun,
     budgetCountsSwaps: account.backend === "agent-api",
   });
+
+  if (options.agentRun) {
+    draft.items = draft.items.filter((i) => i.placement === "in");
+    if (draft.items.length === 0) return null;
+  }
 
   // Price the payments that are in the plan (in parallel, a few at a time).
   const quotes = new Map<number, { quote: PayoutQuote | null; error: string | null }>();

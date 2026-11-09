@@ -30,6 +30,8 @@ const optional = z
 
 const EnvSchema = z.object({
   BURSAR_MODE: z.enum(["dry-run", "live"]).default("dry-run"),
+  // The agent runs in the background while the app runs; "off" stops it (tests, scripts).
+  BURSAR_AGENT: z.enum(["on", "off"]).default("on"),
   NEXT_PUBLIC_APP_URL: z.string().default("http://localhost:3000"),
   DATABASE_URL: z.string().default("file:./dev.db"),
   BURSAR_SESSION_SECRET: optional,

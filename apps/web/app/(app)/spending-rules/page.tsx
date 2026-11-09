@@ -78,6 +78,25 @@ export default async function SetupPage() {
                 ))}
               </select>
             </label>
+            <fieldset className="mt-5 rounded-lg border border-line bg-paper p-4">
+              <legend className="px-1 text-sm font-medium">What the agent does on its own</legend>
+              <label className="flex items-start gap-3 text-sm">
+                <input type="checkbox" name="autopilot" defaultChecked={r.autopilot} className="mt-1" />
+                <span>
+                  <span className="font-medium">Autopilot: pay routine payments without asking me.</span>{" "}
+                  <span className="text-muted">
+                    People you&apos;ve paid before, under &quot;Ask me first above&quot;, with invoices that passed every check. Anything else waits for your OK.
+                  </span>
+                </span>
+              </label>
+              <label className="mt-3 block text-sm font-medium">
+                Pay supplier invoices
+                <select name="invoiceTiming" defaultValue={r.invoiceTiming} className="mt-1 block rounded-md border border-line bg-card px-3 py-2">
+                  <option value="due">The day before they&apos;re due</option>
+                  <option value="asap">As soon as they pass every check</option>
+                </select>
+              </label>
+            </fieldset>
             <p className="mt-5 text-sm">
               <span className="font-medium">Bursar&apos;s fee: </span>
               {r.fee ? (

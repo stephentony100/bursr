@@ -48,6 +48,8 @@ export interface PlanInput {
   dueBy?: string;
   /** List invoices that can't be paid (held, blocked) as plan lines. The agent leaves them on the Invoices page. */
   listHeld?: boolean;
+  /** The agent's runs don't pre-trim to the weekly limit: the account itself refuses, and the agent waits for the refill. */
+  ignoreCap?: boolean;
   /**
    * Live account: its weekly budget counts every action, so a payment in
    * another currency counts twice (the exchange, then the send). Practice
@@ -174,7 +176,7 @@ export function buildPlan(input: PlanInput): DraftPlan {
       });
       continue;
     }
-    if (budgetUsed + budgetCost(c) + feeOn(used + c.amountUsd) > capLeftUsd) {
+    if (!input.ignoreCap && budgetUsed + budgetCost(c) + feeOn(used + c.amountUsd) > capLeftUsd) {
       const left = capLeftUsd - budgetUsed - feeOn(used);
       items.push({
         ...base,

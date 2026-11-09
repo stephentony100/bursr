@@ -6,6 +6,7 @@ import { canReceiveOnNear, notRegisteredText } from "./near-storage";
 import { getPlan, type PlanItemView } from "./plans";
 import { amountOutFor, quotePayout } from "./quotes";
 import { getBusiness, listPayees } from "./store";
+import { formatUsd } from "./money";
 import { chainName } from "./tokens";
 
 // Pays an approved plan, item by item, through the agent account
@@ -185,7 +186,7 @@ export async function payItem(
       data: {
         kind: "payment_sent",
         actor: "agent",
-        message: `Sent ${item.payeeName} their ${item.forWhat.toLowerCase()}: ${token.symbol} on ${chainName(token.chain)}.`,
+        message: `Sent ${item.payeeName} ${formatUsd(item.amountUsd)} (${item.forWhat}) in ${token.symbol} on ${chainName(token.chain)}.`,
         data: JSON.stringify({ itemId: item.id, references }),
       },
     });
@@ -234,7 +235,7 @@ export async function refreshLivePayments(db: PrismaClient, account: AgentAccoun
   await closeFinishedPlans(db);
 }
 
-async function closeFinishedPlans(db: PrismaClient) {
+export async function closeFinishedPlans(db: PrismaClient) {
   const open = await db.plan.findMany({ where: { status: "approved" }, include: { items: true } });
   for (const p of open) {
     const done = p.items.filter((i) => i.placement === "in").every((i) => ["delivered", "failed", "refunded"].includes(i.payStatus));

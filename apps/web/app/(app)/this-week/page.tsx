@@ -2,21 +2,24 @@ import { ArrowRight, Lock } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { connection } from "next/server";
 import { loadSample } from "@/app/actions";
+import { AgentFeed, AgentStatus, ComingUp, NeedsYouList } from "@/components/agent-panel";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { ActionForm } from "@/components/forms";
+import { agentFeed, comingUp, needsYou, nextPayday } from "@/lib/agent/view";
 import { agentAccount, type AccountStatus } from "@/lib/agent-account";
 import { db } from "@/lib/db";
 import { readEnv } from "@/lib/env";
 import { listInvoices } from "@/lib/invoices";
 import { formatUsd, rescale } from "@/lib/money";
 import { getLatestPlan } from "@/lib/plans";
-import { getBusiness, listPayees, recentAudit } from "@/lib/store";
+import { getBusiness, listPayees } from "@/lib/store";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const STEPS = [
   { title: "Send in your invoices", body: "Snap a photo or paste the text. Bursar reads every line for you." },
   { title: "Bursar checks every one", body: "Fake suppliers, changed bank details, double bills and overcharges are stopped before you pay." },
-  { title: "Approve once a week", body: "One tap pays your suppliers and staff, in the digital dollars they prefer, inside your limits." },
+  { title: "Your agent pays on time", body: "It pays staff and suppliers on their day, in the digital dollars each one prefers, inside the limits you set." },
 ];
 
 export default async function Home() {
@@ -72,7 +75,14 @@ export default async function Home() {
   } catch (e) {
     accountError = e instanceof Error ? e.message : "Bursar couldn't reach your wallet just now.";
   }
-  const [payees, activity, invoices, plan] = await Promise.all([listPayees(db()), recentAudit(db(), 12), listInvoices(db()), getLatestPlan(db())]);
+  const [payees, feed, invoices, plan, waitingOnYou, upcoming] = await Promise.all([
+    listPayees(db()),
+    agentFeed(db(), 25),
+    listInvoices(db()),
+    getLatestPlan(db()),
+    needsYou(db()),
+    comingUp(db()),
+  ]);
   const treasury = business.rules.treasury;
   const needsLook = invoices.filter((i) => !["ready", "flag"].includes(i.status)).length;
   const planWaiting = plan?.status === "draft" ? plan.items.filter((i) => i.placement === "in").length : 0;
@@ -105,6 +115,10 @@ export default async function Home() {
           </Link>
         </div>
       </div>
+
+      <AutoRefresh active everyMs={5000} />
+      <AgentStatus autopilot={business.rules.autopilot} frozen={business.rules.frozen} nextPayday={nextPayday(new Date(), business.rules.timeZone, business.rules.paydayWeekday)} />
+      <NeedsYouList items={waitingOnYou} />
 
       {(needsLook > 0 || planWaiting > 0) && (
         <div className="flex flex-wrap gap-3">
@@ -161,44 +175,10 @@ export default async function Home() {
       )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <section className="overflow-hidden rounded-xl border border-line bg-card">
-          <div className="flex items-center justify-between border-b border-line px-5 py-4">
-            <h2 className="text-base font-bold">Latest activity</h2>
-            <Link href="/records" className="text-sm text-indigo underline">
-              All records
-            </Link>
-          </div>
-          <table className="w-full text-sm">
-            <thead className="whitespace-nowrap [overflow-wrap:normal] bg-paper-2/60 text-left text-xs text-muted">
-              <tr>
-                <th scope="col" className="w-36 px-5 py-2.5 font-semibold">When</th>
-                <th scope="col" className="px-5 py-2.5 font-semibold">What happened</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {activity.length === 0 && (
-                <tr>
-                  <td colSpan={2} className="px-5 py-6 text-muted">
-                    Nothing yet.
-                  </td>
-                </tr>
-              )}
-              {activity.map((a) => (
-                <tr key={a.id} className="hover:bg-paper/60">
-                  <td className="whitespace-nowrap px-5 py-3 align-top tabular-nums text-muted">
-                    <time dateTime={a.at.toISOString()}>{a.at.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</time>
-                  </td>
-                  <td className={`px-5 py-3 ${a.kind === "account_refused" ? "text-refuse" : a.kind === "payout_changed" ? "text-hold" : ""}`}>
-                    {a.kind === "account_refused" ? "Blocked by your spending rules: " : ""}
-                    {a.message}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+        <AgentFeed entries={feed} />
 
         <aside className="space-y-6">
+          <ComingUp items={upcoming} />
           <section className="rounded-xl border border-line bg-card p-5">
             <div className="flex items-baseline justify-between">
               <h2 className="text-base font-bold">People you pay</h2>
