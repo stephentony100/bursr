@@ -182,6 +182,12 @@ export async function removePayee(db: PrismaClient, owner: OwnerSession, id: str
   await assertOwner(db, owner);
   const row = await db.payee.update({ where: { id }, data: { removedAt: new Date() } });
   await audit(db, owner, "payee_removed", `You removed ${row.name}`, { id });
+  // Take them out of any list still waiting for the owner's OK, so it matches who can be paid.
+  const waiting = await db.planItem.findMany({ where: { payeeId: id, placement: "in", plan: { status: "draft" } }, select: { id: true, planId: true } });
+  if (waiting.length) {
+    await db.planItem.updateMany({ where: { id: { in: waiting.map((i) => i.id) } }, data: { placement: "removed", reason: "You removed this person." } });
+    for (const planId of new Set(waiting.map((i) => i.planId))) await recomputeFee(db, planId);
+  }
   await applyToSimulatedAccount(db);
 }
 

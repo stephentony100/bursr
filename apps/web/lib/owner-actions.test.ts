@@ -115,6 +115,17 @@ describe("owner-only actions", () => {
     expect(out.status === "refused" && out.refusal.code).toBe("policy_destination_denied");
   });
 
+  it("removing a payee takes them out of a list that isn't approved yet", async () => {
+    const id = await setup();
+    const plan = await t.db.plan.create({ data: { capLeftUsd: "0" } });
+    const item = await t.db.planItem.create({
+      data: { planId: plan.id, kind: "wages", payeeId: id, payeeName: "Tomato Farm", forWhat: "Weekly pay", amountUsd: "1000000", payout: "{}", placement: "in" },
+    });
+    await removePayee(t.db, owner, id);
+    const after = await t.db.planItem.findUnique({ where: { id: item.id } });
+    expect(after).toMatchObject({ placement: "removed", reason: "You removed this person." });
+  });
+
   it("each owner change bumps the account's policy revision", async () => {
     await setup();
     const before = (await getAccountRecord(t.db))!.policyRevision;
