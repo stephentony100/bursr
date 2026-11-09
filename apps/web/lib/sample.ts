@@ -24,6 +24,8 @@ export function sampleRules(tokens: PayoutToken[]): Rules {
     paydayWeekday: 5, // Friday
     timeZone: "Africa/Lagos",
     frozen: false,
+    autopilot: true,
+    invoiceTiming: "due",
     // Practice mode: Bursar's fee goes to a made-up account (hash-derived; nobody holds its key).
     fee: readEnv().BURSAR_FEE_BPS > 0 ? { bps: readEnv().BURSAR_FEE_BPS, payout: { token: t("USDC", "near"), address: demoNearImplicit("bursar-fees"), memo: null } } : null,
   };

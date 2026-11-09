@@ -90,7 +90,7 @@ describe("weekly plan → approval → payment (practice mode)", () => {
   });
 
   it("a payment that needs its own tap blocks plan approval until tapped or removed", async () => {
-    await t.db.payee.updateMany({ where: { name: "Ikeja Gas & Charcoal" }, data: { addedAt: new Date() } }); // a new payee
+    await t.db.payee.updateMany({ where: { name: "Ikeja Gas & Charcoal" }, data: { trustedAt: null } }); // never approved a payment to them
     const plan = await prepareWeeklyPlan(t.db, new Date(), fakeQuote);
     const ikeja = plan.items.find((i) => i.payeeName === "Ikeja Gas & Charcoal")!;
     expect(ikeja.needsOwnTap).toBe(true);
@@ -110,13 +110,13 @@ describe("weekly plan → approval → payment (practice mode)", () => {
     expect((await (await agentAccount(t.db)).status()).spentThisWeekUsd).toBe(550_740_000n); // $548.00 + $2.74 fee
   });
 
-  it("re-checked at payment time: frozen after approval → the account refuses, nothing moves", async () => {
+  it("re-checked at payment time: frozen after approval → the account refuses, nothing moves, the agent waits", async () => {
     const plan = await prepareWeeklyPlan(t.db, new Date(), fakeQuote);
     await approvePlan(t.db, owner, plan.id);
     await setFrozen(t.db, owner, true);
     await payApprovedPlan(t.db, await agentAccount(t.db), plan.id, fakeQuote);
     const items = (await getPlan(t.db, plan.id))!.items.filter((i) => i.placement === "in");
-    expect(items.every((i) => i.payStatus === "failed" && i.payReason?.startsWith("Blocked by your spending rules: Payments are paused"))).toBe(true);
+    expect(items.every((i) => i.payStatus === "waiting" && i.payReason?.startsWith("Payments are paused") && i.retryAt)).toBe(true);
     expect((await (await agentAccount(t.db)).status()).spentThisWeekUsd).toBe(0n);
   });
 
@@ -128,7 +128,7 @@ describe("weekly plan → approval → payment (practice mode)", () => {
     await payApprovedPlan(t.db, await agentAccount(t.db), plan.id, fakeQuote);
     const after = (await getPlan(t.db, plan.id))!.items.find((i) => i.id === tunde.id)!;
     expect(after.payStatus).toBe("failed");
-    expect(after.payReason).toContain("payment details changed after you approved");
+    expect(after.payReason).toContain("payment details changed after this payment was set up");
   });
 
   it("a failed price quote is retried once; if it still fails, the reason is kept and payment still works", async () => {

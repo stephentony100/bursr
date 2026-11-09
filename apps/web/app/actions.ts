@@ -120,7 +120,14 @@ async function payoutFrom(f: FormData): Promise<Payout> {
 function recurringFrom(f: FormData) {
   const amount = text(f, "recurringAmount");
   if (!amount) return null;
-  return { amountUsd: dollars(f, "recurringAmount", "Regular pay"), every: text(f, "recurringEvery") === "month" ? ("month" as const) : ("week" as const) };
+  const every = text(f, "recurringEvery");
+  const amountUsd = dollars(f, "recurringAmount", "Regular pay");
+  if (every === "two_weeks") return { amountUsd, every: "two_weeks" as const };
+  if (every === "month") {
+    const day = text(f, "recurringDay");
+    return day === "" ? { amountUsd, every: "month" as const } : { amountUsd, every: "month" as const, day: Math.min(28, Math.max(0, Number(day) || 0)) };
+  }
+  return { amountUsd, every: "week" as const };
 }
 
 export async function addPayeeAction(_prev: FormResult, f: FormData): Promise<FormResult> {

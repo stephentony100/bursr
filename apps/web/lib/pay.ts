@@ -6,6 +6,7 @@ import { canReceiveOnNear, notRegisteredText } from "./near-storage";
 import { getPlan, type PlanItemView } from "./plans";
 import { amountOutFor, quotePayout } from "./quotes";
 import { getBusiness, listPayees } from "./store";
+import { chainName } from "./tokens";
 
 // Pays an approved plan, item by item, through the agent account
 // (lib/agent-account.ts). Bursar re-checks each item against the payee record
@@ -38,80 +39,161 @@ function refusedText(o: ActionOutcome): string | null {
     : `Blocked by your spending rules: ${o.refusal.message}`;
 }
 
+/** Self-repair: why a payment didn't go out decides whether the agent waits and tries again, or hands it to the owner. */
+type Problem =
+  | { kind: "funds"; message: string } // not enough money in the Bursar wallet: retry when it arrives
+  | { kind: "budget"; message: string; until: Date | null } // weekly limit used up: retry when it refills
+  | { kind: "paused"; message: string } // owner paused payments: retry when they're back on
+  | { kind: "payee"; message: string } // their NEAR account can't hold the token yet: check again daily
+  | { kind: "transient"; message: string; definite: boolean } // network or service trouble: retry with backoff
+  | { kind: "final"; message: string }; // needs the owner (removed payee, changed details, rule refusal)
+
+const MINUTE = 60_000;
+const BACKOFF_MIN = [1, 5, 15, 60, 180];
+export const MAX_ATTEMPTS = BACKOFF_MIN.length + 1;
+
+function problemFromRefusal(o: ActionOutcome & { status: "refused" }, weekResetsAt: Date | null): Problem {
+  const text = refusedText(o)!;
+  switch (o.refusal.code) {
+    case "insufficient_balance":
+      return { kind: "funds", message: "Not enough money in your Bursar wallet for this payment yet. I'll pay it as soon as you add money." };
+    case "spend_budget_exceeded":
+      return { kind: "budget", message: "Your weekly limit is used up. I'll pay it when the limit refills.", until: weekResetsAt };
+    case "wallet_frozen":
+      return { kind: "paused", message: "Payments are paused. I'll pay it when you turn them back on." };
+    default:
+      return o.refusal.layer === "request" ? { kind: "transient", message: text, definite: true } : { kind: "final", message: text };
+  }
+}
+
+/** Where a payment stands after one try: paid, waiting for the agent's next try, or failed (the owner decides). */
 export async function payItem(
   db: PrismaClient,
   account: AgentAccount,
   item: PlanItemView,
   quote: typeof quotePayout = quotePayout,
+  now = new Date(),
 ): Promise<PlanItemView["payStatus"]> {
-  const fail = async (payReason: string) => {
-    await db.planItem.update({ where: { id: item.id }, data: { payStatus: "failed", payReason } });
-    await db.auditEvent.create({ data: { kind: "payment_failed", actor: "agent", message: `Not paid: ${item.payeeName} (${item.forWhat}). ${payReason}`, data: JSON.stringify({ itemId: item.id }) } });
-    return "failed" as const;
+  const row = await db.planItem.findUnique({ where: { id: item.id }, select: { attempts: true } });
+  const attempts = row?.attempts ?? 0;
+  // Keys change only after a try that certainly sent nothing, so an unclear result is always replayed, never repeated.
+  const key = (step: string) => (attempts === 0 ? `${item.id}:${step}` : `${item.id}:${step}:${attempts}`);
+
+  const stop = async (p: Problem) => {
+    const definite = p.kind !== "transient" || p.definite;
+    const nextAttempts = definite ? attempts + 1 : attempts;
+    const giveUp = p.kind === "final" || (p.kind === "transient" && nextAttempts >= MAX_ATTEMPTS);
+    const retryAt =
+      p.kind === "budget"
+        ? (p.until ?? new Date(now.getTime() + 60 * MINUTE))
+        : p.kind === "payee"
+          ? new Date(now.getTime() + 24 * 60 * MINUTE)
+          : p.kind === "transient"
+            ? new Date(now.getTime() + BACKOFF_MIN[Math.min(nextAttempts, BACKOFF_MIN.length - 1)] * MINUTE)
+            : new Date(now.getTime() + (p.kind === "funds" ? 2 : 10) * MINUTE);
+    const status = giveUp ? ("failed" as const) : ("waiting" as const);
+    const message = giveUp && p.kind === "transient" ? `I tried ${nextAttempts} times and it still didn't go through. ${p.message}` : p.message;
+    await db.planItem.update({
+      where: { id: item.id },
+      data: { payStatus: status, payReason: message, payCode: p.kind, attempts: nextAttempts, retryAt: giveUp ? null : retryAt },
+    });
+    await db.auditEvent.create({
+      data: {
+        kind: giveUp ? "payment_failed" : "payment_waiting",
+        actor: "agent",
+        message: giveUp
+          ? `Couldn't pay ${item.payeeName} (${item.forWhat}). ${message} This one needs you.`
+          : `Waiting to pay ${item.payeeName} (${item.forWhat}). ${message}`,
+        data: JSON.stringify({ itemId: item.id, problem: p.kind, retryAt: giveUp ? null : retryAt }),
+      },
+    });
+    return status;
   };
 
-  const business = (await getBusiness(db))!;
-  const planned = item.payout;
-  if (!planned) return fail("No payee to pay.");
-  const payee =
-    item.kind === "fee"
-      ? business.rules.fee && { payout: business.rules.fee.payout, payoutChangedAt: null }
-      : (await listPayees(db)).find((p) => p.id === item.payeeId);
-  if (!payee) return fail(item.kind === "fee" ? "Bursar's fee was removed from your rules, so it wasn't paid." : "You removed this person after approving, so they weren't paid.");
-  if (!samePayout(payee.payout, planned)) return fail("Their payment details changed after you approved, so they weren't paid. It will come back in next week's payments.");
-  if (isOnPayoutHold(payee, new Date())) return fail("Their payment details changed recently and are on a 48-hour safety hold, so they weren't paid.");
+  try {
+    const business = (await getBusiness(db))!;
+    const planned = item.payout;
+    if (!planned) return stop({ kind: "final", message: "No payee to pay." });
+    const payee =
+      item.kind === "fee"
+        ? business.rules.fee && { payout: business.rules.fee.payout, payoutChangedAt: null }
+        : (await listPayees(db)).find((p) => p.id === item.payeeId);
+    if (!payee) {
+      return stop({ kind: "final", message: item.kind === "fee" ? "Bursar's fee was removed from your rules, so it wasn't paid." : "You removed this person, so they weren't paid." });
+    }
+    if (!samePayout(payee.payout, planned)) {
+      return stop({ kind: "final", message: "Their payment details changed after this payment was set up, so it wasn't paid. It will come back with their new details." });
+    }
+    if (isOnPayoutHold(payee, now)) {
+      return stop({ kind: "final", message: "Their payment details changed recently and are on a 48-hour safety hold, so they weren't paid." });
+    }
 
-  // A NEAR account must be registered with the token before it can receive it; check before swapping anything.
-  if (account.backend === "agent-api" && planned.token.chain === "near") {
-    const ok = await canReceiveOnNear(planned.token.assetId, planned.address);
-    if (ok === false) return fail(notRegisteredText(planned.address, planned.token.symbol));
-  }
+    // A NEAR account must be registered with the token before it can receive it; check before swapping anything.
+    if (account.backend === "agent-api" && planned.token.chain === "near") {
+      const ok = await canReceiveOnNear(planned.token.assetId, planned.address);
+      if (ok === false) return stop({ kind: "payee", message: `${notRegisteredText(planned.address, planned.token.symbol)} I'll check again every day.` });
+    }
 
-  await db.planItem.update({ where: { id: item.id }, data: { payStatus: "paying" } });
-  const treasury = business.rules.treasury;
-  const token = planned.token;
-  const amountOut = amountOutFor(item.amountUsd, token);
-  const references: string[] = [];
-  let amountSent = amountOut;
+    await db.planItem.update({ where: { id: item.id }, data: { payStatus: "paying" } });
+    const treasury = business.rules.treasury;
+    const token = planned.token;
+    const amountOut = amountOutFor(item.amountUsd, token);
+    const references: string[] = [];
+    let amountSent = amountOut;
+    const status = account.backend === "agent-api" ? await account.status() : null;
 
-  // Already holding enough of their currency (e.g. an earlier exchange whose send was refused):
-  // send it without exchanging again, so a retry never buys twice or spends the weekly limit twice.
-  const alreadyHeld =
-    token.assetId !== treasury.assetId && account.backend === "agent-api" && ((await account.status()).balances[token.assetId] ?? 0n) >= amountOut;
-  if (token.assetId !== treasury.assetId && !alreadyHeld) {
-    // Different token: swap inside the account first, sized by a fresh quote.
-    const q = await quote(treasury, planned, item.amountUsd);
-    if (!q.ok) return fail(q.reason);
-    amountSent = BigInt(q.quote.amountIn);
-    const swap = await account.execute({ kind: "swap", asset: treasury.assetId, amount: amountSent, destinationAsset: token.assetId }, `${item.id}:swap`);
-    const refused = refusedText(swap);
-    if (refused) return fail(refused);
-    if (swap.status === "accepted") {
+    // Already holding enough of their currency (e.g. an earlier exchange whose send was refused):
+    // send it without exchanging again, so a retry never buys twice or spends the weekly limit twice.
+    const alreadyHeld = token.assetId !== treasury.assetId && status !== null && (status.balances[token.assetId] ?? 0n) >= amountOut;
+    if (token.assetId !== treasury.assetId && !alreadyHeld) {
+      // Different token: swap inside the account first, sized by a fresh quote.
+      const q = await quote(treasury, planned, item.amountUsd);
+      if (!q.ok) return stop({ kind: "transient", message: q.reason, definite: true });
+      amountSent = BigInt(q.quote.amountIn);
+      const swap = await account.execute({ kind: "swap", asset: treasury.assetId, amount: amountSent, destinationAsset: token.assetId }, key("swap"));
+      if (swap.status === "refused") return stop(problemFromRefusal(swap, status?.weekResetsAt ?? null));
       references.push(swap.correlationId);
       // "Only one money action runs per agent wallet at a time": wait for the swap before withdrawing.
       const o = await settle(account, swap.correlationId);
+      if (o.state === "pending") return stop({ kind: "transient", message: "The currency exchange is still running.", definite: false });
       if (o.state !== "done") {
-        return fail(o.state === "pending" ? "The currency exchange was still running after 5 minutes. Check your Bursar wallet before paying again." : `The currency exchange didn't complete (${o.reason ?? o.state}). Nothing was sent to them.`);
+        return stop({ kind: "transient", message: `The currency exchange didn't complete (${o.reason ?? o.state}). Nothing was sent to them.`, definite: true });
       }
     }
+
+    const withdraw = await account.execute(
+      { kind: "withdraw", asset: token.assetId, amount: amountOut, chain: token.chain, recipient: planned.address, memo: planned.memo },
+      key("withdraw"),
+    );
+    if (withdraw.status === "refused") return stop(problemFromRefusal(withdraw, status?.weekResetsAt ?? null));
+    references.push(withdraw.correlationId);
+
+    await db.planItem.update({
+      where: { id: item.id },
+      data: {
+        payStatus: "sent",
+        payReason: null,
+        payCode: null,
+        retryAt: null,
+        sentAt: now,
+        amountSent: amountSent.toString(),
+        amountReceived: amountOut.toString(),
+        references: JSON.stringify(references),
+      },
+    });
+    await db.auditEvent.create({
+      data: {
+        kind: "payment_sent",
+        actor: "agent",
+        message: `Sent ${item.payeeName} their ${item.forWhat.toLowerCase()}: ${token.symbol} on ${chainName(token.chain)}.`,
+        data: JSON.stringify({ itemId: item.id, references }),
+      },
+    });
+    return "sent";
+  } catch (e) {
+    // Network or service trouble: the result is unclear, so the next try replays the same keys.
+    return stop({ kind: "transient", message: `I couldn't reach the payment service (${e instanceof Error ? e.message : String(e)}).`, definite: false });
   }
-
-  const withdraw = await account.execute(
-    { kind: "withdraw", asset: token.assetId, amount: amountOut, chain: token.chain, recipient: planned.address, memo: planned.memo },
-    `${item.id}:withdraw`,
-  );
-  const refused = refusedText(withdraw);
-  if (refused) return fail(refused);
-  if (withdraw.status === "accepted") references.push(withdraw.correlationId);
-
-  await db.planItem.update({
-    where: { id: item.id },
-    data: { payStatus: "sent", sentAt: new Date(), amountSent: amountSent.toString(), amountReceived: amountOut.toString(), references: JSON.stringify(references) },
-  });
-  await db.auditEvent.create({
-    data: { kind: "payment_sent", actor: "agent", message: `Paid ${item.payeeName}: ${item.forWhat}`, data: JSON.stringify({ itemId: item.id, references }) },
-  });
-  return "sent";
 }
 
 /** Pays every item of an approved plan that has not been paid yet, one at a time. */

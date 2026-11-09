@@ -25,6 +25,10 @@ export const RulesSchema = z
     paydayWeekday: z.number().int().min(0).max(6), // 0 = Sunday
     timeZone: z.string().min(1),
     frozen: z.boolean(),
+    /** The agent pays routine payments on its own; only exceptions wait for the owner. */
+    autopilot: z.boolean().default(true),
+    /** Invoices: "due" = the day before their due date; "asap" = as soon as they pass every check. */
+    invoiceTiming: z.enum(["due", "asap"]).default("due"),
     /** Bursar's own fee per plan, paid like any payee to an address on the signed list. null = no fee. */
     fee: z
       .object({ bps: z.number().int().min(1).max(500), payout: z.lazy(() => PayoutSchema) })
@@ -63,9 +67,20 @@ export const PayeeSchema = z.object({
   category: PayeeCategory,
   payout: PayoutSchema,
   prices: z.array(PriceItemSchema),
-  recurring: z.object({ amountUsd: IntStr, every: z.enum(["week", "month"]) }).nullable(),
+  recurring: z
+    .object({
+      amountUsd: IntStr,
+      every: z.enum(["week", "two_weeks", "month"]),
+      /** month only: 1–28, or 0 for the last working day; unset = first payday of the month. */
+      day: z.number().int().min(0).max(28).optional(),
+      /** two_weeks only: the first payday (YYYY-MM-DD); unset = first payday after the payee was added. */
+      startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    })
+    .nullable(),
   addedAt: z.string(), // ISO
   payoutChangedAt: z.string().nullable(), // ISO; starts the 48h hold
+  /** ISO; set when the owner first approves a payment to them. Until then every payment to them needs the owner. */
+  trustedAt: z.string().nullable().default(null),
 });
 export type Payee = z.infer<typeof PayeeSchema>;
 

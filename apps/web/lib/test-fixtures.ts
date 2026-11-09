@@ -34,6 +34,8 @@ export function rules(over: Partial<Rules> = {}): Rules {
     paydayWeekday: 5,
     timeZone: "Africa/Lagos",
     frozen: false,
+    autopilot: true,
+    invoiceTiming: "due",
     fee: null,
     ...over,
   };
@@ -48,6 +50,7 @@ export function payee(over: Partial<Payee> & { id: string }): Payee {
     recurring: null,
     addedAt: "2026-10-01T00:00:00.000Z",
     payoutChangedAt: null,
+    trustedAt: over.trustedAt !== undefined ? over.trustedAt : (over.addedAt ?? "2026-10-01T00:00:00.000Z"),
     ...over,
   };
 }

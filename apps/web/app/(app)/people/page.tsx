@@ -4,8 +4,9 @@ import { addPayeeAction } from "@/app/actions";
 import { ActionForm } from "@/components/forms";
 import { DetailFields, PayoutFields } from "@/components/payee-fields";
 import { db } from "@/lib/db";
-import { isNewPayee, isOnPayoutHold, payoutHoldEndsAt } from "@/lib/domain";
+import { isOnPayoutHold, payoutHoldEndsAt } from "@/lib/domain";
 import { formatUsd } from "@/lib/money";
+import { scheduleWords } from "@/lib/schedule";
 import { getBusiness, listPayees } from "@/lib/store";
 import { chainName } from "@/lib/tokens";
 
@@ -48,7 +49,7 @@ export default async function PayeesPage() {
                 {p.recurring && (
                   <span className="normal-case">
                     {" "}
-                    · {formatUsd(BigInt(p.recurring.amountUsd))} every {p.recurring.every}
+                    · {formatUsd(BigInt(p.recurring.amountUsd))} {scheduleWords(p.recurring, business.rules.paydayWeekday)}
                   </span>
                 )}
               </p>
@@ -64,8 +65,8 @@ export default async function PayeesPage() {
                 <span className="inline-flex w-fit items-center gap-1 rounded-full bg-hold-soft px-2 py-0.5 text-xs font-medium text-hold">
                   Safety hold until {payoutHoldEndsAt(p)!.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                 </span>
-              ) : isNewPayee(p, now) ? (
-                <span className="inline-flex w-fit items-center rounded-full bg-paper-2 px-2 py-0.5 text-xs font-medium text-muted">New: needs your OK</span>
+              ) : !p.trustedAt ? (
+                <span className="inline-flex w-fit items-center rounded-full bg-paper-2 px-2 py-0.5 text-xs font-medium text-muted">First payment needs your OK</span>
               ) : null}
             </div>
           </li>

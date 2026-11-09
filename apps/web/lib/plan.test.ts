@@ -35,7 +35,6 @@ function input(over: Partial<PlanInput> = {}): PlanInput {
     rules: rules(), // weekly $1,000, per payment $400, ask first above $250
     spentThisWeekUsd: 0n,
     handledInvoiceIds: new Set(),
-    wagesPaidPayeeIds: new Set(),
     now: NOW,
     ...over,
   };
@@ -118,13 +117,6 @@ describe("weekly plan", () => {
     expect(item.ownTapReason).toContain("above $250.00");
   });
 
-  it("asks for the owner's own tap for a payee added in the last 7 days", () => {
-    const fresh = { ...farm, addedAt: "2026-11-04T00:00:00.000Z" };
-    const item = placement(buildPlan(input({ payees: [fresh], invoices: [invoice({ id: "d" })] })), "Invoice #D");
-    expect(item.needsOwnTap).toBe(true);
-    expect(item.ownTapReason).toContain("new payee");
-  });
-
   it("does not ask for a tap for an established payee under the threshold", () => {
     expect(placement(buildPlan(input({ invoices: [invoice({ id: "e" })] })), "Invoice #E").needsOwnTap).toBe(false);
   });
@@ -137,12 +129,27 @@ describe("weekly plan", () => {
   });
 
   it("skips invoices already paid and wages already paid this period", () => {
-    const plan = buildPlan(input({ invoices: [invoice({ id: "a" })], handledInvoiceIds: new Set(["a"]), wagesPaidPayeeIds: new Set(["chef"]) }));
+    const plan = buildPlan(input({ invoices: [invoice({ id: "a" })], handledInvoiceIds: new Set(["a"]), handledKeys: new Set(["chef@2026-11-06"]) }));
     expect(plan.items).toHaveLength(0);
   });
 
-  it("monthly pay only on the first payday of the month", () => {
-    expect(placement(buildPlan(input({ payees: [cashier] })), "Monthly pay").placement).toBe("in");
-    expect(buildPlan(input({ payees: [cashier], now: new Date("2026-11-13T10:00:00Z") })).items).toHaveLength(0);
+  it("monthly pay (no day set) is due on the first payday of the month, and caught up once if missed", () => {
+    expect(placement(buildPlan(input({ payees: [cashier] })), "Monthly pay")).toMatchObject({ placement: "in", dueOn: "2026-11-06" });
+    const week2 = new Date("2026-11-13T10:00:00Z");
+    expect(placement(buildPlan(input({ payees: [cashier], now: week2 })), "Monthly pay").dueOn).toBe("2026-11-06");
+    expect(buildPlan(input({ payees: [cashier], now: week2, handledKeys: new Set(["cashier@2026-11-06"]) })).items).toHaveLength(0);
+  });
+
+  it("the agent's run only takes what is due today; an invoice waits for the day before its due date", () => {
+    const later = invoice({ id: "later", extracted: { dueDate: "2026-11-20" } as never });
+    const agentRun = buildPlan(input({ payees: [farm], invoices: [later], dueBy: "2026-11-06" }));
+    expect(agentRun.items).toHaveLength(0);
+    const onTime = buildPlan(input({ payees: [farm], invoices: [later], now: new Date("2026-11-19T08:00:00Z"), dueBy: "2026-11-19" }));
+    expect(placement(onTime, "Invoice #LATER")).toMatchObject({ placement: "in", dueOn: "2026-11-19", dueKey: "inv:later" });
+  });
+
+  it("a payee you have never approved a payment to needs your own OK", () => {
+    const fresh = { ...chef, trustedAt: null };
+    expect(placement(buildPlan(input({ payees: [farm, fresh] })), "Weekly pay")).toMatchObject({ needsOwnTap: true, ownTapReason: "Needs your own tap: first payment to Bisi." });
   });
 });

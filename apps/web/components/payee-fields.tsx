@@ -25,7 +25,7 @@ export function DetailFields({ payee }: { payee?: Payee }) {
         <textarea name="prices" defaultValue={prices} rows={3} placeholder="Tomatoes (crate) = 18.00" className={`${input} num`} />
         <span className="mt-1 block font-normal text-muted">If an invoice charges more than 5% above these, Bursar holds it for you to check.</span>
       </label>
-      <div className="grid grid-cols-2 gap-3 sm:col-span-2 sm:max-w-md">
+      <div className="grid grid-cols-2 gap-3 sm:col-span-2 sm:max-w-xl sm:grid-cols-3">
         <label className="block text-sm font-medium">
           Regular pay, like wages <span className="font-normal text-muted">(optional)</span>
           <span className="mt-1 flex items-center rounded-md border border-line bg-card">
@@ -41,8 +41,21 @@ export function DetailFields({ payee }: { payee?: Payee }) {
         <label className="block text-sm font-medium">
           Every
           <select name="recurringEvery" defaultValue={payee?.recurring?.every ?? "week"} className={input}>
-            <option value="week">Week</option>
+            <option value="week">Week (on payday)</option>
+            <option value="two_weeks">2 weeks (every other payday)</option>
             <option value="month">Month</option>
+          </select>
+        </label>
+        <label className="col-span-2 block text-sm font-medium sm:col-span-1">
+          If monthly, pay on
+          <select name="recurringDay" defaultValue={payee?.recurring?.day ?? ""} className={input}>
+            <option value="">The first payday</option>
+            {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+              <option key={d} value={d}>
+                Day {d}
+              </option>
+            ))}
+            <option value={0}>The last working day</option>
           </select>
         </label>
       </div>

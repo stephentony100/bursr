@@ -34,6 +34,8 @@ model Payee {
   addedAt         DateTime  @default(now())
   /// Set when the owner changes payout details; starts the 48h hold.
   payoutChangedAt DateTime?
+  /// When the owner first approved a payment to them; until then each payment needs the owner.
+  trustedAt       DateTime?
   removedAt       DateTime?
 }
 
@@ -144,6 +146,14 @@ model PlanItem {
   amountReceived String?
   /// Account correlation ids (swap, withdraw) as JSON
   references     String    @default("[]")
+  /// What this payment is for, so the agent never schedules it twice: "<payeeId>@<due date>" or "inv:<invoiceId>".
+  dueKey         String?
+  /// The day it is due (YYYY-MM-DD, business time zone).
+  dueOn          String?
+  /// Self-repair: tries so far, the next try, and the last refusal code.
+  attempts       Int       @default(0)
+  retryAt        DateTime?
+  payCode        String?
 }
 
 /// Small key/value settings (Telegram link, bot name).

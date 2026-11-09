@@ -1,6 +1,6 @@
 import type { Policy } from "@near-intents-agent-api/sdk";
 import { z } from "zod";
-import { PayoutSchema, PriceItemSchema, RulesSchema, type Payee, type Rules } from "./domain";
+import { PayeeSchema, PayoutSchema, PriceItemSchema, RulesSchema, type Payee, type Rules } from "./domain";
 import type { PrismaClient } from "./generated/prisma/client";
 
 // Read side of the data. Rows are JSON-validated on every read. Writes to
@@ -18,7 +18,7 @@ export async function getBusiness(db: PrismaClient): Promise<BusinessRecord | nu
   return { name: row.name, ownerAccountId: row.ownerAccountId, rules: RulesSchema.parse(JSON.parse(row.rules)) };
 }
 
-const RecurringSchema = z.object({ amountUsd: z.string().regex(/^\d+$/), every: z.enum(["week", "month"]) }).nullable();
+const RecurringSchema = PayeeSchema.shape.recurring;
 
 type PayeeRow = Awaited<ReturnType<PrismaClient["payee"]["findMany"]>>[number];
 
@@ -32,6 +32,7 @@ export function payeeFromRow(row: PayeeRow): Payee {
     recurring: RecurringSchema.parse(JSON.parse(row.recurring)),
     addedAt: row.addedAt.toISOString(),
     payoutChangedAt: row.payoutChangedAt?.toISOString() ?? null,
+    trustedAt: row.trustedAt?.toISOString() ?? null,
   };
 }
 

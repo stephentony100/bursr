@@ -16,6 +16,8 @@ export function starterRules(tokens: PayoutToken[]): Rules {
     paydayWeekday: 5,
     timeZone: "Africa/Lagos",
     frozen: false,
+    autopilot: true,
+    invoiceTiming: "due",
     // Live: only with an explicit fee account (a NEAR account that receives USDC).
     fee: (() => {
       const env = readEnv();

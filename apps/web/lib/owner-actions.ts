@@ -193,6 +193,12 @@ export async function removePayee(db: PrismaClient, owner: OwnerSession, id: str
 
 // --- The weekly plan: only the owner approves or removes -------------------
 
+/** The owner approved a payment to them: from now on their routine payments need no extra OK. */
+async function trust(db: PrismaClient, payeeIds: string[]) {
+  const ids = payeeIds.filter(Boolean);
+  if (ids.length) await db.payee.updateMany({ where: { id: { in: ids }, trustedAt: null }, data: { trustedAt: new Date() } });
+}
+
 async function draftItem(db: PrismaClient, itemId: string) {
   const item = await db.planItem.findUnique({ where: { id: itemId }, include: { plan: true } });
   if (!item) throw new Error("That payment isn't in this week's list any more.");
@@ -203,9 +209,14 @@ async function draftItem(db: PrismaClient, itemId: string) {
 /** The owner's own tap for a payment that needs it (above the threshold or a new payee). */
 export async function approvePlanItem(db: PrismaClient, owner: OwnerSession, itemId: string) {
   await assertOwner(db, owner);
-  const item = await draftItem(db, itemId);
+  // Works on the owner's draft list and on the agent's own runs (an exception waiting for the owner).
+  const item = await db.planItem.findUnique({ where: { id: itemId }, include: { plan: true } });
+  if (!item) throw new Error("That payment isn't in the list any more.");
+  if (item.plan.status === "done" || item.payStatus !== "planned") throw new Error("This payment has already been handled.");
+  if (item.ownTapAt) throw new Error("You've already OK'd this payment.");
   if (item.placement !== "in" || !item.needsOwnTap) throw new Error("This payment doesn't need its own OK.");
   await db.planItem.update({ where: { id: itemId }, data: { ownTapAt: new Date() } });
+  await trust(db, [item.payeeId]);
   await audit(db, owner, "plan_item_approved", `You OK'd ${item.payeeName}: ${item.forWhat}`, { itemId });
 }
 
@@ -246,5 +257,6 @@ export async function approvePlan(db: PrismaClient, owner: OwnerSession, planId:
     throw new Error(`First give your own OK to (or take out): ${waiting.map((i) => `${i.payeeName}, ${i.forWhat}`).join("; ")}.`);
   }
   await db.plan.update({ where: { id: planId }, data: { status: "approved", approvedAt: new Date(), approvedBy: owner.accountId } });
+  await trust(db, inPlan.map((i) => i.payeeId));
   await audit(db, owner, "plan_approved", `You approved this week's payments (${inPlan.length})`, { planId });
 }

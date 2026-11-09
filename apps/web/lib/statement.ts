@@ -26,6 +26,7 @@ export interface StatementLine {
 const STATUS_WORDS: Record<PlanItemView["payStatus"], string> = {
   planned: "Not sent yet",
   paying: "Paying",
+  waiting: "Waiting (the agent will try again)",
   sent: "Sent",
   delivered: "Paid",
   failed: "Not paid",

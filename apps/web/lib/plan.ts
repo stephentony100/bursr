@@ -1,6 +1,7 @@
-import { isNewPayee, isOnPayoutHold, payoutHoldEndsAt, type Payee, type Payout, type Rules } from "./domain";
+import { isOnPayoutHold, payoutHoldEndsAt, type Payee, type Payout, type Rules } from "./domain";
 import type { InvoiceView } from "./invoices";
 import { formatUsd } from "./money";
+import { addDays, invoiceDueOn, lastDueOn, localDay, nextDueOn, paydayOnOrAfter } from "./schedule";
 import { chainName } from "./tokens";
 
 // Builds the week's payment plan from invoices that passed the checks and the
@@ -23,6 +24,10 @@ export interface DraftItem {
   reason: string | null;
   needsOwnTap: boolean;
   ownTapReason: string | null;
+  /** What this payment is for, so it is never scheduled twice: "<payeeId>@<due date>" or "inv:<invoiceId>". */
+  dueKey?: string;
+  /** The day it is due (YYYY-MM-DD in the business time zone). */
+  dueOn?: string;
 }
 
 export interface PlanInput {
@@ -33,9 +38,16 @@ export interface PlanInput {
   spentThisWeekUsd: bigint;
   /** Invoices already in an approved plan (paid or being paid). */
   handledInvoiceIds: Set<string>;
-  /** Payees whose regular pay for this period was already paid. */
-  wagesPaidPayeeIds: Set<string>;
+  /** dueKeys already in a plan (paid, being paid, waiting or taken out by the owner). */
+  handledKeys?: Set<string>;
   now: Date;
+  /**
+   * Include payments due on or before this day (YYYY-MM-DD, business time zone).
+   * The agent uses today; the owner's "get payments ready" uses the next payday.
+   */
+  dueBy?: string;
+  /** List invoices that can't be paid (held, blocked) as plan lines. The agent leaves them on the Invoices page. */
+  listHeld?: boolean;
   /**
    * Live account: its weekly budget counts every action, so a payment in
    * another currency counts twice (the exchange, then the send). Practice
@@ -71,28 +83,40 @@ export function buildPlan(input: PlanInput): DraftPlan {
   const candidates: Candidate[] = [];
   const items: DraftItem[] = [];
 
-  // 1. Staff regular pay: weekly every payday; monthly on the first payday of the month.
+  // 1. Regular pay on each payee's own schedule (weekly, every other week, monthly), in the business's time zone.
+  const today = localDay(now, rules.timeZone);
+  const dueBy = input.dueBy ?? paydayOnOrAfter(today, rules.paydayWeekday);
+  const handled = (key: string) => input.handledKeys?.has(key) ?? false;
   for (const p of payees) {
-    if (!p.recurring || input.wagesPaidPayeeIds.has(p.id)) continue;
-    if (p.recurring.every === "month" && now.getUTCDate() > 7) continue;
+    if (!p.recurring) continue;
+    const addedOn = localDay(new Date(p.addedAt), rules.timeZone);
+    // The next due date within reach (today, or by the coming payday for the owner's list);
+    // otherwise a missed one not yet paid is caught up, once.
+    const next = nextDueOn(p.recurring, rules, addedOn, today);
+    const last = lastDueOn(p.recurring, rules, addedOn, addDays(today, -1));
+    const dueOn = next && next <= dueBy ? next : last;
+    if (!dueOn || handled(`${p.id}@${dueOn}`)) continue;
     candidates.push({
       kind: "wages",
       invoiceId: null,
       payeeId: p.id,
       payeeName: p.name,
-      forWhat: p.recurring.every === "week" ? "Weekly pay" : "Monthly pay",
+      forWhat: p.recurring.every === "week" ? "Weekly pay" : p.recurring.every === "two_weeks" ? "Pay (every 2 weeks)" : "Monthly pay",
       amountUsd: BigInt(p.recurring.amountUsd),
       payout: p.payout,
-      due: "0000", // staff first
+      due: `0000-${dueOn}`, // staff first
+      dueKey: `${p.id}@${dueOn}`,
+      dueOn,
     });
   }
 
   // 2. Invoices: ready ones become candidates; the rest are listed with their reasons.
   for (const inv of input.invoices) {
-    if (input.handledInvoiceIds.has(inv.id)) continue;
+    if (input.handledInvoiceIds.has(inv.id) || handled(`inv:${inv.id}`)) continue;
     const payee = inv.payeeId ? byId.get(inv.payeeId) : undefined;
     const forWhat = `Invoice #${inv.invoiceNumber || "?"}`;
     if ((inv.status !== "ready" && inv.status !== "flag") || !payee) {
+      if (input.listHeld === false) continue;
       items.push({
         kind: "invoice",
         invoiceId: inv.id,
@@ -108,6 +132,8 @@ export function buildPlan(input: PlanInput): DraftPlan {
       });
       continue;
     }
+    const invDueOn = invoiceDueOn({ receivedOn: localDay(inv.receivedAt, rules.timeZone), dueDate: inv.extracted?.dueDate ?? null }, rules);
+    if (invDueOn > dueBy) continue; // not due yet: the agent pays it nearer its due date
     candidates.push({
       kind: "invoice",
       invoiceId: inv.id,
@@ -117,6 +143,8 @@ export function buildPlan(input: PlanInput): DraftPlan {
       amountUsd: inv.totalUsd,
       payout: payee.payout,
       due: inv.extracted?.dueDate ?? "9999",
+      dueKey: `inv:${inv.id}`,
+      dueOn: invDueOn,
     });
   }
 
@@ -163,7 +191,7 @@ export function buildPlan(input: PlanInput): DraftPlan {
     budgetUsed += budgetCost(c);
     const tapReasons: string[] = [];
     if (c.amountUsd > threshold) tapReasons.push(`above ${formatUsd(threshold)}`);
-    if (isNewPayee(payee, now)) tapReasons.push(`new payee (added ${day(new Date(payee.addedAt))})`);
+    if (!payee.trustedAt) tapReasons.push(`first payment to ${payee.name}`);
     items.push({
       ...base,
       placement: "in",

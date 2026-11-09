@@ -17,6 +17,7 @@ import { chainName } from "@/lib/tokens";
 const PAY_STATUS: Record<PlanItemView["payStatus"], { label: string; tone: Tone }> = {
   planned: { label: "Waiting for your OK", tone: "neutral" },
   paying: { label: "Paying…", tone: "hold" },
+  waiting: { label: "Agent will retry", tone: "hold" },
   sent: { label: "Sent, on its way…", tone: "hold" },
   delivered: { label: "Paid", tone: "ready" },
   failed: { label: "Not paid", tone: "block" },

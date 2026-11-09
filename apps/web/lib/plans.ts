@@ -12,7 +12,7 @@ import { getBusiness, listPayees } from "./store";
 
 export interface PlanItemView {
   id: string;
-  kind: "invoice" | "wages" | "fee";
+  kind: "invoice" | "wages" | "fee" | "one_off";
   invoiceId: string | null;
   payeeId: string;
   payeeName: string;
@@ -27,7 +27,11 @@ export interface PlanItemView {
   ownTapAt: Date | null;
   quote: PayoutQuote | null;
   quoteError: string | null;
-  payStatus: "planned" | "paying" | "sent" | "delivered" | "failed" | "refunded";
+  /** waiting: the agent tries again at retryAt (self-repair); failed: the owner decides. */
+  payStatus: "planned" | "paying" | "waiting" | "sent" | "delivered" | "failed" | "refunded";
+  retryAt: Date | null;
+  attempts: number;
+  dueOn: string | null;
   payReason: string | null;
   sentAt: Date | null;
   amountSent: bigint | null;
@@ -80,6 +84,9 @@ function planFromRow(r: PlanRow): PlanView {
       amountSent: i.amountSent ? BigInt(i.amountSent) : null,
       amountReceived: i.amountReceived ? BigInt(i.amountReceived) : null,
       references: JSON.parse(i.references) as string[],
+      retryAt: i.retryAt,
+      attempts: i.attempts,
+      dueOn: i.dueOn,
     })),
   };
 }
@@ -94,10 +101,31 @@ export async function getPlan(db: PrismaClient, id: string): Promise<PlanView | 
   return r ? planFromRow(r) : null;
 }
 
-const SIX_DAYS = 6 * 24 * 60 * 60 * 1000;
+/** dueKeys of payments already handled: in an approved plan and not failed (failed ones may be tried again). */
+export async function handledDueKeys(db: PrismaClient): Promise<Set<string>> {
+  const rows = await db.planItem.findMany({
+    where: { dueKey: { not: null }, plan: { status: { in: ["approved", "done"] } }, placement: "in", payStatus: { notIn: ["failed", "refunded"] } },
+    select: { dueKey: true },
+  });
+  return new Set(rows.map((r) => r.dueKey!));
+}
+
+export interface PlanOptions {
+  /** Include payments due on or before this day (default: the next payday). */
+  dueBy?: string;
+  /** List held invoices as plan lines (the owner's view; the agent leaves them on the Invoices page). */
+  listHeld?: boolean;
+  /** Replace an earlier draft (the owner's list) or leave it alone (the agent's own runs). */
+  replaceDraft?: boolean;
+}
 
 /** Builds this week's plan as a draft (replacing any earlier draft) and prices each payment with a dry quote. */
-export async function prepareWeeklyPlan(db: PrismaClient, now = new Date(), quote: typeof quotePayout = quotePayout): Promise<PlanView> {
+export async function prepareWeeklyPlan(
+  db: PrismaClient,
+  now = new Date(),
+  quote: typeof quotePayout = quotePayout,
+  options: PlanOptions = {},
+): Promise<PlanView> {
   const business = await getBusiness(db);
   if (!business) throw new Error("Set up the business first.");
   const account = await agentAccount(db);
@@ -108,11 +136,7 @@ export async function prepareWeeklyPlan(db: PrismaClient, now = new Date(), quot
     select: { invoiceId: true, kind: true, payeeId: true, sentAt: true, plan: { select: { approvedAt: true } } },
   });
   const handledInvoiceIds = new Set(paidItems.map((i) => i.invoiceId).filter((x): x is string => Boolean(x)));
-  const wagesPaidPayeeIds = new Set(
-    paidItems
-      .filter((i) => i.kind === "wages" && now.getTime() - (i.sentAt ?? i.plan.approvedAt ?? now).getTime() < SIX_DAYS)
-      .map((i) => i.payeeId),
-  );
+  const handledKeys = await handledDueKeys(db);
 
   const draft = buildPlan({
     invoices: [...invoices].reverse(), // oldest first
@@ -120,8 +144,10 @@ export async function prepareWeeklyPlan(db: PrismaClient, now = new Date(), quot
     rules: business.rules,
     spentThisWeekUsd: status.spentThisWeekUsd,
     handledInvoiceIds,
-    wagesPaidPayeeIds,
+    handledKeys,
     now,
+    dueBy: options.dueBy,
+    listHeld: options.listHeld,
     budgetCountsSwaps: account.backend === "agent-api",
   });
 
@@ -142,7 +168,7 @@ export async function prepareWeeklyPlan(db: PrismaClient, now = new Date(), quot
     );
   }
 
-  const old = await db.plan.findMany({ where: { status: "draft" }, select: { id: true } });
+  const old = options.replaceDraft === false ? [] : await db.plan.findMany({ where: { status: "draft" }, select: { id: true } });
   const created = await db.$transaction(async (tx) => {
     await tx.planItem.deleteMany({ where: { planId: { in: old.map((p) => p.id) } } });
     await tx.plan.deleteMany({ where: { id: { in: old.map((p) => p.id) } } });
@@ -163,6 +189,8 @@ export async function prepareWeeklyPlan(db: PrismaClient, now = new Date(), quot
             reason: it.reason,
             needsOwnTap: it.needsOwnTap,
             ownTapReason: it.ownTapReason,
+            dueKey: it.dueKey ?? null,
+            dueOn: it.dueOn ?? null,
             quote: quotes.get(i)?.quote ? JSON.stringify(quotes.get(i)!.quote) : null,
             quoteError: quotes.get(i)?.error ?? null,
           })),
