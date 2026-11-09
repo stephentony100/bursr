@@ -6,7 +6,7 @@ Summarised from https://nearhackathon.com/HACKATHON.md on 3 Nov 2026. The live p
 - **Prizes:** $250K in NEAR. Grand prize $55K; each of 13 tracks pays $10K / $3K / $2K. Single transfer within 30 days, no vesting.
 - **Screening:** Claude Code and Codex screen every project first (reproducibility check, feature check, preliminary score). Humans decide; a low AI score alone cannot reject.
 - **Existing products:** allowed, but only the NEAR integration built in the window is judged; disclose it and separate the diff (branch or tags `pre-hackathon` / `hackathon-submission`).
-- **Libraries, templates, AI-generated code:** allowed; list them in the README.
+- **Libraries, templates, boilerplate, open-source and AI-generated code:** allowed (Q-005); list them in README "Built with". Work counts from 19 Oct 2026 (Q-001). Visual effects, layouts and interactions seen elsewhere may be recreated freely, by building them ourselves or with the libraries those sites use (e.g. GSAP, Motion, Lottie). Third-party code only under a license that allows reuse (e.g. MIT, Apache-2.0), keeping its notice and crediting it in the README; never paste a website's own unlicensed scripts or stylesheets, since the repo stays public through judging (Q-014) and unlicensed code risks a takedown.
 - **Mandatory integrations:** none. Track hints are wishes.
 - **Testnet:** testnet-only projects are eligible in every track. NEAR Intents has no testnet: use mainnet with tiny amounts and dry-run quotes.
 - **1Click key:** optional; HACKATHON.md says a 0.2% fee applies without it, while the 1Click app-fees docs say 25 bps is added — check the current docs (see docs/NEAR-NOTES.md).

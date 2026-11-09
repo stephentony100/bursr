@@ -12,4 +12,5 @@ Run this checklist and report each item as PASS / FAIL with evidence. Do not fix
 6. README has: what it is, the problem, try-it steps, how NEAR is used (concrete), trust model, limitations, Built with, link to Wetin. No placeholders left (`<`, `TODO`).
 7. LICENSE exists; `.env.example` lists every variable the code reads (`grep -r "process.env."`).
 8. All P0 items in docs/TASKS.md for finished milestones are ticked.
+8a. Reuse (AGENTS.md rule 9): every library and every piece of third-party code is listed in README "Built with"; any third-party code kept in the repo has a license that allows reuse (e.g. MIT, Apache-2.0) with its notice kept; no website's own scripts or stylesheets without a reuse license are in the repo.
 9. Remind the human of the never-without-OK list before anything public, mainnet or submission-related.

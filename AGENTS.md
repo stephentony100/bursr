@@ -16,7 +16,7 @@ An AI that pays a small business's bills: reads invoices, checks them (look-alik
 6. **Money is integers in smallest units** (string/bigint). Never floats. Read token decimals from the token list.
 7. **Secrets only in `.env`.** Keep `.env.example` complete and secret-free.
 8. **The README is read and run by AI judges** (Claude Code and Codex screen every entry: does it run, does it do what the README says). Keep numbered "do X → see Y" steps true after every change. Dry-run path first, needing no keys. No marketing copy.
-9. **Only code written since 19 Oct 2026 counts.** Do not copy code from other projects. List libraries, templates and AI tools in README "Built with".
+9. **Work counts from 19 Oct 2026** (HACKATHON.md Q-001). Libraries, templates, boilerplate, open-source code and AI-generated code are allowed (Q-005) and must be listed in README "Built with". We may freely recreate any visual effect, layout or interaction we see elsewhere: study it and build it ourselves, or use the libraries those sites use (e.g. GSAP, Motion, Lottie). We may reuse third-party code only if its license allows it (e.g. MIT, Apache-2.0), keeping its license notice and crediting it in the README. Do not paste a website's own scripts or stylesheets that have no reuse license, because the repo must stay public through judging (Q-014) and unlicensed code risks a takedown.
 10. **This repo is independent of Wetin** (the builder's other entry). No shared code or imports.
 11. **Scope:** P0 first, in `docs/TASKS.md` order. P1/P2 only after the full dry-run demo (PRD §9) works from a fresh clone.
 12. **Record decisions** in `docs/DECISIONS.md` with date, reason and the doc line relied on.
