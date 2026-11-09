@@ -1,6 +1,7 @@
 import { isNewPayee, isOnPayoutHold, payoutHoldEndsAt, type Payee, type Payout, type Rules } from "./domain";
 import type { InvoiceView } from "./invoices";
 import { formatUsd } from "./money";
+import { chainName } from "./tokens";
 
 // Builds the week's payment plan from invoices that passed the checks and the
 // staff's regular pay. Pure: no database, no network. The plan is only a
@@ -35,6 +36,12 @@ export interface PlanInput {
   /** Payees whose regular pay for this period was already paid. */
   wagesPaidPayeeIds: Set<string>;
   now: Date;
+  /**
+   * Live account: its weekly budget counts every action, so a payment in
+   * another currency counts twice (the exchange, then the send). Practice
+   * mode's simulator counts each payment once.
+   */
+  budgetCountsSwaps?: boolean;
 }
 
 export interface DraftPlan {
@@ -118,6 +125,9 @@ export function buildPlan(input: PlanInput): DraftPlan {
   candidates.sort((a, b) => a.due.localeCompare(b.due));
   const feeOn = (amount: bigint) => (rules.fee ? (amount * BigInt(rules.fee.bps)) / 10_000n : 0n);
   let used = 0n;
+  let budgetUsed = 0n;
+  const needsSwap = (c: { payout: Payout | null }) => Boolean(c.payout && c.payout.token.assetId !== rules.treasury.assetId);
+  const budgetCost = (c: { amountUsd: bigint; payout: Payout | null }) => (input.budgetCountsSwaps && needsSwap(c) ? 2n : 1n) * c.amountUsd;
   for (const c of candidates) {
     const { due: _due, ...base } = c;
     void _due;
@@ -136,17 +146,21 @@ export function buildPlan(input: PlanInput): DraftPlan {
       });
       continue;
     }
-    if (used + c.amountUsd + feeOn(used + c.amountUsd) > capLeftUsd) {
+    if (budgetUsed + budgetCost(c) + feeOn(used + c.amountUsd) > capLeftUsd) {
+      const left = capLeftUsd - budgetUsed - feeOn(used);
       items.push({
         ...base,
         placement: "deferred",
-        reason: `Moved to next week: only ${formatUsd(capLeftUsd - used - feeOn(used))} is left under your weekly limit of ${formatUsd(cap)}.`,
+        reason: `Moved to next week: only ${formatUsd(left > 0n ? left : 0n)} is left under your weekly limit of ${formatUsd(cap)}.${
+          input.budgetCountsSwaps && needsSwap(c) ? ` Paying in ${c.payout!.token.symbol} on ${chainName(c.payout!.token.chain)} counts twice against the limit (the exchange, then the payment), so it needs ${formatUsd(budgetCost(c))}.` : ""
+        }`,
         needsOwnTap: false,
         ownTapReason: null,
       });
       continue;
     }
     used += c.amountUsd;
+    budgetUsed += budgetCost(c);
     const tapReasons: string[] = [];
     if (c.amountUsd > threshold) tapReasons.push(`above ${formatUsd(threshold)}`);
     if (isNewPayee(payee, now)) tapReasons.push(`new payee (added ${day(new Date(payee.addedAt))})`);

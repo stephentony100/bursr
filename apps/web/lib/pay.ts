@@ -74,7 +74,11 @@ export async function payItem(
   const references: string[] = [];
   let amountSent = amountOut;
 
-  if (token.assetId !== treasury.assetId) {
+  // Already holding enough of their currency (e.g. an earlier exchange whose send was refused):
+  // send it without exchanging again, so a retry never buys twice or spends the weekly limit twice.
+  const alreadyHeld =
+    token.assetId !== treasury.assetId && account.backend === "agent-api" && ((await account.status()).balances[token.assetId] ?? 0n) >= amountOut;
+  if (token.assetId !== treasury.assetId && !alreadyHeld) {
     // Different token: swap inside the account first, sized by a fresh quote.
     const q = await quote(treasury, planned, item.amountUsd);
     if (!q.ok) return fail(q.reason);

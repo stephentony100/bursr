@@ -100,7 +100,8 @@ const SIX_DAYS = 6 * 24 * 60 * 60 * 1000;
 export async function prepareWeeklyPlan(db: PrismaClient, now = new Date(), quote: typeof quotePayout = quotePayout): Promise<PlanView> {
   const business = await getBusiness(db);
   if (!business) throw new Error("Set up the business first.");
-  const [payees, invoices, status] = await Promise.all([listPayees(db), listInvoices(db), (await agentAccount(db)).status()]);
+  const account = await agentAccount(db);
+  const [payees, invoices, status] = await Promise.all([listPayees(db), listInvoices(db), account.status()]);
 
   const paidItems = await db.planItem.findMany({
     where: { plan: { status: { in: ["approved", "done"] } }, placement: "in", payStatus: { notIn: ["failed", "refunded"] } },
@@ -121,6 +122,7 @@ export async function prepareWeeklyPlan(db: PrismaClient, now = new Date(), quot
     handledInvoiceIds,
     wagesPaidPayeeIds,
     now,
+    budgetCountsSwaps: account.backend === "agent-api",
   });
 
   // Price the payments that are in the plan (in parallel, a few at a time).

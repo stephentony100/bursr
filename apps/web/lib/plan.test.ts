@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { InvoiceView } from "./invoices";
 import { buildPlan, type PlanInput } from "./plan";
-import { payee, rules, usd } from "./test-fixtures";
+import { demoTronAddress } from "./demo-addresses";
+import { payee, rules, usd, USDT_TRON } from "./test-fixtures";
 
 const NOW = new Date("2026-11-06T10:00:00Z"); // a Friday, 6th of the month
 const OLD = "2026-09-01T00:00:00.000Z";
@@ -43,6 +44,21 @@ function input(over: Partial<PlanInput> = {}): PlanInput {
 const placement = (plan: ReturnType<typeof buildPlan>, forWhat: string) => plan.items.find((i) => i.forWhat === forWhat)!;
 
 describe("weekly plan", () => {
+  it("live account: a payment in another currency counts twice against the weekly limit", () => {
+    // Both payees are paid in USDT on Tron; the account holds USDC on NEAR, so each payment is an exchange plus a send.
+    const tron = { token: USDT_TRON, address: demoTronAddress("t"), memo: null };
+    const base = {
+      payees: [{ ...farm, payout: tron }, { ...chef, payout: tron }],
+      invoices: [invoice({ id: "a" })],
+      spentThisWeekUsd: BigInt(usd(500)), // $500 of $1,000 left
+    };
+    expect(buildPlan(input(base)).items.every((i) => i.placement === "in")).toBe(true); // $320 counted once fits
+    const live = buildPlan(input({ ...base, budgetCountsSwaps: true })); // $440 + $200 does not
+    expect(placement(live, "Weekly pay").placement).toBe("in");
+    expect(placement(live, "Invoice #A")).toMatchObject({ placement: "deferred" });
+    expect(placement(live, "Invoice #A").reason).toMatch(/counts twice against the limit .* needs \$200\.00/);
+  });
+
   it("puts staff pay and ready invoices in the plan, staff first", () => {
     const plan = buildPlan(input({ invoices: [invoice({ id: "a" })] }));
     expect(plan.items.map((i) => [i.forWhat, i.placement])).toEqual([

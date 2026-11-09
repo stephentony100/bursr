@@ -64,7 +64,7 @@ export default async function SetupPage() {
           <h2 className="text-xl font-bold">Your limits</h2>
           <ActionForm action={saveRules} submit={dryRun ? "Save my limits" : "Save my limits (then confirm with your wallet)"}>
             <div className="mt-4 grid gap-5 sm:grid-cols-3">
-              <Money name="weeklyCap" label="Weekly limit" hint="The most that can go out in any 7 days." value={usd(r.weeklyCapUsd)} />
+              <Money name="weeklyCap" label="Weekly limit" hint={dryRun ? "The most that can go out in any 7 days." : "The most that can go out in any 7 days. A payment in another currency or network counts twice (the exchange, then the payment)."} value={usd(r.weeklyCapUsd)} />
               <Money name="perPaymentCap" label="Largest single payment" hint="Anything bigger is stopped, always." value={usd(r.perPaymentCapUsd)} />
               <Money name="approvalThreshold" label="Ask me first above" hint="Bigger payments wait for your own OK." value={usd(r.approvalThresholdUsd)} />
             </div>
