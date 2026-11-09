@@ -39,7 +39,8 @@ export class AgentApiAccount implements AgentAccount {
   async status(): Promise<AccountStatus> {
     const [view, balances] = await Promise.all([
       this.api.getPolicy(this.cfg.agentId),
-      this.api.getBalances(this.cfg.agentId),
+      // Deposits and payments use the confidential balance; the default (public) one stays empty.
+      this.api.getBalances(this.cfg.agentId, { source: "confidential" }),
     ]);
     if (!view.policy) throw new Error("The agent has no applied policy yet.");
     const weekly = view.usage.budget.weekly;

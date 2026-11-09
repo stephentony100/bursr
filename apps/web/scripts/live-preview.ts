@@ -22,7 +22,7 @@ const treasury = business.rules.treasury;
 const plan = await getLatestPlan(db());
 if (!plan || plan.status !== "draft") throw new Error("Prepare a plan on the Plan page first (it must not be approved yet).");
 
-const balances = await api.getBalances(agentId);
+const balances = await api.getBalances(agentId, { source: "confidential" });
 console.log(`Agent ${agentId}`);
 console.log(`Balances: ${balances.balances.map((b) => `${b.asset_id} ${b.available_raw}`).join(", ") || "none"}`);
 

@@ -22,7 +22,7 @@ async function main() {
   const view = await api.getPolicy(agentId);
   const policy = view.policy as Policy | null;
   if (!policy) throw new Error("The agent has no applied policy.");
-  const balances = await api.getBalances(agentId);
+  const balances = await api.getBalances(agentId, { source: "confidential" });
   console.log(`Agent ${agentId}, policy revision ${view.revision}, frozen=${policy.frozen}`);
   console.log(`Balances: ${JSON.stringify(balances.balances.map((b) => [b.asset_id, b.available_raw]))}`);
 

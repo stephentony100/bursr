@@ -76,7 +76,7 @@ export default async function PlanPage() {
             paid in the digital dollars they prefer. Anything outside your spending rules simply can&apos;t go out.
           </p>
         </div>
-        {(!plan || plan.status !== "draft") && <ActionForm action={preparePlanAction} submit={plan ? "Get next week's payments ready" : "Get this week's payments ready"} />}
+        {(!plan || plan.status !== "draft") && <ActionForm action={preparePlanAction} submit={!plan ? "Get this week's payments ready" : !moving && inPlan.some((i) => i.payStatus === "failed" || i.payStatus === "refunded") ? "Try the unpaid payments again" : "Get next week's payments ready"} />}
       </div>
 
       {!plan && <p className="text-muted">No plan yet.</p>}
