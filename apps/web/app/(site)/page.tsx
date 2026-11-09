@@ -1,21 +1,15 @@
 import Link from "next/link";
-import { CheckCircle, HandCoins, Pause, UserCheck } from "@phosphor-icons/react/dist/ssr";
+import { CheckCircle } from "@phosphor-icons/react/dist/ssr";
 import { Logo } from "@/components/logo";
-import { CatchPills } from "@/components/landing/catch-pills";
+import { ChecksAccordion } from "@/components/landing/checks-accordion";
 import { Hero, TryButton } from "@/components/landing/hero";
-import { LimitWall } from "@/components/landing/limit-wall";
+import { HowSplit } from "@/components/landing/how-split";
+import { LimitsTabs } from "@/components/landing/limits-tabs";
+import { Reveal } from "@/components/landing/reveal";
 import { GuillocheBand } from "@/components/landing/paper";
 import { SealedRoom } from "@/components/landing/sealed-room";
 import { ClearingTape } from "@/components/landing/tapes";
-import { WeekScene } from "@/components/landing/week-scene";
 import { demoNearImplicit, demoTronAddress } from "@/lib/demo-addresses";
-
-const RULES = [
-  { icon: HandCoins, label: "Weekly limit", value: "$2,500.00", body: "The most that can leave your Bursar wallet in a week." },
-  { icon: CheckCircle, label: "Per payment", value: "$900.00", body: "Anything bigger is refused, even if the AI asks for it." },
-  { icon: UserCheck, label: "Only people you added", value: "6 people", body: "A wallet that isn't on your list can't be paid. Only you can add one." },
-  { icon: Pause, label: "Emergency stop", value: "One button", body: "Pause all payments. Nothing goes out until you turn them back on." },
-];
 
 const FIGURES = [
   {
@@ -57,48 +51,20 @@ export default function Landing() {
       <div aria-hidden className="scroll-progress fixed inset-x-0 top-0 z-[60] h-[3px] bg-ledger" />
 
       <Hero account={demoNearImplicit("mama-put-farms")} />
-      <WeekScene />
+      <HowSplit />
       <ClearingTape />
 
-      {/* What it checks */}
-      <section id="checks" className="bg-paper">
-        <div className="mx-auto w-full max-w-7xl px-5 py-24">
-          <h2 className="display max-w-3xl text-5xl leading-[0.95] sm:text-6xl">Four ways bills eat your profit.</h2>
-          <p className="mt-6 max-w-[60ch] text-lg leading-relaxed text-ink/75">
-            Every invoice gets all four checks before it can go on your list. When something looks wrong, Bursar holds it and tells you why. It never guesses an amount.
-          </p>
-          <div className="mt-14">
-            <CatchPills usualAddress={demoTronAddress("eko-fresh-foods")} newAddress={demoTronAddress("eko-new-account")} />
-          </div>
-        </div>
-      </section>
+      <ChecksAccordion usualAddress={demoTronAddress("eko-fresh-foods")} newAddress={demoTronAddress("eko-new-account")} />
 
       {/* Limits */}
       <section id="limits" className="border-y border-ink/10 bg-paper-2">
         <div className="mx-auto w-full max-w-7xl px-5 py-24">
-          <h2 className="display max-w-4xl text-5xl leading-[0.95] sm:text-6xl">The AI does the work. Your wallet keeps the rules.</h2>
+          <Reveal as="h2" onScroll className="display max-w-4xl text-5xl leading-[0.95] sm:text-6xl">The AI does the work. Your wallet keeps the rules.</Reveal>
           <p className="mt-6 max-w-[60ch] text-lg leading-relaxed text-ink/75">
             Your limits live in your Bursar wallet, not in the AI, so even a confused or tricked AI can&apos;t go past them. Watch what happens when it tries.
           </p>
-          <div className="mt-12 grid gap-12 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-            <LimitWall />
-            <dl className="space-y-6">
-              {RULES.map((r) => {
-                const Glyph = r.icon;
-                return (
-                  <div key={r.label} className="grid grid-cols-[2.5rem_1fr] gap-x-4">
-                    <dt className="row-span-2 grid h-10 w-10 place-items-center rounded-full border border-ink/20 bg-card">
-                      <Glyph size={18} weight="bold" aria-hidden />
-                    </dt>
-                    <dd className="flex flex-wrap items-baseline justify-between gap-x-3">
-                      <span className="font-bold [font-stretch:108%]">{r.label}</span>
-                      <span className={`text-ledger ${r.value.startsWith("$") ? "num" : "font-semibold"}`}>{r.value}</span>
-                    </dd>
-                    <dd className="mt-1 text-sm leading-relaxed text-ink/70">{r.body}</dd>
-                  </div>
-                );
-              })}
-            </dl>
+          <div className="mt-12">
+            <LimitsTabs />
           </div>
         </div>
       </section>

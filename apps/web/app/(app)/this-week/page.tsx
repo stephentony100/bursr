@@ -2,7 +2,6 @@ import { ArrowRight, Lock } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { connection } from "next/server";
 import { loadSample } from "@/app/actions";
-import { Envelope } from "@/components/envelope";
 import { ActionForm } from "@/components/forms";
 import { agentAccount, type AccountStatus } from "@/lib/agent-account";
 import { db } from "@/lib/db";
@@ -78,87 +77,180 @@ export default async function Home() {
   const needsLook = invoices.filter((i) => !["ready", "flag"].includes(i.status)).length;
   const planWaiting = plan?.status === "draft" ? plan.items.filter((i) => i.placement === "in").length : 0;
 
+  const inPlan = plan?.items.filter((i) => i.placement === "in") ?? [];
+  const paidCount = inPlan.filter((i) => i.payStatus === "delivered").length;
+  const cap = BigInt(business.rules.weeklyCapUsd);
+  const spent = status?.spentThisWeekUsd ?? 0n;
+  const left = cap > spent ? cap - spent : 0n;
+  const pct = cap > 0n ? Math.min(100, Number((spent * 1000n) / cap) / 10) : 100;
+  const counts = {
+    suppliers: payees.filter((p) => p.category === "supplier").length,
+    staff: payees.filter((p) => p.category === "staff").length,
+    software: payees.filter((p) => p.category === "software").length,
+  };
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="display text-4xl">{business.name}</h1>
-        <p className="mt-1 text-muted">Payday is every {DAYS[business.rules.paydayWeekday]}</p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="display text-4xl">{business.name}</h1>
+          <p className="mt-1 text-muted">Payday is every {DAYS[business.rules.paydayWeekday]}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/invoices" className="rounded-md border border-line bg-card px-4 py-2 text-sm font-semibold hover:border-ink/40">
+            Review invoices
+          </Link>
+          <Link href="/payments" className="rounded-md bg-ledger px-4 py-2 text-sm font-semibold text-card hover:bg-indigo">
+            This week&apos;s payments
+          </Link>
+        </div>
       </div>
 
       {(needsLook > 0 || planWaiting > 0) && (
         <div className="flex flex-wrap gap-3">
           {planWaiting > 0 && (
-            <Link href="/payments" className="rounded-xl border-2 border-ledger/40 bg-ledger-soft px-5 py-3 text-sm">
-              <span className="font-semibold">{planWaiting} payments are ready for your OK.</span> Review and approve <ArrowRight size={14} weight="bold" className="inline" aria-hidden />
+            <Link href="/payments" className="flex items-center gap-2 rounded-lg border border-ledger/30 bg-ledger-soft px-4 py-2.5 text-sm">
+              <span className="font-semibold">{planWaiting} payments are ready for your OK.</span> Review and approve <ArrowRight size={14} weight="bold" aria-hidden />
             </Link>
           )}
           {needsLook > 0 && (
-            <Link href="/invoices" className="rounded-xl border-2 border-hold/40 bg-hold-soft px-5 py-3 text-sm">
+            <Link href="/invoices" className="flex items-center gap-2 rounded-lg border border-hold/30 bg-hold-soft px-4 py-2.5 text-sm">
               <span className="font-semibold">
                 {needsLook} invoice{needsLook === 1 ? "" : "s"} need{needsLook === 1 ? "s" : ""} a look.
               </span>{" "}
-              See why <ArrowRight size={14} weight="bold" className="inline" aria-hidden />
+              See why <ArrowRight size={14} weight="bold" aria-hidden />
             </Link>
           )}
         </div>
       )}
 
       {status ? (
-        <>
-          <Envelope
-            spent={status.spentThisWeekUsd}
-            cap={BigInt(business.rules.weeklyCapUsd)}
-            resetsAt={status.weekResetsAt}
-            facts={[
-              {
-                label: "Payments",
-                value: status.frozen ? (
-                  <span className="inline-flex items-center gap-1.5 text-refuse">
-                    <Lock size={16} weight="bold" aria-hidden /> Paused
-                  </span>
-                ) : (
-                  <span className="text-ledger">On</span>
-                ),
-              },
-              { label: "Money in your Bursar wallet", value: <span className="num">{formatUsd(rescale(status.balances[treasury.assetId] ?? 0n, treasury.decimals, 6))}</span> },
-              { label: "Largest single payment allowed", value: <span className="num">{formatUsd(BigInt(business.rules.perPaymentCapUsd))}</span> },
-            ]}
-          />
-        </>
+        <section aria-label="This week at a glance" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Kpi label="Left to spend this week" value={<span className="num">{formatUsd(left)}</span>}>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-paper-2" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Share of the weekly limit used">
+              <div className={`h-full rounded-full ${pct >= 100 ? "bg-refuse" : pct >= 80 ? "bg-hold" : "bg-ledger"}`} style={{ width: `${pct}%` }} />
+            </div>
+            <p className="mt-2 text-xs tabular-nums text-muted">
+              <span className="num">{formatUsd(spent)}</span> of <span className="num">{formatUsd(cap)}</span> used
+              {status.weekResetsAt && <>, refills {status.weekResetsAt.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</>}
+            </p>
+          </Kpi>
+          <Kpi label="Money in your Bursar wallet" value={<span className="num">{formatUsd(rescale(status.balances[treasury.assetId] ?? 0n, treasury.decimals, 6))}</span>}>
+            <p className="mt-3 text-xs text-muted">{treasury.symbol} held for payouts</p>
+          </Kpi>
+          <Kpi label="Largest single payment allowed" value={<span className="num">{formatUsd(BigInt(business.rules.perPaymentCapUsd))}</span>}>
+            <p className="mt-3 text-xs text-muted">Bigger payments are refused by the wallet</p>
+          </Kpi>
+          <Kpi
+            label="Payments"
+            value={
+              status.frozen ? (
+                <span className="inline-flex items-center gap-1.5 text-refuse">
+                  <Lock size={20} weight="bold" aria-hidden /> Paused
+                </span>
+              ) : (
+                <span className="text-ledger">On</span>
+              )
+            }
+          >
+            <p className="mt-3 text-xs text-muted">{inPlan.length > 0 ? `${paidCount} of ${inPlan.length} paid this week` : "No list prepared yet this week"}</p>
+          </Kpi>
+        </section>
       ) : (
         <p className="rounded-md bg-hold-soft px-4 py-3 text-sm text-hold">{accountError}</p>
       )}
 
-      <section>
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-xl font-bold [font-stretch:110%]">People you pay</h2>
-          <Link href="/people" className="text-sm text-indigo underline">
-            See everyone
-          </Link>
-        </div>
-        <p className="mt-1 text-sm text-muted">
-          {payees.filter((p) => p.category === "supplier").length} suppliers, {payees.filter((p) => p.category === "staff").length} staff,{" "}
-          {payees.filter((p) => p.category === "software").length} subscriptions. Only you can add someone or change where they get paid.
-        </p>
-      </section>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <section className="overflow-hidden rounded-xl border border-line bg-card">
+          <div className="flex items-center justify-between border-b border-line px-5 py-4">
+            <h2 className="text-base font-bold [font-stretch:110%]">Latest activity</h2>
+            <Link href="/records" className="text-sm text-indigo underline">
+              All records
+            </Link>
+          </div>
+          <table className="w-full text-sm">
+            <thead className="bg-paper-2/60 text-left text-xs text-muted">
+              <tr>
+                <th scope="col" className="w-36 px-5 py-2.5 font-semibold">When</th>
+                <th scope="col" className="px-5 py-2.5 font-semibold">What happened</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {activity.length === 0 && (
+                <tr>
+                  <td colSpan={2} className="px-5 py-6 text-muted">
+                    Nothing yet.
+                  </td>
+                </tr>
+              )}
+              {activity.map((a) => (
+                <tr key={a.id} className="hover:bg-paper/60">
+                  <td className="whitespace-nowrap px-5 py-3 align-top tabular-nums text-muted">
+                    <time dateTime={a.at.toISOString()}>{a.at.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</time>
+                  </td>
+                  <td className={`px-5 py-3 ${a.kind === "account_refused" ? "text-refuse" : a.kind === "payout_changed" ? "text-hold" : ""}`}>
+                    {a.kind === "account_refused" ? "Blocked by your spending rules: " : ""}
+                    {a.message}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
 
-      <section>
-        <h2 className="text-xl font-bold [font-stretch:110%]">Latest activity</h2>
-        <ol className="mt-3 divide-y divide-line rounded-xl border border-line bg-card">
-          {activity.length === 0 && <li className="px-4 py-3 text-sm text-muted">Nothing yet.</li>}
-          {activity.map((a) => (
-            <li key={a.id} className="flex gap-4 px-4 py-3 text-sm">
-              <time className="w-28 shrink-0 tabular-nums text-muted" dateTime={a.at.toISOString()}>
-                {a.at.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-              </time>
-              <span className={a.kind === "account_refused" ? "text-refuse" : a.kind === "payout_changed" ? "text-hold" : ""}>
-                {a.kind === "account_refused" ? "Blocked by your spending rules: " : ""}
-                {a.message}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
+        <aside className="space-y-6">
+          <section className="rounded-xl border border-line bg-card p-5">
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-base font-bold [font-stretch:110%]">People you pay</h2>
+              <Link href="/people" className="text-sm text-indigo underline">
+                See everyone
+              </Link>
+            </div>
+            <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
+              {[
+                ["Suppliers", counts.suppliers],
+                ["Staff", counts.staff],
+                ["Software", counts.software],
+              ].map(([k, v]) => (
+                <div key={k} className="rounded-lg bg-paper-2/70 px-2 py-3">
+                  <dd className="num text-2xl font-semibold">{v}</dd>
+                  <dt className="mt-0.5 text-[0.7rem] text-muted [overflow-wrap:normal]">{k}</dt>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-4 text-sm text-muted">
+              {counts.suppliers} suppliers, {counts.staff} staff, {counts.software} subscriptions. Only you can add someone or change where they get paid.
+            </p>
+          </section>
+          <section className="rounded-xl border border-line bg-card p-5">
+            <h2 className="text-base font-bold [font-stretch:110%]">Invoices this week</h2>
+            <dl className="mt-3 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-muted">Received</dt>
+                <dd className="num">{invoices.length}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">Ready to pay</dt>
+                <dd className="num text-ledger">{invoices.length - needsLook}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-muted">Need a look</dt>
+                <dd className="num text-hold">{needsLook}</dd>
+              </div>
+            </dl>
+          </section>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function Kpi({ label, value, children }: { label: string; value: React.ReactNode; children?: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-line bg-card p-5">
+      <p className="text-sm font-medium text-muted">{label}</p>
+      <p className="mt-2 whitespace-nowrap text-3xl font-semibold tracking-tight">{value}</p>
+      {children}
     </div>
   );
 }

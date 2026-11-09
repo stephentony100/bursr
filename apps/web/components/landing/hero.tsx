@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { Logo } from "@/components/logo";
 import { Cheque } from "./cheque";
+import { Reveal } from "./reveal";
 
 const NAV = [
   { href: "#how", label: "How it works" },
@@ -49,11 +50,11 @@ export function Hero({ account }: { account: string }) {
     <section className="bg-paper">
       <SiteNav />
       <div className="mx-auto w-full max-w-7xl px-5 pb-20 pt-12 lg:pt-16">
-        <h1 className="display max-w-[16ch] text-[clamp(2.7rem,6.6vw,6rem)] leading-[0.94] lg:max-w-none">
+        <Reveal as="h1" className="display max-w-[16ch] text-[clamp(2.7rem,6.6vw,6rem)] leading-[0.94] lg:max-w-none">
           Pay everyone.
           <br />
           Never the wrong person.
-        </h1>
+        </Reveal>
         <div className="mt-10 grid grid-cols-[minmax(0,1fr)] items-start gap-12 lg:mt-14 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1.5fr)]">
           <div className="lg:pt-6">
             <p className="max-w-[34ch] text-lg leading-relaxed text-ink/80">

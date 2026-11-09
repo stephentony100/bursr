@@ -13,13 +13,13 @@ import { formatUsd } from "@/lib/money";
 import { getBusiness } from "@/lib/store";
 
 const STATUS: Record<InvoiceStatus, { label: string; tone: string }> = {
-  ready: { label: "Ready to pay", tone: "text-ledger" },
-  pass: { label: "Ready to pay", tone: "text-ledger" },
-  flag: { label: "Ready, but read the note", tone: "text-hold" },
-  defer: { label: "Moves to next week", tone: "text-muted" },
-  hold: { label: "On hold: please check", tone: "text-hold" },
-  block: { label: "Blocked: don't pay", tone: "text-refuse" },
-  needs_owner: { label: "Needs your eyes", tone: "text-hold" },
+  ready: { label: "Ready to pay", tone: "bg-ledger-soft text-ledger" },
+  pass: { label: "Ready to pay", tone: "bg-ledger-soft text-ledger" },
+  flag: { label: "Ready, but read the note", tone: "bg-hold-soft text-hold" },
+  defer: { label: "Moves to next week", tone: "bg-paper-2 text-muted" },
+  hold: { label: "On hold: please check", tone: "bg-hold-soft text-hold" },
+  block: { label: "Blocked: don't pay", tone: "bg-refuse-soft text-refuse" },
+  needs_owner: { label: "Needs your eyes", tone: "bg-hold-soft text-hold" },
 };
 
 export default async function InvoicesPage() {
@@ -82,61 +82,80 @@ export default async function InvoicesPage() {
         )}
       </section>
 
-      <ul className="space-y-4">
-        {invoices.length === 0 && <li className="text-sm text-muted">No invoices yet.</li>}
-        {invoices.map((inv) => {
-          const s = STATUS[inv.status];
-          const issues = inv.results.filter((r) => r.status !== "pass");
-          return (
-            <li key={inv.id} className="rounded-xl border border-line bg-card p-5 [overflow-wrap:anywhere]">
-              <div className="flex flex-wrap items-start gap-x-6 gap-y-2">
-                <div className="min-w-56 flex-1">
-                  <p className="font-medium">
-                    {inv.supplierName || inv.fileName}
-                    {inv.invoiceNumber && <span className="text-muted"> · #{inv.invoiceNumber}</span>}
-                  </p>
-                  <p className="text-sm text-muted">
-                    Received {inv.receivedAt.toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} ·{" "}
-                    <a href={`/api/invoices/${inv.id}/file`} target="_blank" rel="noreferrer" className="text-indigo underline">
+      <section className="overflow-hidden rounded-xl border border-line bg-card">
+        <div className="hidden grid-cols-[minmax(0,1fr)_11rem_8rem_12rem] gap-4 border-b border-line bg-paper-2/60 px-5 py-2.5 text-xs font-semibold text-muted md:grid">
+          <span>Supplier</span>
+          <span>Received</span>
+          <span className="text-right">Amount</span>
+          <span>Status</span>
+        </div>
+        <ul className="divide-y divide-line">
+          {invoices.length === 0 && <li className="px-5 py-6 text-sm text-muted">No invoices yet.</li>}
+          {invoices.map((inv) => {
+            const s = STATUS[inv.status];
+            const issues = inv.results.filter((r) => r.status !== "pass");
+            return (
+              <li key={inv.id} className="px-5 py-4 [overflow-wrap:anywhere] hover:bg-paper/50">
+                <div className="grid gap-x-4 gap-y-1 md:grid-cols-[minmax(0,1fr)_11rem_8rem_12rem] md:items-center">
+                  <div className="min-w-0">
+                    <p className="font-semibold">
+                      {inv.supplierName || inv.fileName}
+                      {inv.invoiceNumber && <span className="font-normal text-muted"> · #{inv.invoiceNumber}</span>}
+                    </p>
+                    <a href={`/api/invoices/${inv.id}/file`} target="_blank" rel="noreferrer" className="text-sm text-indigo underline">
                       view invoice
                     </a>
+                  </div>
+                  <p className="text-sm tabular-nums text-muted">
+                    {inv.receivedAt.toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                   </p>
+                  <p className="num font-semibold md:text-right">{inv.totalUsd > 0n ? formatUsd(inv.totalUsd) : "Not read"}</p>
+                  <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${s.tone}`}>
+                    <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
+                    {s.label}
+                  </span>
                 </div>
-                <p className="num text-xl font-semibold">{inv.totalUsd > 0n ? formatUsd(inv.totalUsd) : "Not read"}</p>
-                <span className={`field-label inline-block -rotate-2 rounded-[3px] border-2 border-current px-2.5 py-1.5 text-[0.72rem] font-extrabold ${s.tone}`}>{s.label}</span>
-              </div>
-              {(issues.length > 0 || inv.needsOwner) && (
-                <ul className="mt-3 space-y-1 text-sm">
-                  {inv.needsOwner && <li className="text-hold">{shortenAddresses(inv.needsOwner)}</li>}
-                  {issues.map((r) => (
-                    <li key={r.check} className={r.status === "block" ? "text-refuse" : r.status === "flag" ? "text-muted" : "text-hold"}>
-                      {shortenAddresses(r.reason)}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {inv.extracted && inv.extracted.lines.length > 0 && (
-                <details className="mt-3 text-sm">
-                  <summary className="cursor-pointer text-muted">What Bursar read from it</summary>
-                  <table className="num mt-2 w-full max-w-xl text-left text-xs">
-                    <tbody>
-                      {inv.extracted.lines.map((l, i) => (
-                        <tr key={i} className="border-b border-line">
-                          <td className="py-1 pr-3 font-sans">{l.description}</td>
-                          <td className="py-1 pr-3 text-right">{l.quantity}</td>
-                          <td className="py-1 pr-3 text-right">{l.unitPrice}</td>
-                          <td className="py-1 text-right">{l.lineTotal}</td>
+                {(issues.length > 0 || inv.needsOwner) && (
+                  <ul className="mt-3 space-y-1 border-l-2 border-line pl-3 text-sm">
+                    {inv.needsOwner && <li className="text-hold">{shortenAddresses(inv.needsOwner)}</li>}
+                    {issues.map((r) => (
+                      <li key={r.check} className={r.status === "block" ? "text-refuse" : r.status === "flag" ? "text-muted" : "text-hold"}>
+                        {shortenAddresses(r.reason)}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {inv.extracted && inv.extracted.lines.length > 0 && (
+                  <details className="mt-2 text-sm">
+                    <summary className="cursor-pointer text-muted">What Bursar read from it</summary>
+                    <table className="mt-2 w-full max-w-xl text-left text-xs">
+                      <thead className="text-muted">
+                        <tr>
+                          <th className="py-1 pr-3 font-medium">Item</th>
+                          <th className="py-1 pr-3 text-right font-medium">Qty</th>
+                          <th className="py-1 pr-3 text-right font-medium">Unit price</th>
+                          <th className="py-1 text-right font-medium">Line total</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <p className="mt-2 text-xs text-muted">Read by: {inv.readBy}</p>
-                </details>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+                      </thead>
+                      <tbody className="num">
+                        {inv.extracted.lines.map((l, i) => (
+                          <tr key={i} className="border-t border-line">
+                            <td className="py-1 pr-3 font-sans">{l.description}</td>
+                            <td className="py-1 pr-3 text-right">{l.quantity}</td>
+                            <td className="py-1 pr-3 text-right">{l.unitPrice}</td>
+                            <td className="py-1 text-right">{l.lineTotal}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <p className="mt-2 text-xs text-muted">Read by: {inv.readBy}</p>
+                  </details>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </section>
     </div>
   );
 }

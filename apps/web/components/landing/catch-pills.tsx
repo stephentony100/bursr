@@ -9,7 +9,7 @@ import type { Verdict } from "./week-data";
 // "What Bursar checks": four tall slips; the open one widens to show the
 // catch from the sample week. They take turns until you pick one.
 
-interface Catch {
+export interface Catch {
   title: string;
   icon: Icon;
   verdict: Verdict;
@@ -28,7 +28,7 @@ function Plate({ label, children, warn = false }: { label: string; children: Rea
   );
 }
 
-function catches(usualAddress: string, newAddress: string): Catch[] {
+export function catches(usualAddress: string, newAddress: string): Catch[] {
   return [
     {
       title: "Look-alike names",
