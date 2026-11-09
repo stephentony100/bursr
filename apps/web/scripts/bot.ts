@@ -1,14 +1,19 @@
 // npm run bot: Bursar's Telegram bot (P1). Long polling; needs TELEGRAM_BOT_TOKEN.
 //   /link CODE  connect this chat (code from Rules & account → Connect Telegram)
 //   /plan       this week's plan, with an Approve button
-// Alerts (blocked/held invoices, failed payments, refused attempts) go to the
+//   any text    talk to Bursar's agent (same agent and tools as the web chat)
+// Alerts (blocked/held invoices, failed payments, refused attempts, and the
+// agent's news: what it paid, what needs your OK, money it needs) go to the
 // linked chat once each. Approving here is the same owner action as on the web.
 import "./load-env";
 import { Bot, InlineKeyboard } from "grammy";
 import { agentAccount } from "../lib/agent-account";
 import { db } from "../lib/db";
 import { readEnv } from "../lib/env";
-import { approvePlan } from "../lib/owner-actions";
+import { randomUUID } from "node:crypto";
+import { chat, confirmCard, type ChatTurn } from "../lib/agent/chat";
+import { runAgent } from "../lib/agent/engine";
+import { approvePlan, approvePlanItem } from "../lib/owner-actions";
 import { payApprovedPlan } from "../lib/pay";
 import { getLatestPlan, getPlan } from "../lib/plans";
 import { BOT_NAME, linkChat, linkedChat, markSent, ownerForChat, pendingAlerts, planText } from "../lib/telegram";
@@ -20,7 +25,7 @@ const web = env.NEXT_PUBLIC_APP_URL;
 
 bot.command("start", (ctx) =>
   ctx.reply(
-    "Hi, I'm Bursar. I check your supplier invoices for fraud and pay everyone once you approve.\n\n" +
+    "Hi, I'm Bursar's agent. I check your supplier invoices for fraud and pay your staff and suppliers on their day, inside the limits you set. I'll message you here when something needs you, and you can just talk to me.\n\n" +
       "To connect: open Bursar → Spending rules → Connect my Telegram, then send me the /link line it shows you.",
   ),
 );
@@ -54,11 +59,60 @@ bot.callbackQuery(/^approve:(.+)$/, async (ctx) => {
   await ctx.reply(`Done. ${sent} payments on the way${failed ? `, ${failed} not paid (see why below)` : ""}.\n\n${planText((await getPlan(db(), planId))!)}`);
 });
 
+// A payment waiting for the owner: OK it from the chat; the agent pays it at once.
+bot.callbackQuery(/^ok:(.+)$/, async (ctx) => {
+  const owner = ctx.chat ? await ownerForChat(db(), ctx.chat.id) : null;
+  if (!owner) return ctx.answerCallbackQuery({ text: "This chat isn't connected.", show_alert: true });
+  try {
+    await approvePlanItem(db(), owner, ctx.match[1]);
+  } catch (e) {
+    return ctx.answerCallbackQuery({ text: e instanceof Error ? e.message.slice(0, 190) : "Could not OK it.", show_alert: true });
+  }
+  await ctx.answerCallbackQuery({ text: "OK'd. Paying now…" });
+  await ctx.editMessageReplyMarkup({ reply_markup: undefined });
+  const r = await runAgent(db());
+  await ctx.reply(r.sent ? "Sent. I'll tell you when it arrives." : "OK'd. I'll pay it as soon as I can and tell you here.");
+});
+
+// Talking to the agent. Action cards become buttons; callback data is short, so the card's signed token stays here.
+const histories = new Map<number, ChatTurn[]>();
+const cardTokens = new Map<string, string>();
+bot.on("message:text", async (ctx) => {
+  if (ctx.message.text.startsWith("/")) return;
+  const owner = await ownerForChat(db(), ctx.chat.id);
+  if (!owner) return ctx.reply("This chat isn't connected yet. Send /start to see how.");
+  const history = [...(histories.get(ctx.chat.id) ?? []), { role: "user" as const, content: ctx.message.text.slice(0, 2000) }].slice(-12);
+  await ctx.replyWithChatAction("typing");
+  const r = await chat(db(), owner, history);
+  histories.set(ctx.chat.id, [...history, { role: "assistant" as const, content: r.reply }].slice(-12));
+  await ctx.reply(r.reply);
+  for (const c of r.cards) {
+    const id = randomUUID().slice(0, 12);
+    cardTokens.set(id, c.token);
+    await ctx.reply(`${c.title}\n${c.detail}`, { reply_markup: new InlineKeyboard().text(c.confirm, `card:${id}`) });
+  }
+});
+
+bot.callbackQuery(/^card:(.+)$/, async (ctx) => {
+  const owner = ctx.chat ? await ownerForChat(db(), ctx.chat.id) : null;
+  const token = cardTokens.get(ctx.match[1]);
+  if (!owner || !token) return ctx.answerCallbackQuery({ text: "This card has expired. Ask again.", show_alert: true });
+  cardTokens.delete(ctx.match[1]);
+  await ctx.editMessageReplyMarkup({ reply_markup: undefined });
+  try {
+    const message = await confirmCard(db(), owner, token);
+    await ctx.answerCallbackQuery({ text: "Done." });
+    await ctx.reply(message);
+  } catch (e) {
+    await ctx.answerCallbackQuery({ text: e instanceof Error ? e.message.slice(0, 190) : "Couldn't do that.", show_alert: true });
+  }
+});
+
 async function sendAlerts() {
   const link = await linkedChat(db());
   if (!link) return;
   for (const a of await pendingAlerts(db())) {
-    await bot.api.sendMessage(link.chatId, a.text);
+    await bot.api.sendMessage(link.chatId, a.text, a.approveItemId ? { reply_markup: new InlineKeyboard().text("✅ OK, pay it", `ok:${a.approveItemId}`) } : undefined);
     await markSent(db(), a.key); // after sending: a crash in between re-sends once, never skips
   }
 }

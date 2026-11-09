@@ -81,7 +81,18 @@ export function planText(plan: PlanView): string {
 export interface Alert {
   key: string;
   text: string;
+  /** A payment waiting for the owner's OK: the bot adds an "OK, pay it" button. */
+  approveItemId?: string;
 }
+
+// The agent's own news that is worth a message (failed payments are sent below, once each).
+const AGENT_ALERT_KINDS: Record<string, string> = {
+  agent_run: "🤖",
+  needs_owner: "✋",
+  needs_money: "💰",
+  money_in: "✅",
+  agent_blocked: "⚠️",
+};
 
 /** Alerts not yet sent: problem invoices, failed payments, refused attempts. */
 export async function pendingAlerts(db: PrismaClient): Promise<Alert[]> {
@@ -97,6 +108,15 @@ export async function pendingAlerts(db: PrismaClient): Promise<Alert[]> {
   for (const p of failed) alerts.push({ key: `failed:${p.id}`, text: `❌ Not paid: ${p.payeeName}, ${p.forWhat}.\n${p.payReason ?? ""}` });
   const refused = await db.auditEvent.findMany({ where: { kind: "account_refused" }, orderBy: { at: "asc" } });
   for (const r of refused) alerts.push({ key: `refused:${r.id}`, text: `🛡 Your spending rules blocked a payment: ${r.message}` });
+  // What the agent did or needs, from the last day (older news isn't sent when a chat is first linked).
+  const agentEvents = await db.auditEvent.findMany({
+    where: { actor: "agent", kind: { in: Object.keys(AGENT_ALERT_KINDS) }, at: { gte: new Date(Date.now() - 24 * 60 * 60_000) } },
+    orderBy: { at: "asc" },
+  });
+  for (const e of agentEvents) {
+    const itemId = e.kind === "needs_owner" ? (JSON.parse(e.data ?? "{}") as { itemId?: string }).itemId : undefined;
+    alerts.push({ key: `agent:${e.id}`, text: `${AGENT_ALERT_KINDS[e.kind]} ${e.message}`, approveItemId: itemId });
+  }
 
   const sent = new Set((await db.telegramMessage.findMany({ where: { key: { in: alerts.map((a) => a.key) } }, select: { key: true } })).map((m) => m.key));
   return alerts.filter((a) => !sent.has(a.key));
