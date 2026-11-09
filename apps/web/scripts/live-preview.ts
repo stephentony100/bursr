@@ -3,10 +3,11 @@
 // would need, the withdrawal fee, what the payee would receive, and any rule
 // the account would refuse. Run this before approving a live plan.
 import "./load-env";
-import { createAgentApi } from "@near-intents-agent-api/sdk";
+import { AgentApiError, createAgentApi } from "@near-intents-agent-api/sdk";
 import { db } from "../lib/db";
 import { readEnv } from "../lib/env";
 import { formatUnits, formatUsd } from "../lib/money";
+import { canReceiveOnNear, notRegisteredText } from "../lib/near-storage";
 import { getLatestPlan } from "../lib/plans";
 import { amountOutFor } from "../lib/quotes";
 import { getBusiness } from "../lib/store";
@@ -37,8 +38,18 @@ for (const i of plan.items.filter((x) => x.placement === "in" && x.payout)) {
     const swap = await agent.swap(agentId, { origin_asset: treasury.assetId, destination_asset: token.assetId, amount: out.toString(), confidential: PRIVATE_PAYMENTS, dry: true });
     console.log(`  swap preview: ${JSON.stringify({ amount_out: swap.quote?.amount_out ?? null, fee: swap.fee ?? null, warnings: swap.warnings ?? [] })}`);
   }
-  const w = await agent.withdraw(agentId, { asset: token.assetId, amount: out.toString(), chain: token.chain, recipient: i.payout!.address, ...(i.payout!.memo ? { memo: i.payout!.memo } : {}), confidential: PRIVATE_PAYMENTS, dry: true });
-  console.log(`  withdraw preview: ${JSON.stringify({ amount_out: w.quote?.amount_out ?? null, fee: w.fee ?? null, warnings: w.warnings ?? [] })}`);
+  if (token.chain === "near" && (await canReceiveOnNear(token.assetId, i.payout!.address)) === false) {
+    console.log(`  NOT PAYABLE: ${notRegisteredText(i.payout!.address, token.symbol)}`);
+    continue;
+  }
+  try {
+    const w = await agent.withdraw(agentId, { asset: token.assetId, amount: out.toString(), chain: token.chain, recipient: i.payout!.address, ...(i.payout!.memo ? { memo: i.payout!.memo } : {}), confidential: PRIVATE_PAYMENTS, dry: true });
+    // The withdrawal spends the token the swap produces; previews don't run the swap, so its balance warning is expected here.
+    const warnings = (w.warnings ?? []).filter((x) => !(token.assetId !== treasury.assetId && x.code === "insufficient_balance"));
+    console.log(`  withdraw preview: ${JSON.stringify({ amount_out: w.quote?.amount_out ?? null, fee: w.fee ?? null, warnings })}`);
+  } catch (e) {
+    console.log(`  withdraw preview REFUSED: ${e instanceof AgentApiError ? `${e.code}: ${e.detail ?? e.title}` : e}`);
+  }
 }
 console.log(`\nPlan total ${formatUsd(total)} (${formatUnits(total, 6)} in USD terms). Nothing was moved.`);
 await db().$disconnect();

@@ -2,6 +2,7 @@ import { agentAccount, type ActionOutcome, type AgentAccount } from "./agent-acc
 import { readEnv } from "./env";
 import { isOnPayoutHold, normaliseAddress, type Payout } from "./domain";
 import type { PrismaClient } from "./generated/prisma/client";
+import { canReceiveOnNear, notRegisteredText } from "./near-storage";
 import { getPlan, type PlanItemView } from "./plans";
 import { amountOutFor, quotePayout } from "./quotes";
 import { getBusiness, listPayees } from "./store";
@@ -59,6 +60,12 @@ export async function payItem(
   if (!payee) return fail(item.kind === "fee" ? "Bursar's fee was removed from your rules, so it wasn't paid." : "You removed this person after approving, so they weren't paid.");
   if (!samePayout(payee.payout, planned)) return fail("Their payment details changed after you approved, so they weren't paid. It will come back in next week's payments.");
   if (isOnPayoutHold(payee, new Date())) return fail("Their payment details changed recently and are on a 48-hour safety hold, so they weren't paid.");
+
+  // A NEAR account must be registered with the token before it can receive it; check before swapping anything.
+  if (account.backend === "agent-api" && planned.token.chain === "near") {
+    const ok = await canReceiveOnNear(planned.token.assetId, planned.address);
+    if (ok === false) return fail(notRegisteredText(planned.address, planned.token.symbol));
+  }
 
   await db.planItem.update({ where: { id: item.id }, data: { payStatus: "paying" } });
   const treasury = business.rules.treasury;

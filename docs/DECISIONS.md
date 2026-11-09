@@ -122,4 +122,4 @@ Record each decision with date, reason and the doc line relied on.
 - [x] Human: owner account `stephentony.near` (one FullAccess key on chain, 6 Nov; balance ~0 NEAR, fine because owner signing is gasless)
 - [x] Telegram: token only in `.env`; chat linked by one-time code; web approvals remain the default for judges
 - [ ] Final name (Bursar is a working name)
-- [ ] M3: does Agent API `withdraw` to a NEAR account handle USDC storage registration?
+- [x] M3: does Agent API `withdraw` to a NEAR account handle USDC storage registration? **No** (9 Nov 2026): a public withdrawal of USDC to `stephentony.near` (`storage_balance_of` = null on the USDC contract) was refused with 409 `invalid_address` ("The recipient is not a valid address for this chain, or the provider refused it"). Bursar now checks `storage_balance_of` before paying a NEAR payee (`lib/near-storage.ts`) and says what to do; nothing is swapped or sent
