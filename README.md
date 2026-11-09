@@ -58,10 +58,10 @@ To start again from scratch: `npm run demo`.
 
 Live mode uses a real NEAR Intents Agent API account. There is no testnet for it. Steps for the owner:
 
-1. In `.env`: `BURSAR_MODE=live`, `DATABASE_URL=file:./live.db` (run `npm run db:push` after each update), `NEAR_AI_API_KEY` (with credits, to read invoices), `AGENT_API_KEY=naa_…` (from https://partners.demo.agentsonintents.com/dashboard), and a long random `BURSAR_SESSION_SECRET`. Then `npm run db:push` and `npm run dev`.
+1. In `.env`: `BURSAR_MODE=live`, `DATABASE_URL=file:./live.db` (run `npm run db:push` after each update), `NEAR_AI_API_KEY` (with credits, to read invoices), `AGENT_API_KEY` (from https://partners.demo.agentsonintents.com/dashboard), a long random `BURSAR_SESSION_SECRET` and `BURSAR_DATA_KEY` (64 hex characters; `.env.example` shows how to make one). Then `npm run db:push` and `npm run dev`.
 2. **Sign in** (top right; HOT Wallet and others via `@hot-labs/near-connect`). The server checks the signed message and that the key is a full-access key of the account.
 3. On **Spending rules**, set up the business (starts at $20 a week, $10 a payment), add people on **People**, then **Set up my Bursar wallet with these limits…**. The exact policy is under "Technical details of what you're confirming"; your wallet signs it (a gasless delegate action the Agent API relays).
-4. **Let Bursar make payments inside my limits…** → your wallet signs a grant; put the shown `AGENT_API_GRANT_TOKEN` line in `.env` and restart.
+4. **Let Bursar make payments inside my limits…** → your wallet signs a 30-day grant. Bursar keeps the grant's token in the database, encrypted with `BURSAR_DATA_KEY` (AES-256-GCM, bound to the agent); nothing to copy, no restart. Three days before it ends, the same box offers to renew it.
 5. `npm run rules:live` → asks the live account for payments the rules forbid (an unlisted address; one unit over the per-payment cap) and saves its answers in `fixtures/live/`. Run it on an unfunded account: refused requests create no operation and move nothing.
 6. To pay for real: give people a regular pay (or add invoices), **Payments → Get this week's payments ready**, then `npm run live:preview` (the account's own dry preview of every payment). Fund the account with `npm run fund -- <TOKEN> <chain>` (for example `npm run fund -- USDC near`), which prints a one-time deposit address and the minimum; send from your own wallet. Then **Approve and pay everyone**. Each payment is followed to its final status and the payee-side transaction is recorded on the statement.
 

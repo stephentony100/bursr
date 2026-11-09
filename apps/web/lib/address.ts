@@ -42,6 +42,10 @@ function isSolana(a: string): boolean {
   return decode58(a)?.length === 32;
 }
 
+// Sui addresses are 0x and 64 hex characters. Lowercase only: the policy's
+// "only" list matches the exact entry, and Sui wallets show lowercase.
+const isSui = (a: string) => /^0x[0-9a-f]{64}$/.test(a);
+
 const EVM_STYLE = new Set(["eth", "base", "arb", "pol", "bsc", "op", "avax"]);
 
 /** Returns a plain-English problem, or null when the address looks right for the network. */
@@ -49,12 +53,13 @@ export function addressProblem(chain: string, address: string): string | null {
   const a = address.trim();
   if (!a) return "Enter their address.";
   const ok =
-    chain === "tron" ? isTron(a) : chain === "near" ? isNear(a) : chain === "sol" ? isSolana(a) : EVM_STYLE.has(chain) ? isEvm(a) : true;
+    chain === "tron" ? isTron(a) : chain === "near" ? isNear(a) : chain === "sol" ? isSolana(a) : chain === "sui" ? isSui(a) : EVM_STYLE.has(chain) ? isEvm(a) : true;
   if (ok) return null;
   const hint: Record<string, string> = {
     tron: "a Tron address starts with T and has 34 characters",
     near: "a NEAR account looks like name.near or is 64 lowercase hex characters",
     sol: "a Solana address is 32 to 44 letters and numbers",
+    sui: "a Sui address starts with 0x and has 64 lowercase letters and numbers after it",
   };
   return `That doesn't look like a valid address for this network (${hint[chain] ?? "an address starts with 0x and has 42 characters"}). Check it with the payee.`;
 }

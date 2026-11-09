@@ -52,6 +52,9 @@ export interface AccountRecord {
   policy: Policy;
   policyRevision: number;
   budgetStartedAt: Date;
+  /** Live only: the sealed payment pass (lib/grant-store.ts). */
+  grantSealed: string | null;
+  grantExpiresAt: Date | null;
 }
 
 export async function getAccountRecord(db: PrismaClient): Promise<AccountRecord | null> {
@@ -63,6 +66,8 @@ export async function getAccountRecord(db: PrismaClient): Promise<AccountRecord 
     policy: JSON.parse(row.policy) as Policy,
     policyRevision: row.policyRevision,
     budgetStartedAt: row.budgetStartedAt,
+    grantSealed: row.grantSealed,
+    grantExpiresAt: row.grantExpiresAt,
   };
 }
 

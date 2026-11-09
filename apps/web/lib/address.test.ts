@@ -9,6 +9,7 @@ describe("payout address checks", () => {
     expect(addressProblem("near", "stephentony.near")).toBeNull();
     expect(addressProblem("near", demoNearImplicit("a"))).toBeNull();
     expect(addressProblem("sol", demoSolanaAddress("a"))).toBeNull();
+    expect(addressProblem("sui", "0x" + "5e93a736".repeat(8))).toBeNull();
   });
 
   it("rejects a Tron address with one character changed (checksum)", () => {
@@ -23,6 +24,8 @@ describe("payout address checks", () => {
     expect(addressProblem("near", "Not A Near Account")).not.toBeNull();
     expect(addressProblem("base", "0x123")).not.toBeNull();
     expect(addressProblem("sol", "abc")).not.toBeNull();
+    expect(addressProblem("sui", demoEvmAddress("a"))).toMatch(/Sui address/); // 40 hex is EVM, not Sui
+    expect(addressProblem("sui", "0x" + "5E93A736".repeat(8))).not.toBeNull();
     expect(addressProblem("tron", "")).toBe("Enter their address.");
     expect(addressProblem("near", demoNearImplicit("a").slice(1))).not.toBeNull(); // 63 hex chars
   });

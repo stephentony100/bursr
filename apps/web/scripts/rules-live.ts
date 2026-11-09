@@ -2,27 +2,22 @@
 // account itself (the NEAR Intents Agent API on mainnet), not by Bursar.
 // It asks the live account for payments the rules forbid and records what the
 // account answers. Use an UNFUNDED agent: even if a rule were missing, there is
-// nothing to move. Needs AGENT_API_KEY, AGENT_API_GRANT_TOKEN and the agent
-// (created on the Setup page in live mode, or AGENT_API_AGENT_ID).
+// nothing to move. Needs AGENT_API_KEY and BURSAR_DATA_KEY in .env, and the
+// agent and its payment pass (set up on Spending rules in live mode).
 import "./load-env";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { AgentApiError, createAgentApi, createIdempotencyKey, type Policy } from "@near-intents-agent-api/sdk";
 import { db } from "../lib/db";
 import { demoEvmAddress, demoNearImplicit, demoSolanaAddress, demoTronAddress } from "../lib/demo-addresses";
-import { readEnv } from "../lib/env";
-import { getAccountRecord } from "../lib/store";
+import { liveAgentConfig } from "../lib/agent-account";
 
 type Step = { name: string; expect: string; got: string; pass: boolean; detail: unknown };
 
 async function main() {
-  const env = readEnv();
-  const agentId = env.AGENT_API_AGENT_ID ?? (await getAccountRecord(db()))?.agentId;
-  if (!env.AGENT_API_KEY || !env.AGENT_API_GRANT_TOKEN || !agentId) {
-    throw new Error("Needs AGENT_API_KEY, AGENT_API_GRANT_TOKEN and an agent (Setup page in live mode, or AGENT_API_AGENT_ID).");
-  }
-  const api = createAgentApi({ apiKey: env.AGENT_API_KEY, baseUrl: env.AGENT_API_BASE_URL });
-  const agent = api.forGrant(env.AGENT_API_GRANT_TOKEN);
+  const { apiKey, baseUrl, agentId, grantToken } = await liveAgentConfig(db());
+  const api = createAgentApi({ apiKey, baseUrl });
+  const agent = api.forGrant(grantToken);
 
   const view = await api.getPolicy(agentId);
   const policy = view.policy as Policy | null;

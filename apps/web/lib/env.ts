@@ -43,7 +43,8 @@ const EnvSchema = z.object({
   AGENT_API_BASE_URL: z.string().default("https://api.demo.agentsonintents.com"),
   AGENT_API_KEY: optional,
   AGENT_API_AGENT_ID: optional,
-  AGENT_API_GRANT_TOKEN: optional,
+  // 32 random bytes as hex; seals the agent's payment pass in the database (lib/grant-store.ts). Live only.
+  BURSAR_DATA_KEY: optional,
   VAULT_CONTRACT_ID: optional,
   AGENT_ACCOUNT_ID: optional,
   AGENT_FUNCTION_CALL_PRIVATE_KEY: optional,

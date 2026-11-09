@@ -8,8 +8,9 @@ import {
 } from "@near-intents-agent-api/sdk";
 import { readEnv } from "./env";
 import type { PrismaClient } from "./generated/prisma/client";
-import { desiredPolicy, NotOwnerError } from "./owner-actions";
+import { desiredPolicy, NotOwnerError, setFrozen } from "./owner-actions";
 import { isOwnerSession, type OwnerSession } from "./owner";
+import { dataKey, saveGrant } from "./grant-store";
 import { getAccountRecord, getBusiness } from "./store";
 
 // Live mode owner actions on the Agent API. Every one follows the documented
@@ -40,8 +41,9 @@ export interface PreparedIntent {
 
 // grant_issue: the grant token is created here and must stay on the server
 // until the owner's signature is accepted. Kept in memory for the few minutes
-// the intent is valid; never written to the database.
-const pendingGrantTokens = new Map<string, { token: string; expiresAt: number }>();
+// the intent is valid; once accepted it is sealed into the database
+// (lib/grant-store.ts) and never shown to anyone.
+const pendingGrantTokens = new Map<string, { token: string; agentId: string; grantExpiresAt: Date }>();
 
 function api() {
   const env = readEnv();
@@ -97,22 +99,22 @@ export async function prepareOwnerIntent(db: PrismaClient, owner: OwnerSession, 
   }
   // grant_issue
   const { token, commitment } = createGrantCredential();
+  const grantExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  dataKey(); // fail before the owner signs if the pass couldn't be stored
   const g = await client.generateIntent({
     type: "grant_issue",
     agent_id: record.agentId,
     label: "Bursar payments",
     credential: commitment,
-    expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    expires_at: grantExpiresAt.toISOString(),
   });
-  pendingGrantTokens.set(g.correlation_id, { token, expiresAt: Date.parse(g.expires_at) });
+  pendingGrantTokens.set(g.correlation_id, { token, agentId: record.agentId, grantExpiresAt });
   return prepared(kind, g);
 }
 
 export interface SubmitResult {
   status: string;
   failureCode: string | null;
-  /** grant_issue only: shown to the owner once, to put in .env. */
-  grantToken?: string;
 }
 
 export async function submitOwnerIntent(
@@ -121,6 +123,10 @@ export async function submitOwnerIntent(
   p: { kind: OwnerIntentKind; correlationId: string; agentId: string; signedData: SignedData },
 ): Promise<SubmitResult> {
   await assertLiveOwner(db, owner);
+  if (p.kind === "grant_issue" && !pendingGrantTokens.has(p.correlationId)) {
+    // Without the token kept at prepare time, an accepted grant could never be used.
+    return { status: "FAILED", failureCode: "Bursar restarted before your OK arrived. Please press the button again." };
+  }
   const client = api();
   try {
     await client.submitIntent({ type: p.kind, correlation_id: p.correlationId, signed_data: p.signedData });
@@ -135,6 +141,9 @@ export async function submitOwnerIntent(
   }
   const result: SubmitResult = { status: status.status, failureCode: status.failure_code ?? null };
   if (status.status !== "SUCCESS") return result;
+  // Keep the owner's rules in step with the account, or the page would keep
+  // offering "Pause" and ask the owner to sign the old (unpaused) policy back.
+  if (p.kind === "agent_freeze" || p.kind === "agent_unfreeze") await setFrozen(db, owner, p.kind === "agent_freeze");
 
   // Store what the Agent API says is in force; never a policy sent by the browser.
   const view = await client.getPolicy(p.agentId);
@@ -155,7 +164,11 @@ export async function submitOwnerIntent(
   if (p.kind === "grant_issue") {
     const pending = pendingGrantTokens.get(p.correlationId);
     pendingGrantTokens.delete(p.correlationId);
-    result.grantToken = pending?.token;
+    if (!pending) return { status: "FAILED", failureCode: "Bursar restarted before your OK arrived. Please press the button again." };
+    // Bind the pass to the agent recorded when it was prepared, not to anything the browser sent.
+    const current = await getAccountRecord(db);
+    if (!current || current.agentId !== pending.agentId) return { status: "FAILED", failureCode: "Your Bursar wallet changed. Please press the button again." };
+    await saveGrant(db, pending.agentId, pending.token, pending.grantExpiresAt);
   }
   return result;
 }

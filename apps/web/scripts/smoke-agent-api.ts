@@ -2,7 +2,7 @@
 // agent, changes a policy or moves funds.
 //   no key            → GET /v1/network (public): which network, which contract
 //   AGENT_API_KEY     → whoami, partner quota, token count
-//   + AGENT_API_AGENT_ID + AGENT_API_GRANT_TOKEN
+//   + a live database with the agent and its sealed pass (BURSAR_DATA_KEY)
 //                     → the agent's policy, and a dry withdrawal preview to an
 //                       address that is NOT on the owner's list. The account's
 //                       rules answer with a policy_destination_denied warning.
@@ -10,6 +10,8 @@ import "./load-env";
 import { z } from "zod";
 import { createAgentApi } from "@near-intents-agent-api/sdk";
 import { demoEvmAddress } from "../lib/demo-addresses";
+import { liveAgentConfig } from "../lib/agent-account";
+import { db } from "../lib/db";
 import { readEnv } from "../lib/env";
 import { fetchJson } from "../lib/http";
 
@@ -32,17 +34,20 @@ async function main() {
   console.log("quota:", JSON.stringify(quota));
   console.log(`tokens: ${tokens.length}`);
 
-  if (!env.AGENT_API_AGENT_ID || !env.AGENT_API_GRANT_TOKEN) {
-    console.log("\nSKIPPED policy checks: set AGENT_API_AGENT_ID and AGENT_API_GRANT_TOKEN in .env.");
+  let live: Awaited<ReturnType<typeof liveAgentConfig>>;
+  try {
+    live = await liveAgentConfig(db());
+  } catch (e) {
+    console.log(`\nSKIPPED policy checks: ${e instanceof Error ? e.message : e}`);
     return;
   }
-  const agentId = env.AGENT_API_AGENT_ID;
+  const agentId = live.agentId;
   const policy = await api.getPolicy(agentId);
   console.log("policy:", JSON.stringify(policy, null, 2));
 
   const usdcBase = tokens.filter((t) => t.symbol === "USDC" && t.blockchain === "base");
   if (usdcBase.length !== 1) throw new Error(`expected one USDC on base in Agent API tokens, found ${usdcBase.length}`);
-  const agent = api.forGrant(env.AGENT_API_GRANT_TOKEN);
+  const agent = api.forGrant(live.grantToken);
   const preview = await agent.withdraw(agentId, {
     asset: usdcBase[0].asset_id,
     amount: "1000000", // 1 USDC, preview only

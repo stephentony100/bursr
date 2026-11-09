@@ -3,6 +3,7 @@ import { SimulatedAccount } from "./agent-account/simulated";
 import type { AgentAccount } from "./agent-account/types";
 import { db as defaultDb } from "./db";
 import { readEnv } from "./env";
+import { readGrant } from "./grant-store";
 import type { PrismaClient } from "./generated/prisma/client";
 import { getAccountRecord, getBusiness } from "./store";
 
@@ -22,15 +23,17 @@ export async function agentAccount(db: PrismaClient = defaultDb()): Promise<Agen
     return new SimulatedAccount(db, Object.fromEntries(tokens.map((t) => [t.assetId, t.decimals])));
   }
 
+  return new AgentApiAccount(await liveAgentConfig(db));
+}
+
+/** What the live account needs: the partner key from .env, the agent and its sealed pass from the database. */
+export async function liveAgentConfig(db: PrismaClient = defaultDb()) {
+  const env = readEnv();
+  if (!env.AGENT_API_KEY) throw new Error("Live mode needs AGENT_API_KEY in .env.");
   const record = await getAccountRecord(db);
-  const agentId = env.AGENT_API_AGENT_ID ?? record?.agentId;
-  if (!env.AGENT_API_KEY || !agentId || !env.AGENT_API_GRANT_TOKEN) {
-    throw new Error("Live mode needs AGENT_API_KEY, the agent (create it on the Setup page) and AGENT_API_GRANT_TOKEN in .env.");
+  if (!record || record.backend !== "agent-api") throw new Error("Set up your Bursar wallet first (Spending rules).");
+  if (env.AGENT_API_AGENT_ID && env.AGENT_API_AGENT_ID !== record.agentId) {
+    throw new Error("AGENT_API_AGENT_ID in .env names a different agent than this business's wallet. Remove it from .env.");
   }
-  return new AgentApiAccount({
-    apiKey: env.AGENT_API_KEY,
-    baseUrl: env.AGENT_API_BASE_URL,
-    agentId,
-    grantToken: env.AGENT_API_GRANT_TOKEN,
-  });
+  return { apiKey: env.AGENT_API_KEY, baseUrl: env.AGENT_API_BASE_URL, agentId: record.agentId, grantToken: readGrant(record) };
 }

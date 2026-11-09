@@ -8,6 +8,7 @@ import { agentAccount, type AccountStatus } from "@/lib/agent-account";
 import { db } from "@/lib/db";
 import { readEnv } from "@/lib/env";
 import { formatUnits, USD_DECIMALS } from "@/lib/money";
+import { grantState } from "@/lib/grant-store";
 import { policyNeedsSigning } from "@/lib/owner-actions";
 import { getOwner } from "@/lib/session";
 import { getAccountRecord, getBusiness } from "@/lib/store";
@@ -22,7 +23,8 @@ export default async function SetupPage() {
   const [business, owner, record, tokens] = await Promise.all([getBusiness(db()), getOwner(), getAccountRecord(db()), payoutTokens()]);
 
   let status: AccountStatus | null = null;
-  if (business && (dryRun || (record && env.AGENT_API_GRANT_TOKEN))) {
+  const grant = grantState(record);
+  if (business && (dryRun || grant.usable)) {
     try {
       status = await (await agentAccount(db())).status();
     } catch {
@@ -51,7 +53,8 @@ export default async function SetupPage() {
           businessOwner={business?.ownerAccountId ?? null}
           agentId={record?.agentId ?? null}
           needsSigning={needsSigning}
-          hasGrant={Boolean(env.AGENT_API_GRANT_TOKEN)}
+          hasGrant={grant.usable}
+          grantRenewBy={grant.renewSoon && grant.expiresAt ? grant.expiresAt.toISOString() : null}
           frozen={r?.frozen ?? false}
         />
       )}

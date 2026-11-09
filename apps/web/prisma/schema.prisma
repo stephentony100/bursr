@@ -50,6 +50,9 @@ model AgentAccount {
   budgetStartedAt DateTime  @default(now())
   /// Dry-run only: simulated balances per asset id, as JSON { assetId: "amount" }.
   simBalances     String    @default("{}")
+  /// Live only: the agent's grant (payment pass), sealed with BURSAR_DATA_KEY (lib/grant-store.ts). Never plain text.
+  grantSealed     String?
+  grantExpiresAt  DateTime?
   signedAt        DateTime  @default(now())
 }
 

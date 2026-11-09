@@ -35,6 +35,8 @@ export function WalletPanel(props: {
   agentId: string | null;
   needsSigning: boolean;
   hasGrant: boolean;
+  /** ISO date the payment pass ends, when it ends within 3 days. */
+  grantRenewBy: string | null;
   frozen: boolean;
 }) {
   const router = useRouter();
@@ -42,7 +44,6 @@ export function WalletPanel(props: {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [prepared, setPrepared] = useState<Prepared | null>(null);
-  const [grantToken, setGrantToken] = useState<string | null>(null);
   const [name, setName] = useState("");
 
   async function guard(fn: () => Promise<void>) {
@@ -98,7 +99,7 @@ export function WalletPanel(props: {
       } else {
         throw new Error(`This wallet cannot sign ${intent.standard}.`);
       }
-      const result = await post<{ status: string; failureCode: string | null; grantToken?: string }>("/api/owner/intent", {
+      const result = await post<{ status: string; failureCode: string | null }>("/api/owner/intent", {
         step: "submit",
         kind: prepared.kind,
         correlationId: prepared.correlationId,
@@ -107,8 +108,7 @@ export function WalletPanel(props: {
       });
       setPrepared(null);
       if (result.status !== "SUCCESS") throw new Error(`Not applied: ${result.failureCode ?? result.status}`);
-      if (result.grantToken) setGrantToken(result.grantToken);
-      setNotice("Done. Your wallet now enforces this.");
+      setNotice(prepared.kind === "grant_issue" ? "Done. Bursar can now make payments inside your limits." : "Done. Your wallet now enforces this.");
       router.refresh();
     });
 
@@ -116,7 +116,7 @@ export function WalletPanel(props: {
     ? "agent_create"
     : props.needsSigning
       ? "policy_update"
-      : !props.hasGrant
+      : !props.hasGrant || props.grantRenewBy
         ? "grant_issue"
         : null;
 
@@ -158,10 +158,15 @@ export function WalletPanel(props: {
               <p className="text-muted">
                 {props.agentId ? (props.hasGrant ? "Your wallet is set up and Bursar can pay inside your limits." : "Your wallet is set up. One more step lets Bursar make payments.") : "Next: set up your Bursar wallet. It's free; your wallet app just confirms it."}
               </p>
+              {props.grantRenewBy && (
+                <p className="text-hold">
+                  Bursar&apos;s permission to pay ends on {new Date(props.grantRenewBy).toLocaleDateString([], { day: "numeric", month: "short" })}. Renew it so payday isn&apos;t missed.
+                </p>
+              )}
               <div className="flex flex-wrap gap-2">
                 {next && (
                   <button onClick={() => prepare(next)} disabled={busy} className="rounded-md bg-ledger px-4 py-2 font-medium text-card disabled:opacity-60">
-                    {LABELS[next]}…
+                    {next === "grant_issue" && props.hasGrant ? "Renew Bursar's permission to pay" : LABELS[next]}…
                   </button>
                 )}
                 {props.agentId && (
@@ -202,12 +207,6 @@ export function WalletPanel(props: {
             </div>
           )}
 
-          {grantToken && (
-            <div className="rounded-md border border-hold bg-hold-soft p-4">
-              <p className="font-medium">Last step for whoever set up Bursar for you: add this line to the settings file (.env) and restart Bursar. It is shown only once, so copy it now.</p>
-              <pre className="num mt-2 overflow-auto text-xs">AGENT_API_GRANT_TOKEN={grantToken}</pre>
-            </div>
-          )}
         </div>
       )}
 
