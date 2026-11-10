@@ -41,7 +41,7 @@ describe("the agent on autopilot", () => {
     expect(plan!.items.every((i) => i.payStatus === "sent" && (i.kind === "fee" || i.dueKey))).toBe(true);
     const log = (await agentLog()).map((e) => e.message);
     expect(log.some((m) => /payments? (is|are) due/.test(m))).toBe(true);
-    expect(log.some((m) => m.startsWith("Paying Bisi Adeyemi"))).toBe(true);
+    expect(log.some((m) => m.startsWith("Started paying Bisi Adeyemi (head chef) $220.00 (Weekly pay)"))).toBe(true);
     expect(log.some((m) => m.startsWith("Sent Bisi Adeyemi"))).toBe(true);
   });
 
@@ -90,8 +90,10 @@ describe("the agent on autopilot", () => {
     expect(quiet.attempted).toBe(0);
 
     await t.db.agentAccount.update({ where: { id: "main" }, data: { simBalances: JSON.stringify({ [treasury]: "6000000000" }) } }); // money arrives
-    const paid = await run(new Date(now.getTime() + 6 * 60_000));
+    // Paid in the same run that notices the money, not on a later check.
+    const paid = await run(new Date(now.getTime() + 3 * 60_000 + 1000));
     expect(paid.sent).toBe(waiting.length);
+    expect((await agentLog()).some((e) => /Trying the \d+ payments that were waiting for money now/.test(e.message))).toBe(true);
   });
 
   it("warns before payday when the wallet is short, and says when money arrives", async () => {

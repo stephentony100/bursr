@@ -108,6 +108,9 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
   const last = await db.setting.findUnique({ where: { key: "agent_last_balance" } });
   if (last && held > BigInt(last.value)) {
     await say(db, "money_in", `Your Bursar wallet received ${formatUsd(held - BigInt(last.value))}. It now holds ${formatUsd(held)}.`);
+    // Payments waiting for money get their try in this same run, not on the next check.
+    const woke = await db.planItem.updateMany({ where: { payStatus: "waiting", payCode: "funds" }, data: { retryAt: now } });
+    if (woke.count) await say(db, "agent_run", `Trying the ${woke.count} payment${woke.count === 1 ? "" : "s"} that ${woke.count === 1 ? "was" : "were"} waiting for money now.`);
   }
   await db.setting.upsert({ where: { key: "agent_last_balance" }, update: { value: held.toString() }, create: { key: "agent_last_balance", value: held.toString() } });
   const need = await paydayNeed(db, held, now);
@@ -183,7 +186,7 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
     if (!item) continue;
     report.attempted++;
     const where = item.payout ? ` in ${item.payout.token.symbol} on ${chainName(item.payout.token.chain)}` : "";
-    await say(db, "payment_started", `${row.attempts > 0 ? "Trying again: paying" : "Paying"} ${item.payeeName} ${formatUsd(item.amountUsd)}${where}…`, { itemId: item.id });
+    await say(db, "payment_started", `${row.attempts > 0 ? "Started again: paying" : "Started paying"} ${item.payeeName} ${formatUsd(item.amountUsd)} (${item.forWhat})${where}…`, { itemId: item.id });
     const status = await payItem(db, account, item, quote, now);
     if (status === "sent") report.sent++;
     else if (status === "waiting") report.waiting++;

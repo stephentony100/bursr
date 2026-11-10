@@ -111,6 +111,12 @@ export async function payItem(
     return status;
   };
 
+  // Each step of a payment shows in the owner's feed as it happens (only the live account has real steps).
+  const step = async (kind: string, message: string) => {
+    if (account.backend !== "agent-api") return;
+    await db.auditEvent.create({ data: { kind, actor: "agent", message, data: JSON.stringify({ itemId: item.id }) } });
+  };
+
   try {
     const business = (await getBusiness(db))!;
     const planned = item.payout;
@@ -159,6 +165,7 @@ export async function payItem(
         });
       }
       amountSent = BigInt(q.quote.amountIn);
+      await step("payment_exchanging", `Exchanging ${formatUsd(rescale(amountSent, treasury.decimals, USD_DECIMALS))} of ${treasury.symbol} on ${chainName(treasury.chain)} into ${token.symbol} on ${chainName(token.chain)} for ${item.payeeName}…`);
       const swap = await account.execute({ kind: "swap", asset: treasury.assetId, amount: amountSent, destinationAsset: token.assetId }, key("swap"));
       if (swap.status === "refused") return stop(problemFromRefusal(swap, status?.weekResetsAt ?? null));
       references.push(swap.correlationId);
@@ -168,7 +175,10 @@ export async function payItem(
       if (o.state !== "done") {
         return stop({ kind: "transient", message: `The currency exchange didn't complete (${o.reason ?? o.state}). Nothing was sent to them.`, definite: true });
       }
+      await step("payment_exchanged", `Exchange done. ${item.payeeName}'s ${token.symbol} on ${chainName(token.chain)} is ready to send.`);
     }
+
+    await step("payment_sending", `Sending ${formatUsd(item.amountUsd)} of ${token.symbol} to ${item.payeeName}'s wallet on ${chainName(token.chain)}…`);
 
     const withdraw = await account.execute(
       { kind: "withdraw", asset: token.assetId, amount: amountOut, chain: token.chain, recipient: planned.address, memo: planned.memo },

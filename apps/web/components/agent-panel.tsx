@@ -29,6 +29,9 @@ function feedLook(e: FeedEntry) {
       return { Icon: CheckCircle, tone: "text-ledger", bg: "bg-ledger-soft" };
     case "payment_sent":
     case "payment_started":
+    case "payment_exchanging":
+    case "payment_exchanged":
+    case "payment_sending":
       return { Icon: PaperPlaneTilt, tone: "text-ledger", bg: "bg-ledger-soft" };
     case "payment_waiting":
       return { Icon: Clock, tone: "text-hold", bg: "bg-hold-soft" };
