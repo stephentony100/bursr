@@ -10,13 +10,14 @@ import { readEnv } from "@/lib/env";
 import { formatUnits, USD_DECIMALS } from "@/lib/money";
 import { grantState } from "@/lib/grant-store";
 import { policyNeedsSigning } from "@/lib/owner-actions";
-import { getOwner } from "@/lib/session";
+import { getOwner, guardPage } from "@/lib/session";
 import { getAccountRecord, getBusiness } from "@/lib/store";
 import { chainName, payoutTokens } from "@/lib/tokens";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export default async function SetupPage() {
+  await guardPage();
   await connection();
   const env = readEnv();
   const dryRun = env.BURSAR_MODE === "dry-run";

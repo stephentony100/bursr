@@ -46,6 +46,29 @@ export async function canReceiveOnNear(assetId: string, accountId: string, rpcUr
   }
 }
 
+/** How much of a NEAR token (smallest units) an account holds; null when the chain couldn't be asked. */
+export async function tokenBalanceOnNear(assetId: string, accountId: string, rpcUrl = readEnv().NEAR_RPC_URL): Promise<bigint | null> {
+  const contract = nep141Contract(assetId);
+  if (!contract) return null;
+  try {
+    const res = await fetchJson(rpcUrl, RpcResult, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "bursar",
+        method: "query",
+        params: { request_type: "call_function", finality: "final", account_id: contract, method_name: "ft_balance_of", args_base64: Buffer.from(JSON.stringify({ account_id: accountId })).toString("base64") },
+      }),
+      timeoutMs: 10_000,
+    });
+    if (!res.result) return null;
+    return BigInt(JSON.parse(Buffer.from(res.result.result).toString("utf8")) as string);
+  } catch {
+    return null;
+  }
+}
+
 export function notRegisteredText(accountId: string, symbol: string): string {
   return `${accountId} can't receive ${symbol} on NEAR yet: the account has never held ${symbol}. Ask them to add ${symbol} in their NEAR wallet (or receive any amount of it once), then try again. Nothing was sent.`;
 }

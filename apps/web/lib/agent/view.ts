@@ -145,6 +145,9 @@ export async function paydayNeed(db: PrismaClient, balanceUsd: bigint, now = new
   const business = await getBusiness(db);
   if (!business) return null;
   const payday = nextPayday(now, business.rules.timeZone, business.rules.paydayWeekday);
-  const due = (await comingUp(db, now)).filter((u) => u.dueOn <= payday).reduce((a, u) => a + u.amountUsd, 0n);
+  const upcoming = (await comingUp(db, now)).filter((u) => u.dueOn <= payday).reduce((a, u) => a + u.amountUsd, 0n);
+  // Plus what the agent is already holding: due, not sent yet (waiting for money, or for the owner's OK).
+  const held = await db.planItem.findMany({ where: { placement: "in", payStatus: { in: ["planned", "waiting"] }, plan: { status: "approved" } }, select: { amountUsd: true } });
+  const due = upcoming + held.reduce((a, i) => a + BigInt(i.amountUsd), 0n);
   return { payday, due, short: due > balanceUsd ? due - balanceUsd : 0n };
 }

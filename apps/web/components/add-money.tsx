@@ -61,6 +61,13 @@ function OneTap({ suggestedUsd }: { suggestedUsd: string | null }) {
       const info = await oneTapDepositAction();
       if (!info.ok) throw new Error(info.message);
       const d = info.deposit;
+      const wanted = parseUnits(amount, d.decimals);
+      if (d.ownerBalance !== null && BigInt(d.ownerBalance) < wanted) {
+        const has = Number(BigInt(d.ownerBalance)) / 10 ** d.decimals;
+        throw new Error(
+          `Your NEAR wallet holds ${has.toFixed(2)} ${d.symbol} on NEAR, less than $${amount}. Use "From another wallet or exchange" to add money from another network, or add ${d.symbol} on NEAR to your wallet first.`,
+        );
+      }
       const w = await wallet();
       await w.signAndSendTransaction({
         receiverId: d.tokenContract,
@@ -69,7 +76,7 @@ function OneTap({ suggestedUsd }: { suggestedUsd: string | null }) {
             type: "FunctionCall",
             params: {
               methodName: "ft_transfer_call",
-              args: { receiver_id: "intents.near", amount: parseUnits(amount, d.decimals).toString(), msg: d.agentAccount },
+              args: { receiver_id: "intents.near", amount: wanted.toString(), msg: d.agentAccount },
               gas: "100000000000000",
               deposit: "1",
             },

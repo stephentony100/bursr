@@ -5,6 +5,7 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { ActionForm, ForceTester, ItemButton } from "@/components/forms";
 import { Badge, type Tone } from "@/components/ui/badge";
 import { db } from "@/lib/db";
+import { guardPage } from "@/lib/session";
 import { readEnv } from "@/lib/env";
 import { shortenAddresses } from "@/lib/address";
 import { listInvoices } from "@/lib/invoices";
@@ -37,6 +38,7 @@ function FeeText({ raw, decimals }: { raw: bigint; decimals: number }) {
 }
 
 export default async function PlanPage() {
+  await guardPage();
   await connection();
   const dryRun = readEnv().BURSAR_MODE === "dry-run";
   const business = await getBusiness(db());

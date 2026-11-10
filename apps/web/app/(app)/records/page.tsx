@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { db } from "@/lib/db";
+import { guardPage } from "@/lib/session";
 import { formatUsd } from "@/lib/money";
 import { refreshPayments } from "@/lib/pay";
 import { statementLines } from "@/lib/statement";
@@ -8,6 +9,7 @@ import { aiSummaryAction } from "@/app/actions";
 import { AiSummaryButton } from "@/components/ai-summary";
 
 export default async function StatementPage() {
+  await guardPage();
   await connection();
   await refreshPayments(db());
   const lines = await statementLines(db());

@@ -6,6 +6,7 @@ import { InvitesList } from "@/components/invites-list";
 import { InviteForm } from "@/components/onboarding";
 import { DetailFields, PayoutFields } from "@/components/payee-fields";
 import { db } from "@/lib/db";
+import { guardPage } from "@/lib/session";
 import { isOnPayoutHold, payoutHoldEndsAt } from "@/lib/domain";
 import { listInvites } from "@/lib/invites";
 import { formatUsd } from "@/lib/money";
@@ -14,6 +15,7 @@ import { getBusiness, listPayees } from "@/lib/store";
 import { chainName } from "@/lib/tokens";
 
 export default async function PayeesPage() {
+  await guardPage();
   await connection();
   const [business, payees, invites] = await Promise.all([getBusiness(db()), listPayees(db()), listInvites(db())]);
   if (!business) {

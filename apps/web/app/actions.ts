@@ -411,8 +411,8 @@ export async function depositAddressAction(symbol: string, chain: string): Promi
 /** What the owner's NEAR wallet signs for a one-tap top-up (live mode). */
 export async function oneTapDepositAction(): Promise<{ ok: true; deposit: OneTapDeposit } | { ok: false; message: string }> {
   try {
-    await requireOwner();
-    return { ok: true, deposit: await oneTapDeposit(db()) };
+    const owner = await requireOwner();
+    return { ok: true, deposit: await oneTapDeposit(db(), owner.accountId) };
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Couldn't prepare the top-up." };
   }

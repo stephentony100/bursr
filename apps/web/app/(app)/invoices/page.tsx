@@ -7,6 +7,7 @@ import { DEFAULT_READER_MODEL } from "@/lib/reader";
 import { ActionForm } from "@/components/forms";
 import type { InvoiceStatus } from "@/lib/checks";
 import { db } from "@/lib/db";
+import { guardPage } from "@/lib/session";
 import { readEnv } from "@/lib/env";
 import { listInvoices } from "@/lib/invoices";
 import { formatUsd } from "@/lib/money";
@@ -23,6 +24,7 @@ const STATUS: Record<InvoiceStatus, { label: string; tone: string }> = {
 };
 
 export default async function InvoicesPage() {
+  await guardPage();
   await connection();
   const dryRun = readEnv().BURSAR_MODE === "dry-run";
   const business = await getBusiness(db());

@@ -5,10 +5,12 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { DEFAULT_CHAT_MODEL, QUICK_QUESTIONS } from "@/lib/agent/chat";
 import { agentFeed, needsYou, nextPayday } from "@/lib/agent/view";
 import { db } from "@/lib/db";
+import { guardPage } from "@/lib/session";
 import { readEnv } from "@/lib/env";
 import { getBusiness } from "@/lib/store";
 
 export default async function AgentPage() {
+  await guardPage();
   await connection();
   const business = await getBusiness(db());
   if (!business) return <p className="text-muted">Set up your business first.</p>;

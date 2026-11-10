@@ -5,7 +5,8 @@ import { useState } from "react";
 import { signInWithWallet, signOut } from "./wallet";
 
 /** Live mode: sign in or out from any page. */
-export function HeaderWallet({ accountId }: { accountId: string | null }) {
+export function HeaderWallet({ accountId, tone = "light" }: { accountId: string | null; tone?: "light" | "dark" }) {
+  const dark = tone === "dark";
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,10 +27,10 @@ export function HeaderWallet({ accountId }: { accountId: string | null }) {
   if (accountId) {
     return (
       <span className="flex items-center gap-2 text-sm">
-        <span className="num text-cream/70" title="You're signed in as the owner">
+        <span className={`num ${dark ? "text-muted" : "text-cream/70"}`} title="You're signed in as the owner">
           {accountId}
         </span>
-        <button onClick={() => run(signOut)} disabled={busy} className="text-card underline decoration-card/40 hover:decoration-card disabled:opacity-60">
+        <button onClick={() => run(signOut)} disabled={busy} className={`underline disabled:opacity-60 ${dark ? "text-indigo" : "text-card decoration-card/40 hover:decoration-card"}`}>
           Sign out
         </button>
       </span>
@@ -40,12 +41,12 @@ export function HeaderWallet({ accountId }: { accountId: string | null }) {
       <button
         onClick={() => run(signInWithWallet)}
         disabled={busy}
-        className="rounded-md bg-card px-3 py-1.5 text-sm font-semibold text-ink hover:bg-paper disabled:opacity-60"
+        className={`rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-60 ${dark ? "bg-ledger text-white hover:bg-indigo" : "bg-card text-ink hover:bg-paper"}`}
       >
         {busy ? "Check your wallet…" : "Sign in"}
       </button>
       {error && (
-        <span role="alert" className="max-w-56 text-xs text-[#ffc9c3]">
+        <span role="alert" className={`max-w-56 text-xs ${dark ? "text-refuse" : "text-[#ffc9c3]"}`}>
           {error}
         </span>
       )}

@@ -48,7 +48,7 @@ export async function POST(req: Request) {
 
   const business = await getBusiness(db());
   if (business && business.ownerAccountId !== accountId) {
-    return NextResponse.json({ error: `This business belongs to ${business.ownerAccountId}.` }, { status: 403 });
+    return NextResponse.json({ error: "This Bursar belongs to another wallet. Connect the wallet it was set up with." }, { status: 403 });
   }
   const res = NextResponse.json({ accountId });
   res.cookies.set(SESSION_COOKIE, issueSessionCookie(accountId, publicKey), { httpOnly: true, sameSite: "strict", path: "/", maxAge: 12 * 60 * 60 });

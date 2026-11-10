@@ -3,13 +3,15 @@ import { practiceMoneyAction } from "@/app/actions";
 import { AddMoney } from "@/components/add-money";
 import { ActionForm } from "@/components/forms";
 import { agentAccount } from "@/lib/agent-account";
-import { comingUp, nextPayday } from "@/lib/agent/view";
+import { nextPayday, paydayNeed } from "@/lib/agent/view";
 import { db } from "@/lib/db";
+import { guardPage } from "@/lib/session";
 import { readEnv } from "@/lib/env";
 import { formatUnits, formatUsd, rescale, USD_DECIMALS } from "@/lib/money";
 import { getBusiness } from "@/lib/store";
 
 export default async function AddMoneyPage() {
+  await guardPage();
   await connection();
   const business = await getBusiness(db());
   if (!business) return <p className="text-muted">Set up your business first.</p>;
@@ -22,8 +24,9 @@ export default async function AddMoneyPage() {
   } catch {
     balance = null;
   }
-  const payday = nextPayday(new Date(), business.rules.timeZone, business.rules.paydayWeekday);
-  const due = (await comingUp(db())).filter((u) => u.dueOn <= payday).reduce((a, u) => a + u.amountUsd, 0n);
+  const need = await paydayNeed(db(), balance ?? 0n);
+  const payday = need?.payday ?? nextPayday(new Date(), business.rules.timeZone, business.rules.paydayWeekday);
+  const due = need?.due ?? 0n;
   const short = balance !== null && due > balance ? due - balance : 0n;
   const paydayWords = new Date(`${payday}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
 
@@ -43,7 +46,7 @@ export default async function AddMoneyPage() {
           <p className="num mt-2 text-3xl font-semibold">{balance === null ? "…" : formatUsd(balance)}</p>
         </div>
         <div className={`rounded-xl border p-5 ${short > 0n ? "border-hold/40 bg-hold-soft/60" : "border-line bg-card"}`}>
-          <p className="text-sm font-medium text-muted">Due by {paydayWords}</p>
+          <p className="text-sm font-medium text-muted">Due by {paydayWords}, including payments waiting</p>
           <p className="num mt-2 text-3xl font-semibold">{formatUsd(due)}</p>
           <p className="mt-1 text-sm">{short > 0n ? `Add at least ${formatUsd(short)} so nobody waits.` : "You have enough for it."}</p>
         </div>

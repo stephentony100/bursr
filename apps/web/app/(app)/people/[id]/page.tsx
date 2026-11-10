@@ -6,10 +6,12 @@ import { changePayoutAction, removePayeeAction, updatePayeeAction } from "@/app/
 import { ActionForm } from "@/components/forms";
 import { DetailFields, PayoutFields } from "@/components/payee-fields";
 import { db } from "@/lib/db";
+import { guardPage } from "@/lib/session";
 import { isOnPayoutHold, payoutHoldEndsAt } from "@/lib/domain";
 import { getBusiness, getPayee } from "@/lib/store";
 
 export default async function PayeePage({ params }: PageProps<"/people/[id]">) {
+  await guardPage();
   await connection();
   const { id } = await params;
   const [business, payee] = await Promise.all([getBusiness(db()), getPayee(db(), id)]);

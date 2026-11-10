@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AppNav, PageName } from "@/components/app-nav";
 import { HeaderWallet } from "@/components/header-wallet";
 import { Logo } from "@/components/logo";
@@ -8,14 +9,15 @@ import { readEnv } from "@/lib/env";
 import { getOwner } from "@/lib/session";
 import { getBusiness } from "@/lib/store";
 
-function ModeBadge({ dryRun }: { dryRun: boolean }) {
+/** Practice mode only: real money is the normal case and needs no label. */
+function PracticeBadge() {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${dryRun ? "bg-hold-soft text-hold" : "bg-refuse-soft text-refuse"}`}
-      title={dryRun ? "You're exploring with a sample restaurant and practice money. Nothing real is paid." : "Real money. Payments go out for real."}
+      className="inline-flex items-center gap-1.5 rounded-full bg-hold-soft px-2.5 py-1 text-xs font-semibold text-hold"
+      title="You're exploring with practice money. Nothing real is paid."
     >
-      <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${dryRun ? "bg-hold" : "bg-refuse"}`} />
-      {dryRun ? "Demo · practice money" : "Live · real money"}
+      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-hold" />
+      Demo · practice money
     </span>
   );
 }
@@ -25,6 +27,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   await connection();
   const owner = dryRun ? null : await getOwner();
   const business = await getBusiness(db());
+  if (!dryRun && !business) redirect("/welcome");
+  // Each page also checks (lib/session guardPage): a layout check alone doesn't stop a page rendering.
+  if (!dryRun && (!owner || business?.ownerAccountId !== owner.accountId)) redirect("/signin");
   return (
     <div className="min-h-[100dvh] lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
       <a href="#main" className="skip-link">
@@ -74,7 +79,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <PageName />
             </p>
             <div className="flex items-center gap-3">
-              <ModeBadge dryRun={dryRun} />
+              {dryRun ? <PracticeBadge /> : <span className="hidden lg:block"><HeaderWallet accountId={owner?.accountId ?? null} tone="dark" /></span>}
             </div>
           </div>
         </div>

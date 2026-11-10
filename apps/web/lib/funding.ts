@@ -3,6 +3,7 @@ import { PRIVATE_PAYMENTS } from "./agent-account/agent-api";
 import type { PrismaClient } from "./generated/prisma/client";
 import { readEnv } from "./env";
 import { formatUnits, parseUnits } from "./money";
+import { tokenBalanceOnNear } from "./near-storage";
 import { getAccountRecord, getBusiness } from "./store";
 import { CHAIN_NAMES } from "./tokens";
 
@@ -37,17 +38,20 @@ export interface OneTapDeposit {
   decimals: number;
   /** The agent's NEAR Intents account: the `msg` of the transfer. */
   agentAccount: string;
+  /** What the owner's own wallet holds of that token (smallest units); null if it couldn't be checked. */
+  ownerBalance: string | null;
 }
 
 /** What the owner's wallet signs for a one-tap top-up (live mode). */
-export async function oneTapDeposit(db: PrismaClient): Promise<OneTapDeposit> {
+export async function oneTapDeposit(db: PrismaClient, ownerAccountId: string): Promise<OneTapDeposit> {
   const business = await getBusiness(db);
   if (!business) throw new Error("Set up the business first.");
   const t = business.rules.treasury;
   if (t.chain !== "near" || !t.assetId.startsWith("nep141:")) throw new Error("One-tap top-up needs the Bursar wallet to hold a NEAR token.");
   // The same account the balances belong to (seen live: getBalances → near_account_id).
   const { near_account_id } = await api().getBalances(await agentId(db), { source: "public" });
-  return { tokenContract: t.assetId.slice("nep141:".length), symbol: t.symbol, decimals: t.decimals, agentAccount: near_account_id };
+  const held = await tokenBalanceOnNear(t.assetId, ownerAccountId);
+  return { tokenContract: t.assetId.slice("nep141:".length), symbol: t.symbol, decimals: t.decimals, agentAccount: near_account_id, ownerBalance: held === null ? null : held.toString() };
 }
 
 export interface DepositAddress {

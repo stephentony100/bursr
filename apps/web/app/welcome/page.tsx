@@ -1,5 +1,6 @@
 import { Check } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { addPayeeAction, onboardBusinessAction, onboardNextAction, practiceMoneyAction, startOwnPracticeAction } from "@/app/actions";
 import { AddMoney } from "@/components/add-money";
@@ -32,9 +33,12 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
   const state = await onboardingState(db(), owner);
   const asked = (await searchParams).step as Step | undefined;
   // An owner may go back to a step they have done; never ahead of the first open one.
-  const step: Step = asked && STEPS.includes(asked) && (state.done[asked] || asked === state.current) ? asked : state.current;
+  // Signed out (live): only the wallet step, whatever the link asks for; nothing about an existing business is shown.
+  const step: Step =
+    state.live && !owner ? "wallet" : asked && STEPS.includes(asked) && (state.done[asked] || asked === state.current) ? asked : state.current;
   const business = await getBusiness(db());
-  // Practice mode with the sample restaurant loaded: offer to start a business of your own instead.
+  if (state.live && owner && business && business.ownerAccountId !== owner.accountId) redirect("/this-week");
+  // Practice restaurant loaded: offer to start a business of your own instead.
   const onSample = !state.live && business?.name === SAMPLE_NAME;
 
   return (
@@ -44,7 +48,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
           <Link href="/" aria-label="Bursar home">
             <Logo />
           </Link>
-          <span className="text-sm text-muted">{state.live ? "Live · real money" : "Practice · practice money"}</span>
+          {!state.live && <span className="text-sm text-hold">Practice mode · practice money</span>}
         </div>
       </header>
       <main id="main" className="mx-auto grid max-w-5xl gap-8 px-5 py-10 md:grid-cols-[14rem_minmax(0,1fr)]">

@@ -14,7 +14,7 @@ import { listInvoices } from "@/lib/invoices";
 import { formatUsd, rescale } from "@/lib/money";
 import { getLatestPlan } from "@/lib/plans";
 import { onboardingState, STEP_TITLES } from "@/lib/onboarding";
-import { getOwner } from "@/lib/session";
+import { getOwner, guardPage } from "@/lib/session";
 import { getBusiness, listPayees } from "@/lib/store";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -26,6 +26,7 @@ const STEPS = [
 ];
 
 export default async function Home() {
+  await guardPage();
   await connection();
   const dryRun = readEnv().BURSAR_MODE === "dry-run";
   const business = await getBusiness(db());
