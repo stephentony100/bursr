@@ -37,6 +37,7 @@ const OWNER_KINDS_SHOWN = new Set([
   "plan_approved",
   "plan_item_approved",
   "plan_item_removed",
+  "plan_item_updated",
   "payee_added",
   "payee_removed",
   "payout_changed",

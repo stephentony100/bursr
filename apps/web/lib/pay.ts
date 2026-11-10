@@ -6,7 +6,7 @@ import { canReceiveOnNear, notRegisteredText } from "./near-storage";
 import { getPlan, type PlanItemView } from "./plans";
 import { amountOutFor, quotePayout } from "./quotes";
 import { getBusiness, listPayees } from "./store";
-import { formatUsd } from "./money";
+import { formatUsd, rescale, USD_DECIMALS } from "./money";
 import { chainName } from "./tokens";
 
 // Pays an approved plan, item by item, through the agent account
@@ -150,6 +150,14 @@ export async function payItem(
       // Different token: swap inside the account first, sized by a fresh quote.
       const q = await quote(treasury, planned, item.amountUsd);
       if (!q.ok) return stop({ kind: "transient", message: q.reason, definite: true });
+      // The network fee comes out of what they receive: if it eats the whole payment, say so instead of retrying.
+      if (BigInt(q.quote.withdrawFee) >= amountOut) {
+        const fee = formatUsd(rescale(BigInt(q.quote.withdrawFee), token.decimals, USD_DECIMALS));
+        return stop({
+          kind: "final",
+          message: `Sending ${formatUsd(item.amountUsd)} to ${chainName(token.chain)} costs about ${fee} in network fees, more than the payment itself. Pay a larger amount, or ask them for an address on a cheaper network.`,
+        });
+      }
       amountSent = BigInt(q.quote.amountIn);
       const swap = await account.execute({ kind: "swap", asset: treasury.assetId, amount: amountSent, destinationAsset: token.assetId }, key("swap"));
       if (swap.status === "refused") return stop(problemFromRefusal(swap, status?.weekResetsAt ?? null));

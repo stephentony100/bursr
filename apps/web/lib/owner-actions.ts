@@ -163,6 +163,32 @@ export async function updatePayeeDetails(
     },
   });
   await audit(db, owner, "payee_updated", `You updated ${input.name}'s details`, { id });
+
+  // Regular pay that is due but not sent yet follows the new amount (or goes, if the regular pay was removed).
+  // A try with an unclear result (network trouble) keeps its amount, so its replay can never pay twice.
+  const unsent = await db.planItem.findMany({
+    where: { payeeId: id, kind: "wages", placement: "in", payStatus: { in: ["planned", "waiting"] }, NOT: { payCode: "transient" }, plan: { status: { in: ["draft", "approved"] } } },
+  });
+  for (const item of unsent) {
+    if (!input.recurring) {
+      await db.planItem.update({ where: { id: item.id }, data: { placement: "removed", reason: "You removed their regular pay." } });
+    } else if (item.amountUsd !== input.recurring.amountUsd || item.payeeName !== input.name.trim()) {
+      await db.planItem.update({
+        where: { id: item.id },
+        data: {
+          amountUsd: input.recurring.amountUsd,
+          payeeName: input.name.trim(),
+          quote: null,
+          quoteError: null,
+          retryAt: null,
+          // New request bodies get new idempotency keys (nothing was sent under the old ones).
+          attempts: { increment: 1 },
+        },
+      });
+      await audit(db, owner, "plan_item_updated", `${input.name}'s waiting ${item.forWhat.toLowerCase()} is now ${formatUsd(BigInt(input.recurring.amountUsd))}`, { itemId: item.id });
+    }
+    await recomputeFee(db, item.planId);
+  }
 }
 
 /** Changing where a payee is paid starts a 48-hour hold on that payee. */

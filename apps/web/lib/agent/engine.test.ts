@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { loadSampleBusiness } from "../demo-loader";
-import { approvePlanItem, setFrozen } from "../owner-actions";
+import { approvePlanItem, setFrozen, updatePayeeDetails } from "../owner-actions";
 import { demoOwner } from "../owner";
 import type { quotePayout } from "../quotes";
 import { amountOutFor } from "../quotes";
@@ -106,5 +106,19 @@ describe("the agent on autopilot", () => {
     await addPracticeMoney(t.db, "500");
     await runAgent(t.db, { now: wednesday, quote: fakeQuote });
     expect((await agentLog()).some((e) => e.kind === "money_in" && e.message.startsWith("Your Bursar wallet received $500.00"))).toBe(true);
+  });
+
+  it("changing someone's regular pay updates their payment that is still waiting", async () => {
+    const treasury = (await getBusiness(t.db))!.rules.treasury.assetId;
+    await t.db.agentAccount.update({ where: { id: "main" }, data: { simBalances: JSON.stringify({ [treasury]: "1000000" }) } }); // $1: everything waits
+    await run();
+    const bisi = (await t.db.payee.findFirst({ where: { name: "Bisi Adeyemi (head chef)" } }))!;
+    const before = (await t.db.planItem.findFirst({ where: { payeeId: bisi.id, kind: "wages" } }))!;
+    expect(before).toMatchObject({ payStatus: "waiting", amountUsd: "220000000" });
+    await updatePayeeDetails(t.db, owner, bisi.id, { name: bisi.name, category: "staff", prices: [], recurring: { amountUsd: "250000000", every: "week" } });
+    const after = (await t.db.planItem.findUnique({ where: { id: before.id } }))!;
+    expect(after).toMatchObject({ amountUsd: "250000000", retryAt: null, attempts: before.attempts + 1 });
+    await updatePayeeDetails(t.db, owner, bisi.id, { name: bisi.name, category: "staff", prices: [], recurring: null });
+    expect((await t.db.planItem.findUnique({ where: { id: before.id } }))!.placement).toBe("removed");
   });
 });
