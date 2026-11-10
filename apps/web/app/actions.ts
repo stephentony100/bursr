@@ -184,11 +184,20 @@ export async function changePayoutAction(_prev: FormResult, f: FormData): Promis
   });
 }
 
+/** Removes someone, then goes back to People (their own page no longer exists) with a note saying so. */
 export async function removePayeeAction(_prev: FormResult, f: FormData): Promise<FormResult> {
-  return run(async () => {
-    await removePayee((await appDb()), await requireOwner(), text(f, "id"));
-    return "Removed. Bursar can no longer pay them.";
-  });
+  let name = "";
+  try {
+    const sdb = await appDb();
+    const id = text(f, "id");
+    name = (await sdb.payee.findUnique({ where: { id }, select: { name: true } }))?.name ?? "";
+    await removePayee(sdb, await requireOwner(), id);
+  } catch (e) {
+    console.error("[bursar]", e);
+    return { ok: false, message: friendlyError(e) };
+  }
+  revalidatePath("/", "layout");
+  redirect(`/people?removed=${encodeURIComponent(name)}`);
 }
 
 export type RuleTestResult = { tried: string; allowed: boolean; message: string } | null;

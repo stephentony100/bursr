@@ -12,8 +12,9 @@ import { formatUsd } from "@/lib/money";
 import { scheduleWords } from "@/lib/schedule";
 import { getBusiness, listPayees } from "@/lib/store";
 import { chainName } from "@/lib/tokens";
+import { readEnv } from "@/lib/env";
 
-export default async function PayeesPage() {
+export default async function PayeesPage({ searchParams }: { searchParams: Promise<{ removed?: string }> }) {
   await guardPage();
   await connection();
   const [business, payees, invites] = await Promise.all([getBusiness((await appDb())), listPayees((await appDb())), listInvites((await appDb()))]);
@@ -29,8 +30,25 @@ export default async function PayeesPage() {
     );
   }
   const now = new Date();
+  const removed = (await searchParams).removed;
+  const live = readEnv().BURSAR_MODE === "live";
   return (
     <div className="space-y-10">
+      {removed !== undefined && (
+        <p role="status" className="rounded-xl border border-ledger/40 bg-ledger-soft px-5 py-4 text-sm">
+          <span className="font-semibold">{removed ? `${removed} was removed.` : "Removed."}</span> Bursar can no longer pay them.
+          {live && (
+            <>
+              {" "}
+              Confirm the updated list with your wallet on{" "}
+              <Link href="/spending-rules" className="text-indigo underline">
+                Spending rules
+              </Link>{" "}
+              so your agent&apos;s wallet knows too.
+            </>
+          )}
+        </p>
+      )}
       <div>
         <h1 className="display text-4xl">People you pay</h1>
         <p className="mt-2 max-w-2xl text-muted">
