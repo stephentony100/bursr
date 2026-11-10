@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { readEnv } from "@/lib/env";
 import { checkChallenge, issueSessionCookie, SESSION_COOKIE, SIGN_IN_MESSAGE, signInRecipient } from "@/lib/owner";
 import { getBusiness } from "@/lib/store";
+import { friendlyError } from "@/lib/errors";
 
 // Live mode sign-in, step 2: verify the wallet's NEP-413 signature. near-api-js
 // checks the signature and that the key is a FullAccess key of the account,
@@ -43,7 +44,8 @@ export async function POST(req: Request) {
       provider: new JsonRpcProvider({ url: env.NEAR_RPC_URL }),
     });
   } catch (e) {
-    return NextResponse.json({ error: `Signature not accepted: ${e instanceof Error ? e.message : e}` }, { status: 401 });
+    console.error("[bursar] sign-in signature check failed", e);
+    return NextResponse.json({ error: friendlyError(new Error("Signature not accepted")) }, { status: 401 });
   }
 
   const business = await getBusiness(db());

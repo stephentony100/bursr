@@ -4,6 +4,7 @@ import { useState } from "react";
 import { depositAddressAction, noticeTopUpAction, oneTapDepositAction, type DepositResult } from "@/app/actions";
 import { parseUnits } from "@/lib/money";
 import { wallet } from "./wallet";
+import { friendlyError } from "@/lib/errors";
 
 // Adding money to the agent's wallet. Live: one tap from the owner's NEAR
 // wallet, or a one-time address (with QR) for USDC on any other chain.
@@ -86,7 +87,7 @@ function OneTap({ suggestedUsd }: { suggestedUsd: string | null }) {
       await noticeTopUpAction();
       setMsg({ ok: true, text: `Sent $${amount} ${d.symbol} from your wallet. Your agent will say here when it has arrived (usually within a minute).` });
     } catch (e) {
-      setMsg({ ok: false, text: e instanceof Error ? e.message : String(e) });
+      setMsg({ ok: false, text: friendlyError(e) });
     } finally {
       setBusy(false);
     }

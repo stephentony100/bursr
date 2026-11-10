@@ -17,6 +17,7 @@ import { approvePlan, approvePlanItem } from "../lib/owner-actions";
 import { payApprovedPlan } from "../lib/pay";
 import { getLatestPlan, getPlan } from "../lib/plans";
 import { BOT_NAME, linkChat, linkedChat, markSent, ownerForChat, pendingAlerts, planText } from "../lib/telegram";
+import { friendlyError } from "../lib/errors";
 
 const env = readEnv();
 if (!env.TELEGRAM_BOT_TOKEN) throw new Error("Set TELEGRAM_BOT_TOKEN in .env (from @BotFather).");
@@ -49,7 +50,7 @@ bot.callbackQuery(/^approve:(.+)$/, async (ctx) => {
   try {
     await approvePlan(db(), owner, planId);
   } catch (e) {
-    return ctx.answerCallbackQuery({ text: e instanceof Error ? e.message.slice(0, 190) : "Could not approve.", show_alert: true });
+    return ctx.answerCallbackQuery({ text: friendlyError(e).slice(0, 190), show_alert: true });
   }
   await ctx.answerCallbackQuery({ text: "Approved. Paying everyone now…" });
   await ctx.editMessageReplyMarkup({ reply_markup: undefined });
@@ -66,7 +67,7 @@ bot.callbackQuery(/^ok:(.+)$/, async (ctx) => {
   try {
     await approvePlanItem(db(), owner, ctx.match[1]);
   } catch (e) {
-    return ctx.answerCallbackQuery({ text: e instanceof Error ? e.message.slice(0, 190) : "Could not OK it.", show_alert: true });
+    return ctx.answerCallbackQuery({ text: friendlyError(e).slice(0, 190), show_alert: true });
   }
   await ctx.answerCallbackQuery({ text: "OK'd. Paying now…" });
   await ctx.editMessageReplyMarkup({ reply_markup: undefined });
@@ -104,7 +105,7 @@ bot.callbackQuery(/^card:(.+)$/, async (ctx) => {
     await ctx.answerCallbackQuery({ text: "Done." });
     await ctx.reply(message);
   } catch (e) {
-    await ctx.answerCallbackQuery({ text: e instanceof Error ? e.message.slice(0, 190) : "Couldn't do that.", show_alert: true });
+    await ctx.answerCallbackQuery({ text: friendlyError(e).slice(0, 190), show_alert: true });
   }
 });
 

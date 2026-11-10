@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { prepareOwnerIntent, submitOwnerIntent } from "@/lib/owner-intents";
 import { getOwner } from "@/lib/session";
+import { friendlyError } from "@/lib/errors";
 
 // Live mode owner actions: prepare an intent for the wallet, then submit the
 // wallet's signature. The owner session is checked on both steps.
@@ -29,6 +30,6 @@ export async function POST(req: Request) {
     const { kind, correlationId, agentId, signedData } = body.data;
     return NextResponse.json(await submitOwnerIntent(db(), owner, { kind, correlationId, agentId, signedData: signedData as never }));
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Failed." }, { status: 400 });
+    return NextResponse.json({ error: friendlyError(e, "That didn't go through, so nothing changed. Please try again.") }, { status: 400 });
   }
 }

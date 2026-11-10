@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { signInWithWallet, signOut } from "./wallet";
+import { friendlyError } from "@/lib/errors";
 
 /** Live mode: sign in or out from any page. */
 export function HeaderWallet({ accountId, tone = "light" }: { accountId: string | null; tone?: "light" | "dark" }) {
@@ -18,7 +19,7 @@ export function HeaderWallet({ accountId, tone = "light" }: { accountId: string 
       await fn();
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setBusy(false);
     }

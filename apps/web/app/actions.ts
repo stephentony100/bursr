@@ -22,7 +22,6 @@ import {
   addPayee,
   approvePlan,
   approvePlanItem,
-  NotOwnerError,
   setupBusiness,
   changePayout,
   removePayee,
@@ -39,6 +38,7 @@ import { prepareWeeklyPlan } from "@/lib/plans";
 import { requireOwner } from "@/lib/session";
 import { getBusiness, getPayee, listPayees } from "@/lib/store";
 import { payoutTokens } from "@/lib/tokens";
+import { friendlyError } from "@/lib/errors";
 
 // Every action is an untrusted entry point: each one resolves the owner from
 // the session itself and validates its input. Owner-only changes go through
@@ -63,7 +63,8 @@ async function run(fn: () => Promise<string>): Promise<FormResult> {
     revalidatePath("/", "layout");
     return { ok: true, message };
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : "Something went wrong." };
+    console.error("[bursar]", e);
+    return { ok: false, message: friendlyError(e, "Something went wrong.") };
   }
 }
 
@@ -232,7 +233,7 @@ export async function testRule(_prev: RuleTestResult, f: FormData): Promise<Rule
       ? { tried, allowed: false, message: out.refusal.message }
       : { tried, allowed: true, message: "This would go through, just as it should." };
   } catch (e) {
-    return { tried, allowed: false, message: e instanceof Error ? e.message : "Bursar couldn't reach your wallet just now. Please try again." };
+    return { tried, allowed: false, message: friendlyError(e, "Bursar couldn't reach your wallet just now. Please try again.") };
   }
 }
 
@@ -349,7 +350,7 @@ export async function forceOverCapAction(): Promise<RuleTestResult> {
       ? { tried, allowed: false, message: out.refusal.message }
       : { tried, allowed: true, message: "It went through. Please check your spending rules: this should not happen." };
   } catch (e) {
-    return { tried, allowed: false, message: e instanceof Error ? e.message : "Bursar couldn't reach your wallet just now. Please try again." };
+    return { tried, allowed: false, message: friendlyError(e, "Bursar couldn't reach your wallet just now. Please try again.") };
   }
 }
 
@@ -404,7 +405,7 @@ export async function depositAddressAction(symbol: string, chain: string): Promi
     const qrSvg = await QRCode.toString(address.address, { type: "svg", margin: 1, width: 192 });
     return { ok: true, address, qrSvg };
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : "Couldn't get an address just now." };
+    return { ok: false, message: friendlyError(e, "Couldn't get an address just now.") };
   }
 }
 
@@ -414,7 +415,7 @@ export async function oneTapDepositAction(): Promise<{ ok: true; deposit: OneTap
     const owner = await requireOwner();
     return { ok: true, deposit: await oneTapDeposit(db(), owner.accountId) };
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : "Couldn't prepare the top-up." };
+    return { ok: false, message: friendlyError(e, "Couldn't prepare the top-up.") };
   }
 }
 
@@ -448,7 +449,7 @@ export async function chatAction(history: ChatTurn[]): Promise<ChatReply> {
       .slice(-12);
     return await chat(db(), owner, clean);
   } catch (e) {
-    return { reply: e instanceof Error ? e.message : "Something went wrong.", cards: [], ai: false };
+    return { reply: friendlyError(e, "Something went wrong."), cards: [], ai: false };
   }
 }
 
@@ -468,7 +469,8 @@ async function step(fn: () => Promise<void>): Promise<FormResult> {
   try {
     await fn();
   } catch (e) {
-    return { ok: false, message: e instanceof NotOwnerError ? e.message : e instanceof Error ? e.message : "Something went wrong." };
+    console.error("[bursar]", e);
+    return { ok: false, message: friendlyError(e) };
   }
   revalidatePath("/", "layout");
   redirect("/welcome");
@@ -535,7 +537,7 @@ export async function onboardNextAction(_prev: FormResult, f: FormData): Promise
       await requireOwner();
       await markOnboarding(db(), "finished");
     } catch (e) {
-      return { ok: false, message: e instanceof Error ? e.message : "Something went wrong." };
+      return { ok: false, message: friendlyError(e, "Something went wrong.") };
     }
     kickAgent();
     revalidatePath("/", "layout");
@@ -556,7 +558,7 @@ export async function startOwnPracticeAction(): Promise<FormResult> {
     await clearPracticeBusiness(db());
     await clearOnboarding(db());
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : "Something went wrong." };
+    return { ok: false, message: friendlyError(e, "Something went wrong.") };
   }
   revalidatePath("/", "layout");
   redirect("/welcome");
@@ -572,7 +574,7 @@ export async function createInviteAction(f: FormData): Promise<InviteResult> {
     revalidatePath("/", "layout");
     return { ok: true, link: `${readEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/join/${invite.token}`, name: invite.name };
   } catch (e) {
-    return { ok: false, message: e instanceof Error ? e.message : "Couldn't make the link." };
+    return { ok: false, message: friendlyError(e, "Couldn't make the link.") };
   }
 }
 

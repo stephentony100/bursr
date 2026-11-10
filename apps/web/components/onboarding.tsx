@@ -9,6 +9,7 @@ import type { PayoutToken, Rules } from "@/lib/domain";
 import { formatUnits, USD_DECIMALS } from "@/lib/money";
 import { chainName } from "@/lib/chains";
 import { signInWithWallet } from "./wallet";
+import { friendlyError } from "@/lib/errors";
 
 // The interactive parts of /welcome. Each form posts to a server action that
 // saves and returns to /welcome, which then shows the next step.
@@ -29,7 +30,7 @@ export function ConnectWallet() {
             await signInWithWallet();
             router.refresh();
           } catch (e) {
-            setError(e instanceof Error ? e.message : String(e));
+            setError(friendlyError(e));
           } finally {
             setBusy(false);
           }

@@ -16,6 +16,7 @@ import { getLatestPlan } from "@/lib/plans";
 import { onboardingState, STEP_TITLES } from "@/lib/onboarding";
 import { getOwner, guardPage } from "@/lib/session";
 import { getBusiness, listPayees } from "@/lib/store";
+import { friendlyError } from "@/lib/errors";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -77,7 +78,7 @@ export default async function Home() {
   try {
     status = await (await agentAccount(db())).status();
   } catch (e) {
-    accountError = e instanceof Error ? e.message : "Bursar couldn't reach your wallet just now.";
+    accountError = friendlyError(e, "Bursar couldn't reach your wallet just now.");
   }
   const [payees, feed, invoices, plan, waitingOnYou, upcoming] = await Promise.all([
     listPayees(db()),

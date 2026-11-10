@@ -8,6 +8,7 @@ import { amountOutFor, quotePayout } from "./quotes";
 import { getBusiness, listPayees } from "./store";
 import { formatUsd, rescale, USD_DECIMALS } from "./money";
 import { chainName } from "./tokens";
+import { friendlyError } from "./errors";
 
 // Pays an approved plan, item by item, through the agent account
 // (lib/agent-account.ts). Bursar re-checks each item against the payee record
@@ -173,7 +174,7 @@ export async function payItem(
       const o = await settle(account, swap.correlationId);
       if (o.state === "pending") return stop({ kind: "transient", message: "The currency exchange is still running.", definite: false });
       if (o.state !== "done") {
-        return stop({ kind: "transient", message: `The currency exchange didn't complete (${o.reason ?? o.state}). Nothing was sent to them.`, definite: true });
+        return stop({ kind: "transient", message: "The currency exchange for this payment didn't complete. Nothing was sent to them, and I'll try again.", definite: true });
       }
       await step("payment_exchanged", `Exchange done. ${item.payeeName}'s ${token.symbol} on ${chainName(token.chain)} is ready to send.`);
     }
@@ -211,7 +212,7 @@ export async function payItem(
     return "sent";
   } catch (e) {
     // Network or service trouble: the result is unclear, so the next try replays the same keys.
-    return stop({ kind: "transient", message: `I couldn't reach the payment service (${e instanceof Error ? e.message : String(e)}).`, definite: false });
+    return stop({ kind: "transient", message: `I couldn't finish this payment just now (${friendlyError(e)}) I'll try again shortly.`, definite: false });
   }
 }
 

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { post, signInWithWallet, signOut as walletSignOut, wallet } from "./wallet";
+import { friendlyError } from "@/lib/errors";
 
 // Live mode only. The owner's wallet (HOT, via @hot-labs/near-connect) signs
 // everything; Bursar's server never sees the owner's key. Before any signature
@@ -53,7 +54,7 @@ export function WalletPanel(props: {
     try {
       await fn();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(friendlyError(e));
     } finally {
       setBusy(false);
     }
@@ -102,7 +103,7 @@ export function WalletPanel(props: {
         signedData,
       });
       setPrepared(null);
-      if (result.status !== "SUCCESS") throw new Error(`Not applied: ${result.failureCode ?? result.status}`);
+      if (result.status !== "SUCCESS") throw new Error(friendlyError({ code: result.failureCode ?? "" }, result.status === "REFUSED" ? "Your wallet's confirmation wasn't accepted, so nothing changed. Please try again." : "That didn't go through, so nothing changed. Please try again in a minute."));
       setNotice(prepared.kind === "grant_issue" ? "Done. Bursar can now make payments inside your limits." : "Done. Your wallet now enforces this.");
       router.refresh();
     });

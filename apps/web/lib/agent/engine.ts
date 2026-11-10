@@ -11,6 +11,7 @@ import { getBusiness } from "../store";
 import { chainName } from "../tokens";
 import { say, sayOnce } from "./say";
 import { paydayNeed } from "./view";
+import { friendlyError } from "../errors";
 
 // Bursar's agent. It wakes every minute (lib/agent/loop.ts) and on events,
 // and does the routine work on its own: follows payments on their way, works
@@ -80,7 +81,7 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
   try {
     account = await agentAccount(db);
   } catch (e) {
-    const why = e instanceof Error ? e.message : String(e);
+    const why = friendlyError(e);
     await sayOnce(db, "not-ready", 6 * HOUR, "agent_blocked", `I can't make payments yet: ${why}`);
     return { ...EMPTY, note: why };
   }

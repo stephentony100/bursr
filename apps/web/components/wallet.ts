@@ -1,6 +1,7 @@
 "use client";
 
 import type { NearConnector } from "@hot-labs/near-connect";
+import { friendlyError } from "@/lib/errors";
 
 // One wallet connection for the whole app (HOT and other NEAR wallets via
 // @hot-labs/near-connect). The owner's key never leaves the wallet.
@@ -20,7 +21,7 @@ export async function wallet() {
 export async function post<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error ?? `Request failed (${res.status})`);
+  if (!res.ok) throw new Error(friendlyError(data.error ?? { status: res.status }));
   return data as T;
 }
 

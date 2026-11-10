@@ -5,6 +5,7 @@ import { setupBusiness } from "@/lib/owner-actions";
 import { getOwner } from "@/lib/session";
 import { starterRules } from "@/lib/starter-rules";
 import { payoutTokens } from "@/lib/tokens";
+import { friendlyError } from "@/lib/errors";
 
 // Live mode: the signed-in owner creates their business with tiny starter caps.
 export async function POST(req: Request) {
@@ -16,6 +17,6 @@ export async function POST(req: Request) {
     await setupBusiness(db(), owner, { name: body.data.name, rules: starterRules(await payoutTokens()) });
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : "Could not set up." }, { status: 400 });
+    return NextResponse.json({ error: friendlyError(e, "Could not set up.") }, { status: 400 });
   }
 }
