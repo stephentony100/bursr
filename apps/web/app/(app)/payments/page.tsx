@@ -4,8 +4,7 @@ import { approveItemAction, approvePlanAction, forceOverCapAction, preparePlanAc
 import { AutoRefresh } from "@/components/auto-refresh";
 import { ActionForm, ForceTester, ItemButton } from "@/components/forms";
 import { Badge, type Tone } from "@/components/ui/badge";
-import { db } from "@/lib/db";
-import { guardPage } from "@/lib/session";
+import { guardPage, appDb } from "@/lib/session";
 import { readEnv } from "@/lib/env";
 import { shortenAddresses } from "@/lib/address";
 import { listInvoices } from "@/lib/invoices";
@@ -41,7 +40,7 @@ export default async function PlanPage() {
   await guardPage();
   await connection();
   const dryRun = readEnv().BURSAR_MODE === "dry-run";
-  const business = await getBusiness(db());
+  const business = await getBusiness((await appDb()));
   if (!business) {
     return (
       <p className="text-muted">
@@ -53,9 +52,9 @@ export default async function PlanPage() {
       </p>
     );
   }
-  await refreshPayments(db());
-  const plan = await getLatestPlan(db());
-  const invoiceStatus = new Map((await listInvoices(db())).map((v) => [v.id, v.status]));
+  await refreshPayments((await appDb()));
+  const plan = await getLatestPlan((await appDb()));
+  const invoiceStatus = new Map((await listInvoices((await appDb()))).map((v) => [v.id, v.status]));
   const treasury = business.rules.treasury;
 
   const inPlan = plan?.items.filter((i) => i.placement === "in") ?? [];

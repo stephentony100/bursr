@@ -1,11 +1,12 @@
 import { db } from "../db";
 import { readEnv } from "../env";
+import { allBusinessIds, scoped } from "../tenant";
 import { runAgent } from "./engine";
 
-// Keeps Bursar's agent working while the app runs: a run shortly after start,
-// then every minute, and every few seconds while payments are on their way
-// (so the owner sees "received" soon after it happens). Owner actions call
-// `kickAgent()` so the agent reacts at once instead of on the next minute.
+// Keeps every business's agent working while the app runs: a run shortly
+// after start, then every minute, and every few seconds while payments are on
+// their way (so the owner sees "received" soon after it happens). Owner
+// actions call `kickAgent()` so the agent reacts at once.
 
 const EVERY_MS = 60_000;
 const FOLLOW_MS = 8_000;
@@ -15,7 +16,10 @@ const off = () => readEnv().BURSAR_AGENT === "off";
 
 async function runAndFollow() {
   try {
-    await runAgent();
+    for (const id of await allBusinessIds(db())) {
+      // One business's trouble never stops the others.
+      await runAgent(scoped(db(), id)).catch((e) => console.error(`[bursar agent ${id}]`, e instanceof Error ? e.message : e));
+    }
     const moving = await db().planItem.count({ where: { payStatus: { in: ["sent", "paying"] } } });
     if (moving > 0) followUp();
   } catch (e) {
@@ -37,13 +41,13 @@ export function startAgentLoop() {
   setTimeout(() => void runAndFollow(), 5_000);
 }
 
-/** Wake the agent now (fire and forget). */
+/** Wake the agents now (fire and forget). */
 export function kickAgent() {
   if (off()) return;
   setTimeout(() => void runAndFollow(), 0);
 }
 
-/** After the owner ran the agent directly: keep following the payments it sent. */
+/** After an owner ran their agent directly: keep following the payments it sent. */
 export function followPayments() {
   if (!off()) followUp();
 }

@@ -6,6 +6,7 @@ import type { PrismaClient } from "./generated/prisma/client";
 import { addPayee, NotOwnerError } from "./owner-actions";
 import type { OwnerSession } from "./owner";
 import { getBusiness } from "./store";
+import { scoped } from "./tenant";
 
 // Invites: the owner sends a link; the person chooses how they want to be paid
 // and gives their address. Nothing is payable until the owner approves what
@@ -86,16 +87,19 @@ export interface PublicInvite {
   tokens: PayoutToken[];
 }
 
+/** `db` is the unscoped database: the link itself says which business it belongs to. */
 export async function publicInvite(db: PrismaClient, token: string, now = new Date()): Promise<PublicInvite | null> {
   const row = await db.payeeInvite.findUnique({ where: { token } });
-  const business = await getBusiness(db);
+  const business = row ? await getBusiness(scoped(db, row.businessId)) : null;
   if (!row || !business) return null;
   const state = row.status === "open" && row.expiresAt > now ? "open" : row.status === "submitted" ? "sent" : "closed";
   return { businessName: business.name, name: row.name, state, tokens: business.rules.payoutTokens };
 }
 
-export async function submitInvite(db: PrismaClient, token: string, input: { assetId: string; address: string; memo: string }, now = new Date()) {
-  const row = await db.payeeInvite.findUnique({ where: { token } });
+export async function submitInvite(raw: PrismaClient, token: string, input: { assetId: string; address: string; memo: string }, now = new Date()) {
+  const found = await raw.payeeInvite.findUnique({ where: { token } });
+  const db = scoped(raw, found?.businessId ?? "none");
+  const row = found;
   const business = await getBusiness(db);
   if (!row || !business || row.status !== "open" || row.expiresAt <= now) throw new Error("This link has expired or was already used. Ask for a new one.");
   const tokenChoice = business.rules.payoutTokens.find((t) => t.assetId === input.assetId);

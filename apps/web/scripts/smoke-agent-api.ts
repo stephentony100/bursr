@@ -12,6 +12,7 @@ import { createAgentApi } from "@near-intents-agent-api/sdk";
 import { demoEvmAddress } from "../lib/demo-addresses";
 import { liveAgentConfig } from "../lib/agent-account";
 import { db } from "../lib/db";
+import { scriptDb } from "../lib/tenant";
 import { readEnv } from "../lib/env";
 import { fetchJson } from "../lib/http";
 
@@ -36,7 +37,7 @@ async function main() {
 
   let live: Awaited<ReturnType<typeof liveAgentConfig>>;
   try {
-    live = await liveAgentConfig(db());
+    live = await liveAgentConfig(await scriptDb(db()));
   } catch (e) {
     console.log(`\nSKIPPED policy checks: ${e instanceof Error ? e.message : e}`);
     return;

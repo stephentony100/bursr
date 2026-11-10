@@ -1,6 +1,5 @@
 import { connection } from "next/server";
-import { db } from "@/lib/db";
-import { guardPage } from "@/lib/session";
+import { guardPage, appDb } from "@/lib/session";
 import { formatUsd } from "@/lib/money";
 import { refreshPayments } from "@/lib/pay";
 import { statementLines } from "@/lib/statement";
@@ -11,10 +10,10 @@ import { AiSummaryButton } from "@/components/ai-summary";
 export default async function StatementPage() {
   await guardPage();
   await connection();
-  await refreshPayments(db());
-  const lines = await statementLines(db());
+  await refreshPayments((await appDb()));
+  const lines = await statementLines((await appDb()));
   const total = lines.filter((l) => l.status !== "Not paid").reduce((a, l) => a + l.amountUsd, 0n);
-  const facts = await monthFacts(db());
+  const facts = await monthFacts((await appDb()));
 
   return (
     <div className="space-y-8">

@@ -16,13 +16,25 @@ import { runAgent } from "../lib/agent/engine";
 import { approvePlan, approvePlanItem } from "../lib/owner-actions";
 import { payApprovedPlan } from "../lib/pay";
 import { getLatestPlan, getPlan } from "../lib/plans";
-import { BOT_NAME, linkChat, linkedChat, markSent, ownerForChat, pendingAlerts, planText } from "../lib/telegram";
+import { BOT_NAME, hasLinkCode, linkChat, linkedChat, markSent, ownerForChat, pendingAlerts, planText } from "../lib/telegram";
+import { allBusinessIds, scoped } from "../lib/tenant";
 import { friendlyError } from "../lib/errors";
 
 const env = readEnv();
 if (!env.TELEGRAM_BOT_TOKEN) throw new Error("Set TELEGRAM_BOT_TOKEN in .env (from @BotFather).");
 const bot = new Bot(env.TELEGRAM_BOT_TOKEN);
 const web = env.NEXT_PUBLIC_APP_URL;
+
+/** The business a chat is linked to, and its owner (one bot serves every business on this Bursar). */
+async function forChat(chatId: number | undefined) {
+  if (chatId === undefined) return null;
+  for (const id of await allBusinessIds(db())) {
+    const bdb = scoped(db(), id);
+    const owner = await ownerForChat(bdb, chatId);
+    if (owner) return { bdb, owner };
+  }
+  return null;
+}
 
 bot.command("start", (ctx) =>
   ctx.reply(
@@ -32,46 +44,54 @@ bot.command("start", (ctx) =>
 );
 
 bot.command("link", async (ctx) => {
-  await ctx.reply(await linkChat(db(), ctx.chat.id, ctx.match ?? ""));
+  // The business whose Telegram code this is.
+  for (const id of await allBusinessIds(db())) {
+    const bdb = scoped(db(), id);
+    if (await hasLinkCode(bdb, ctx.match ?? "")) return ctx.reply(await linkChat(bdb, ctx.chat.id, ctx.match ?? ""));
+  }
+  await ctx.reply("That code is wrong or expired. Get a new one in Bursar → Spending rules → Connect my Telegram.");
 });
 
 bot.command("plan", async (ctx) => {
-  if (!(await ownerForChat(db(), ctx.chat.id))) return ctx.reply("This chat isn't connected yet. Send /start to see how.");
-  const plan = await getLatestPlan(db());
+  const b = await forChat(ctx.chat.id);
+  if (!b) return ctx.reply("This chat isn't connected yet. Send /start to see how.");
+  const plan = await getLatestPlan(b.bdb);
   if (!plan) return ctx.reply(`Nothing waiting yet. Get this week's payments ready at ${web}/payments`);
   const keyboard = plan.status === "draft" ? new InlineKeyboard().text("✅ Approve and pay everyone", `approve:${plan.id}`) : undefined;
   await ctx.reply(`${planText(plan)}\n\nSee the details: ${web}/payments`, { reply_markup: keyboard });
 });
 
 bot.callbackQuery(/^approve:(.+)$/, async (ctx) => {
-  const owner = ctx.chat ? await ownerForChat(db(), ctx.chat.id) : null;
-  if (!owner) return ctx.answerCallbackQuery({ text: "This chat isn't connected.", show_alert: true });
+  const b = await forChat(ctx.chat?.id);
+  if (!b) return ctx.answerCallbackQuery({ text: "This chat isn't connected.", show_alert: true });
+  const owner = b.owner;
   const planId = ctx.match[1];
   try {
-    await approvePlan(db(), owner, planId);
+    await approvePlan(b.bdb, owner, planId);
   } catch (e) {
     return ctx.answerCallbackQuery({ text: friendlyError(e).slice(0, 190), show_alert: true });
   }
   await ctx.answerCallbackQuery({ text: "Approved. Paying everyone now…" });
   await ctx.editMessageReplyMarkup({ reply_markup: undefined });
-  const results = await payApprovedPlan(db(), await agentAccount(db()), planId);
+  const results = await payApprovedPlan(b.bdb, await agentAccount(b.bdb), planId);
   const sent = Object.values(results).filter((s) => s === "sent").length;
   const failed = Object.values(results).length - sent;
-  await ctx.reply(`Done. ${sent} payments on the way${failed ? `, ${failed} not paid (see why below)` : ""}.\n\n${planText((await getPlan(db(), planId))!)}`);
+  await ctx.reply(`Done. ${sent} payments on the way${failed ? `, ${failed} not paid (see why below)` : ""}.\n\n${planText((await getPlan(b.bdb, planId))!)}`);
 });
 
 // A payment waiting for the owner: OK it from the chat; the agent pays it at once.
 bot.callbackQuery(/^ok:(.+)$/, async (ctx) => {
-  const owner = ctx.chat ? await ownerForChat(db(), ctx.chat.id) : null;
-  if (!owner) return ctx.answerCallbackQuery({ text: "This chat isn't connected.", show_alert: true });
+  const b = await forChat(ctx.chat?.id);
+  if (!b) return ctx.answerCallbackQuery({ text: "This chat isn't connected.", show_alert: true });
+  const owner = b.owner;
   try {
-    await approvePlanItem(db(), owner, ctx.match[1]);
+    await approvePlanItem(b.bdb, owner, ctx.match[1]);
   } catch (e) {
     return ctx.answerCallbackQuery({ text: friendlyError(e).slice(0, 190), show_alert: true });
   }
   await ctx.answerCallbackQuery({ text: "OK'd. Paying now…" });
   await ctx.editMessageReplyMarkup({ reply_markup: undefined });
-  const r = await runAgent(db());
+  const r = await runAgent(b.bdb);
   await ctx.reply(r.sent ? "Sent. I'll tell you when it arrives." : "OK'd. I'll pay it as soon as I can and tell you here.");
 });
 
@@ -80,11 +100,12 @@ const histories = new Map<number, ChatTurn[]>();
 const cardTokens = new Map<string, string>();
 bot.on("message:text", async (ctx) => {
   if (ctx.message.text.startsWith("/")) return;
-  const owner = await ownerForChat(db(), ctx.chat.id);
-  if (!owner) return ctx.reply("This chat isn't connected yet. Send /start to see how.");
+  const b = await forChat(ctx.chat.id);
+  if (!b) return ctx.reply("This chat isn't connected yet. Send /start to see how.");
+  const owner = b.owner;
   const history = [...(histories.get(ctx.chat.id) ?? []), { role: "user" as const, content: ctx.message.text.slice(0, 2000) }].slice(-12);
   await ctx.replyWithChatAction("typing");
-  const r = await chat(db(), owner, history);
+  const r = await chat(b.bdb, owner, history);
   histories.set(ctx.chat.id, [...history, { role: "assistant" as const, content: r.reply }].slice(-12));
   await ctx.reply(r.reply);
   for (const c of r.cards) {
@@ -95,13 +116,14 @@ bot.on("message:text", async (ctx) => {
 });
 
 bot.callbackQuery(/^card:(.+)$/, async (ctx) => {
-  const owner = ctx.chat ? await ownerForChat(db(), ctx.chat.id) : null;
+  const b = await forChat(ctx.chat?.id);
+  const owner = b?.owner;
   const token = cardTokens.get(ctx.match[1]);
-  if (!owner || !token) return ctx.answerCallbackQuery({ text: "This card has expired. Ask again.", show_alert: true });
+  if (!b || !owner || !token) return ctx.answerCallbackQuery({ text: "This card has expired. Ask again.", show_alert: true });
   cardTokens.delete(ctx.match[1]);
   await ctx.editMessageReplyMarkup({ reply_markup: undefined });
   try {
-    const message = await confirmCard(db(), owner, token);
+    const message = await confirmCard(b.bdb, owner, token);
     await ctx.answerCallbackQuery({ text: "Done." });
     await ctx.reply(message);
   } catch (e) {
@@ -110,11 +132,14 @@ bot.callbackQuery(/^card:(.+)$/, async (ctx) => {
 });
 
 async function sendAlerts() {
-  const link = await linkedChat(db());
-  if (!link) return;
-  for (const a of await pendingAlerts(db())) {
-    await bot.api.sendMessage(link.chatId, a.text, a.approveItemId ? { reply_markup: new InlineKeyboard().text("✅ OK, pay it", `ok:${a.approveItemId}`) } : undefined);
-    await markSent(db(), a.key); // after sending: a crash in between re-sends once, never skips
+  for (const id of await allBusinessIds(db())) {
+    const bdb = scoped(db(), id);
+    const link = await linkedChat(bdb);
+    if (!link) continue;
+    for (const a of await pendingAlerts(bdb)) {
+      await bot.api.sendMessage(link.chatId, a.text, a.approveItemId ? { reply_markup: new InlineKeyboard().text("✅ OK, pay it", `ok:${a.approveItemId}`) } : undefined);
+      await markSent(bdb, a.key); // after sending: a crash in between re-sends once, never skips
+    }
   }
 }
 

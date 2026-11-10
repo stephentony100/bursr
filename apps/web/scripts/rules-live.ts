@@ -9,6 +9,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { AgentApiError, createAgentApi, createIdempotencyKey, type Policy } from "@near-intents-agent-api/sdk";
 import { db } from "../lib/db";
+import { scriptDb } from "../lib/tenant";
 import { demoEvmAddress, demoNearImplicit, demoSolanaAddress, demoTronAddress } from "../lib/demo-addresses";
 import { liveAgentConfig } from "../lib/agent-account";
 import { BALANCE_SOURCE } from "../lib/agent-account/agent-api";
@@ -16,7 +17,7 @@ import { BALANCE_SOURCE } from "../lib/agent-account/agent-api";
 type Step = { name: string; expect: string; got: string; pass: boolean; detail: unknown };
 
 async function main() {
-  const { apiKey, baseUrl, agentId, grantToken } = await liveAgentConfig(db());
+  const { apiKey, baseUrl, agentId, grantToken } = await liveAgentConfig(await scriptDb(db()));
   const api = createAgentApi({ apiKey, baseUrl });
   const agent = api.forGrant(grantToken);
 

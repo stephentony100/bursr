@@ -4,18 +4,17 @@ import { AgentChat } from "@/components/agent-chat";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { DEFAULT_CHAT_MODEL, QUICK_QUESTIONS } from "@/lib/agent/chat";
 import { agentFeed, needsYou, nextPayday } from "@/lib/agent/view";
-import { db } from "@/lib/db";
-import { guardPage } from "@/lib/session";
+import { guardPage, appDb } from "@/lib/session";
 import { readEnv } from "@/lib/env";
 import { getBusiness } from "@/lib/store";
 
 export default async function AgentPage() {
   await guardPage();
   await connection();
-  const business = await getBusiness(db());
+  const business = await getBusiness((await appDb()));
   if (!business) return <p className="text-muted">Set up your business first.</p>;
   const env = readEnv();
-  const [feed, waiting] = await Promise.all([agentFeed(db(), 20), needsYou(db())]);
+  const [feed, waiting] = await Promise.all([agentFeed((await appDb()), 20), needsYou((await appDb()))]);
   const r = business.rules;
   return (
     <div className="space-y-6">

@@ -14,15 +14,20 @@ datasource db {
 model Business {
   id             String   @id @default("main")
   name           String
+  /// The NEAR account that owns it; one business per wallet for now.
   ownerAccountId String
   /// Rules (lib/domain.ts RulesSchema) as JSON.
   rules          String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@index([ownerAccountId])
 }
 
 model Payee {
   id              String    @id @default(cuid())
+  /// The business this belongs to (every query is limited to one business: lib/tenant.ts).
+  businessId      String    @default("main")
   name            String
   category        String
   /// Payout (token, address, memo) as JSON. Only the owner changes it.
@@ -37,6 +42,8 @@ model Payee {
   /// When the owner first approved a payment to them; until then each payment needs the owner.
   trustedAt       DateTime?
   removedAt       DateTime?
+
+  @@index([businessId])
 }
 
 /// The agent's account and the policy the owner last signed.
@@ -61,6 +68,8 @@ model AgentAccount {
 /// Every money action the agent asked the account for, allowed or refused.
 model AccountAction {
   id             String   @id @default(cuid())
+  /// The business this belongs to (every query is limited to one business: lib/tenant.ts).
+  businessId     String   @default("main")
   idempotencyKey String   @unique
   at             DateTime @default(now())
   kind           String
@@ -72,11 +81,15 @@ model AccountAction {
   usdMicros      String   @default("0")
   /// Live: Agent API correlation id.
   correlationId  String?
+
+  @@index([businessId])
 }
 
 /// An invoice as received, what the Reader read, and what the checks decided.
 model Invoice {
   id            String   @id @default(cuid())
+  /// The business this belongs to (every query is limited to one business: lib/tenant.ts).
+  businessId    String   @default("main")
   receivedAt    DateTime @default(now())
   fileName      String
   mediaType     String
@@ -97,23 +110,31 @@ model Invoice {
   results       String   @default("[]")
   /// Why it needs the owner (unreadable, unsure fields, other currency).
   needsOwner    String?
+
+  @@index([businessId])
 }
 
 /// One week's payment plan. The owner approves it as a whole.
 model Plan {
-  id          String     @id @default(cuid())
-  createdAt   DateTime   @default(now())
+  id         String     @id @default(cuid())
+  /// The business this belongs to (every query is limited to one business: lib/tenant.ts).
+  businessId String     @default("main")
+  createdAt  DateTime   @default(now())
   /// draft | approved | done
-  status      String     @default("draft")
-  approvedAt  DateTime?
-  approvedBy  String?
+  status     String     @default("draft")
+  approvedAt DateTime?
+  approvedBy String?
   /// USD left under the weekly limit when the plan was built (6 decimals)
-  capLeftUsd  String
-  items       PlanItem[]
+  capLeftUsd String
+  items      PlanItem[]
+
+  @@index([businessId])
 }
 
 model PlanItem {
   id             String    @id @default(cuid())
+  /// The business this belongs to (every query is limited to one business: lib/tenant.ts).
+  businessId     String    @default("main")
   planId         String
   plan           Plan      @relation(fields: [planId], references: [id])
   /// invoice | wages
@@ -154,6 +175,8 @@ model PlanItem {
   attempts       Int       @default(0)
   retryAt        DateTime?
   payCode        String?
+
+  @@index([businessId])
 }
 
 /// Small key/value settings (Telegram link, bot name).
@@ -165,18 +188,26 @@ model Setting {
 
 /// Telegram messages already sent, by key, so each alert goes out once.
 model TelegramMessage {
-  key    String   @id
-  sentAt DateTime @default(now())
+  key        String   @id
+  /// The business this belongs to (every query is limited to one business: lib/tenant.ts).
+  businessId String   @default("main")
+  sentAt     DateTime @default(now())
+
+  @@index([businessId])
 }
 
 /// Every refusal, rule change and payment attempt, in order. Never edited.
 model AuditEvent {
-  id      String   @id @default(cuid())
-  at      DateTime @default(now())
-  kind    String
-  actor   String
-  message String
-  data    String?
+  id         String   @id @default(cuid())
+  /// The business this belongs to (every query is limited to one business: lib/tenant.ts).
+  businessId String   @default("main")
+  at         DateTime @default(now())
+  kind       String
+  actor      String
+  message    String
+  data       String?
+
+  @@index([businessId])
 }
 
 /// A link the owner sends to someone they will pay, so that person enters how
@@ -184,6 +215,8 @@ model AuditEvent {
 /// they added to the payee list (and, live, signed into the account's policy).
 model PayeeInvite {
   id          String    @id @default(cuid())
+  /// The business this belongs to (every query is limited to one business: lib/tenant.ts).
+  businessId  String    @default("main")
   /// Random, unguessable; the only key in the link.
   token       String    @unique
   name        String
@@ -198,4 +231,6 @@ model PayeeInvite {
   /// open | submitted | approved | declined
   status      String    @default("open")
   payeeId     String?
+
+  @@index([businessId])
 }

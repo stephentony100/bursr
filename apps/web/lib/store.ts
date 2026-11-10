@@ -7,6 +7,7 @@ import type { PrismaClient } from "./generated/prisma/client";
 // rules and payees live in lib/owner-actions.ts (owner only).
 
 export interface BusinessRecord {
+  id: string;
   name: string;
   ownerAccountId: string;
   rules: Rules;
@@ -15,7 +16,7 @@ export interface BusinessRecord {
 export async function getBusiness(db: PrismaClient): Promise<BusinessRecord | null> {
   const row = await db.business.findUnique({ where: { id: "main" } });
   if (!row) return null;
-  return { name: row.name, ownerAccountId: row.ownerAccountId, rules: RulesSchema.parse(JSON.parse(row.rules)) };
+  return { id: row.id, name: row.name, ownerAccountId: row.ownerAccountId, rules: RulesSchema.parse(JSON.parse(row.rules)) };
 }
 
 const RecurringSchema = PayeeSchema.shape.recurring;

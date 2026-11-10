@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { db } from "@/lib/db";
 import { prepareOwnerIntent, submitOwnerIntent } from "@/lib/owner-intents";
-import { getOwner } from "@/lib/session";
+import { getOwner, appDb } from "@/lib/session";
 import { friendlyError } from "@/lib/errors";
 
 // Live mode owner actions: prepare an intent for the wallet, then submit the
@@ -26,9 +25,9 @@ export async function POST(req: Request) {
   const body = Body.safeParse(await req.json());
   if (!body.success) return NextResponse.json({ error: "Bad request." }, { status: 400 });
   try {
-    if (body.data.step === "prepare") return NextResponse.json(await prepareOwnerIntent(db(), owner, body.data.kind));
+    if (body.data.step === "prepare") return NextResponse.json(await prepareOwnerIntent((await appDb()), owner, body.data.kind));
     const { kind, correlationId, agentId, signedData } = body.data;
-    return NextResponse.json(await submitOwnerIntent(db(), owner, { kind, correlationId, agentId, signedData: signedData as never }));
+    return NextResponse.json(await submitOwnerIntent((await appDb()), owner, { kind, correlationId, agentId, signedData: signedData as never }));
   } catch (e) {
     return NextResponse.json({ error: friendlyError(e, "That didn't go through, so nothing changed. Please try again.") }, { status: 400 });
   }

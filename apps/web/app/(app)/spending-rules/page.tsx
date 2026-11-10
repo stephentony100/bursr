@@ -5,12 +5,11 @@ import { linkedChat } from "@/lib/telegram";
 import { ActionForm, RuleTester } from "@/components/forms";
 import { WalletPanel } from "@/components/wallet-panel";
 import { agentAccount, type AccountStatus } from "@/lib/agent-account";
-import { db } from "@/lib/db";
 import { readEnv } from "@/lib/env";
 import { formatUnits, USD_DECIMALS } from "@/lib/money";
 import { grantState } from "@/lib/grant-store";
 import { policyNeedsSigning } from "@/lib/owner-actions";
-import { getOwner, guardPage } from "@/lib/session";
+import { getOwner, guardPage, appDb } from "@/lib/session";
 import { getAccountRecord, getBusiness } from "@/lib/store";
 import { chainName, payoutTokens } from "@/lib/tokens";
 
@@ -21,19 +20,19 @@ export default async function SetupPage() {
   await connection();
   const env = readEnv();
   const dryRun = env.BURSAR_MODE === "dry-run";
-  const [business, owner, record, tokens] = await Promise.all([getBusiness(db()), getOwner(), getAccountRecord(db()), payoutTokens()]);
+  const [business, owner, record, tokens] = await Promise.all([getBusiness((await appDb())), getOwner(), getAccountRecord((await appDb())), payoutTokens()]);
 
   let status: AccountStatus | null = null;
   const grant = grantState(record);
   if (business && (dryRun || grant.usable)) {
     try {
-      status = await (await agentAccount(db())).status();
+      status = await (await agentAccount((await appDb()))).status();
     } catch {
       status = null;
     }
   }
-  const needsSigning = !dryRun && (await policyNeedsSigning(db()));
-  const telegram = env.TELEGRAM_BOT_TOKEN ? await linkedChat(db()) : null;
+  const needsSigning = !dryRun && (await policyNeedsSigning((await appDb())));
+  const telegram = env.TELEGRAM_BOT_TOKEN ? await linkedChat((await appDb())) : null;
   const r = business?.rules;
   const usd = (micros: string) => formatUnits(BigInt(micros), USD_DECIMALS);
 

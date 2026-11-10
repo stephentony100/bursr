@@ -8,13 +8,12 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { ActionForm } from "@/components/forms";
 import { agentFeed, comingUp, needsYou, nextPayday } from "@/lib/agent/view";
 import { agentAccount, type AccountStatus } from "@/lib/agent-account";
-import { db } from "@/lib/db";
 import { readEnv } from "@/lib/env";
 import { listInvoices } from "@/lib/invoices";
 import { formatUsd, rescale } from "@/lib/money";
 import { getLatestPlan } from "@/lib/plans";
 import { onboardingState, STEP_TITLES } from "@/lib/onboarding";
-import { getOwner, guardPage } from "@/lib/session";
+import { getOwner, guardPage, appDb } from "@/lib/session";
 import { getBusiness, listPayees } from "@/lib/store";
 import { friendlyError } from "@/lib/errors";
 
@@ -30,10 +29,10 @@ export default async function Home() {
   await guardPage();
   await connection();
   const dryRun = readEnv().BURSAR_MODE === "dry-run";
-  const business = await getBusiness(db());
+  const business = await getBusiness((await appDb()));
   // A new live owner starts with the guided setup.
   if (!business && !dryRun) redirect("/welcome");
-  const setup = business && !dryRun ? await onboardingState(db(), await getOwner()) : null;
+  const setup = business && !dryRun ? await onboardingState((await appDb()), await getOwner()) : null;
 
   if (!business) {
     return (
@@ -76,17 +75,17 @@ export default async function Home() {
   let status: AccountStatus | null = null;
   let accountError: string | null = null;
   try {
-    status = await (await agentAccount(db())).status();
+    status = await (await agentAccount((await appDb()))).status();
   } catch (e) {
     accountError = friendlyError(e, "Bursar couldn't reach your wallet just now.");
   }
   const [payees, feed, invoices, plan, waitingOnYou, upcoming] = await Promise.all([
-    listPayees(db()),
-    agentFeed(db(), 25),
-    listInvoices(db()),
-    getLatestPlan(db()),
-    needsYou(db()),
-    comingUp(db()),
+    listPayees((await appDb())),
+    agentFeed((await appDb()), 25),
+    listInvoices((await appDb())),
+    getLatestPlan((await appDb())),
+    needsYou((await appDb())),
+    comingUp((await appDb())),
   ]);
   const treasury = business.rules.treasury;
   const needsLook = invoices.filter((i) => !["ready", "flag"].includes(i.status)).length;

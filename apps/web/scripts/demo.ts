@@ -4,12 +4,14 @@
 import "./load-env";
 import { execSync } from "node:child_process";
 import { db } from "../lib/db";
+import { DEMO_OWNER_ID } from "../lib/owner";
+import { dbForOwner } from "../lib/tenant";
 import { loadSampleBusiness } from "../lib/demo-loader";
 import { chainName } from "../lib/tokens";
 
 async function main() {
   execSync("npx prisma db push", { stdio: "pipe", env: { ...process.env, CHECKPOINT_DISABLE: "1" } });
-  const { name, payees, invoices } = await loadSampleBusiness(db());
+  const { name, payees, invoices } = await loadSampleBusiness(await dbForOwner(db(), DEMO_OWNER_ID));
   console.log(`Loaded "${name}" (dry-run, demo money only).`);
   for (const p of payees) console.log(`  payee    ${p.name.padEnd(28)} ${p.payout.token.symbol} on ${chainName(p.payout.token.chain)}`);
   for (const i of invoices) {

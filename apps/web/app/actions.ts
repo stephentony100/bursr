@@ -7,7 +7,6 @@ import { verifyReader, type AttestationResult } from "@/lib/attestation";
 import { aiSummary, monthFacts, type AiSummary } from "@/lib/summary";
 import { BOT_NAME, createLinkCode } from "@/lib/telegram";
 import { agentAccount, type ActionRequest } from "@/lib/agent-account";
-import { db } from "@/lib/db";
 import { clearPracticeBusiness, loadSampleBusiness, loadSampleInvoices } from "@/lib/demo-loader";
 import { ingestInvoice } from "@/lib/invoices";
 import { demoEvmAddress, demoNearImplicit, demoTronAddress } from "@/lib/demo-addresses";
@@ -35,7 +34,8 @@ import { runAgent } from "@/lib/agent/engine";
 import { followPayments, kickAgent } from "@/lib/agent/loop";
 import { payApprovedPlan } from "@/lib/pay";
 import { prepareWeeklyPlan } from "@/lib/plans";
-import { requireOwner } from "@/lib/session";
+import { requireOwner, appDb } from "@/lib/session";
+import { db as rawDb } from "@/lib/db";
 import { getBusiness, getPayee, listPayees } from "@/lib/store";
 import { payoutTokens } from "@/lib/tokens";
 import { friendlyError } from "@/lib/errors";
@@ -70,7 +70,7 @@ async function run(fn: () => Promise<string>): Promise<FormResult> {
 
 export async function loadSample(): Promise<FormResult> {
   return run(async () => {
-    await loadSampleBusiness(db());
+    await loadSampleBusiness((await appDb()));
     kickAgent();
     return "Welcome to Bukka Corner. Have a look around.";
   });
@@ -79,15 +79,15 @@ export async function loadSample(): Promise<FormResult> {
 export async function saveRules(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
     const owner = await requireOwner();
-    const business = await getBusiness(db());
+    const business = await getBusiness((await appDb()));
     if (!business) throw new Error("Set up the business first.");
     const allowed = new Set(f.getAll("payoutToken").map(String));
     const all = await payoutTokens();
     const chosen = all.filter((t) => allowed.has(t.assetId));
     if (chosen.length === 0) throw new Error("Pick at least one way to pay people.");
-    const inUse = (await listPayees(db())).filter((p) => !allowed.has(p.payout.token.assetId));
+    const inUse = (await listPayees((await appDb()))).filter((p) => !allowed.has(p.payout.token.assetId));
     if (inUse.length) throw new Error(`${inUse[0].name} is paid that way, so it has to stay ticked. Change how they're paid first.`);
-    await updateRules(db(), owner, {
+    await updateRules((await appDb()), owner, {
       ...business.rules,
       weeklyCapUsd: dollars(f, "weeklyCap", "Weekly limit"),
       perPaymentCapUsd: dollars(f, "perPaymentCap", "Largest single payment"),
@@ -106,7 +106,7 @@ export async function toggleFreeze(_prev: FormResult, f: FormData): Promise<Form
   return run(async () => {
     if (readEnv().BURSAR_MODE !== "dry-run") throw new Error("Pause payments from the wallet box above; it asks your wallet to confirm.");
     const freeze = text(f, "freeze") === "1";
-    await setFrozen(db(), await requireOwner(), freeze);
+    await setFrozen((await appDb()), await requireOwner(), freeze);
     return freeze ? "All payments are paused. Nothing can go out until you turn them back on." : "Payments are back on.";
   });
 }
@@ -124,7 +124,7 @@ function parsePrices(raw: string): PriceItem[] {
 }
 
 async function payoutFrom(f: FormData): Promise<Payout> {
-  const business = await getBusiness(db());
+  const business = await getBusiness((await appDb()));
   if (!business) throw new Error("Set up the business first.");
   const token = business.rules.payoutTokens.find((t) => t.assetId === text(f, "token"));
   if (!token) throw new Error("Pick how they want to be paid.");
@@ -150,7 +150,7 @@ export async function addPayeeAction(_prev: FormResult, f: FormData): Promise<Fo
   return run(async () => {
     const name = text(f, "name");
     if (!name) throw new Error("Add their name.");
-    await addPayee(db(), await requireOwner(), {
+    await addPayee((await appDb()), await requireOwner(), {
       name,
       category: PayeeCategory.parse(text(f, "category")),
       payout: await payoutFrom(f),
@@ -164,7 +164,7 @@ export async function addPayeeAction(_prev: FormResult, f: FormData): Promise<Fo
 export async function updatePayeeAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
     const id = text(f, "id");
-    await updatePayeeDetails(db(), await requireOwner(), id, {
+    await updatePayeeDetails((await appDb()), await requireOwner(), id, {
       name: text(f, "name"),
       category: PayeeCategory.parse(text(f, "category")),
       prices: parsePrices(text(f, "prices")),
@@ -177,16 +177,16 @@ export async function updatePayeeAction(_prev: FormResult, f: FormData): Promise
 export async function changePayoutAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
     const id = text(f, "id");
-    const payee = await getPayee(db(), id);
+    const payee = await getPayee((await appDb()), id);
     if (!payee) throw new Error("Payee not found.");
-    await changePayout(db(), await requireOwner(), id, await payoutFrom(f));
+    await changePayout((await appDb()), await requireOwner(), id, await payoutFrom(f));
     return `Saved. For your safety, payments to ${payee.name} are on hold for 48 hours.`;
   });
 }
 
 export async function removePayeeAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
-    await removePayee(db(), await requireOwner(), text(f, "id"));
+    await removePayee((await appDb()), await requireOwner(), text(f, "id"));
     return "Removed. Bursar can no longer pay them.";
   });
 }
@@ -199,8 +199,8 @@ export type RuleTestResult = { tried: string; allowed: boolean; message: string 
  * dry-run, the Agent API in live mode), not from this page.
  */
 export async function testRule(_prev: RuleTestResult, f: FormData): Promise<RuleTestResult> {
-  const business = await getBusiness(db());
-  const payees = await listPayees(db());
+  const business = await getBusiness((await appDb()));
+  const payees = await listPayees((await appDb()));
   if (!business) return { tried: "", allowed: false, message: "Add someone you pay first." };
   // Prefer a supplier paid in the token the account holds, so only the rule under test decides
   // (paying in another token needs a swap first, which the payment run does).
@@ -228,7 +228,7 @@ export async function testRule(_prev: RuleTestResult, f: FormData): Promise<Rule
     tried = `pay ${payee.name} $50.00`;
   }
   try {
-    const out = await (await agentAccount(db())).preview(req);
+    const out = await (await agentAccount((await appDb()))).preview(req);
     return out.status === "refused"
       ? { tried, allowed: false, message: out.refusal.message }
       : { tried, allowed: true, message: "This would go through, just as it should." };
@@ -256,7 +256,7 @@ export async function uploadInvoiceAction(_prev: FormResult, f: FormData): Promi
     } else {
       throw new Error("Add a photo of the invoice or paste its text.");
     }
-    const v = await ingestInvoice(db(), input);
+    const v = await ingestInvoice((await appDb()), input);
     kickAgent();
     const label = v.supplierName ? `${v.supplierName} #${v.invoiceNumber}` : input.name;
     const words: Record<string, string> = {
@@ -275,8 +275,8 @@ export async function loadSampleInvoicesAction(): Promise<FormResult> {
   return run(async () => {
     if (readEnv().BURSAR_MODE !== "dry-run") throw new Error("Sample invoices are for practice mode only.");
     await requireOwner();
-    await db().invoice.deleteMany();
-    await loadSampleInvoices(db());
+    await (await appDb()).invoice.deleteMany();
+    await loadSampleInvoices((await appDb()));
     return "The six sample invoices were checked again.";
   });
 }
@@ -286,7 +286,7 @@ export async function loadSampleInvoicesAction(): Promise<FormResult> {
 export async function preparePlanAction(): Promise<FormResult> {
   return run(async () => {
     await requireOwner();
-    const plan = await prepareWeeklyPlan(db());
+    const plan = await prepareWeeklyPlan((await appDb()));
     const n = plan.items.filter((i) => i.placement === "in").length;
     return `Ready: ${n} payment${n === 1 ? "" : "s"} waiting for your OK.`;
   });
@@ -294,7 +294,7 @@ export async function preparePlanAction(): Promise<FormResult> {
 
 export async function approveItemAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
-    await approvePlanItem(db(), await requireOwner(), text(f, "itemId"));
+    await approvePlanItem((await appDb()), await requireOwner(), text(f, "itemId"));
     kickAgent();
     return "OK'd. The agent is paying it now.";
   });
@@ -302,7 +302,7 @@ export async function approveItemAction(_prev: FormResult, f: FormData): Promise
 
 export async function removeItemAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
-    await removePlanItem(db(), await requireOwner(), text(f, "itemId"));
+    await removePlanItem((await appDb()), await requireOwner(), text(f, "itemId"));
     return "Taken out of this week's payments.";
   });
 }
@@ -311,8 +311,8 @@ export async function removeItemAction(_prev: FormResult, f: FormData): Promise<
 export async function approvePlanAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
     const planId = text(f, "planId");
-    await approvePlan(db(), await requireOwner(), planId);
-    const results = await payApprovedPlan(db(), await agentAccount(db()), planId);
+    await approvePlan((await appDb()), await requireOwner(), planId);
+    const results = await payApprovedPlan((await appDb()), await agentAccount((await appDb())), planId);
     const sent = Object.values(results).filter((s) => s === "sent").length;
     const failed = Object.values(results).filter((s) => s === "failed").length;
     return `Done. ${sent} payment${sent === 1 ? "" : "s"} on the way${failed ? `, ${failed} not paid (see why below)` : ""}.`;
@@ -326,8 +326,8 @@ export async function approvePlanAction(_prev: FormResult, f: FormData): Promise
  * (a refused live request is recorded by `npm run rules:live`).
  */
 export async function forceOverCapAction(): Promise<RuleTestResult> {
-  const business = await getBusiness(db());
-  const payees = await listPayees(db());
+  const business = await getBusiness((await appDb()));
+  const payees = await listPayees((await appDb()));
   if (!business) return { tried: "", allowed: false, message: "Set up the business first." };
   const payee = payees.find((p) => p.payout.token.assetId === business.rules.treasury.assetId) ?? payees[0];
   if (!payee) return { tried: "", allowed: false, message: "Add a payee first." };
@@ -343,7 +343,7 @@ export async function forceOverCapAction(): Promise<RuleTestResult> {
   };
   const tried = `send ${formatUsd(over)} to ${payee.name}, skipping your approval`;
   try {
-    const account = await agentAccount(db());
+    const account = await agentAccount((await appDb()));
     const out = readEnv().BURSAR_MODE === "dry-run" ? await account.execute(req, `forced-${Date.now()}`) : await account.preview(req);
     revalidatePath("/", "layout");
     return out.status === "refused"
@@ -361,14 +361,14 @@ export async function verifyReaderAction(): Promise<AttestationResult> {
 
 /** NEAR AI phrases this month's facts; rejected if it mentions any figure not in the records. */
 export async function aiSummaryAction(): Promise<AiSummary> {
-  return aiSummary(await monthFacts(db()));
+  return aiSummary(await monthFacts((await appDb())));
 }
 
 /** Owner only: a one-time code to link the owner's Telegram chat to the bot. */
 export async function telegramLinkAction(): Promise<FormResult> {
   return run(async () => {
-    const code = await createLinkCode(db(), await requireOwner());
-    const row = await db().setting.findUnique({ where: { key: BOT_NAME } });
+    const code = await createLinkCode((await appDb()), await requireOwner());
+    const row = await (await appDb()).setting.findUnique({ where: { key: BOT_NAME } });
     const name = row ? `@${JSON.parse(row.value)}` : "your Bursar bot (start it with npm run bot)";
     return `Open ${name} in Telegram and send:  /link ${code}  (valid for 10 minutes)`;
   });
@@ -378,7 +378,7 @@ export async function telegramLinkAction(): Promise<FormResult> {
 export async function runPaydayNowAction(): Promise<FormResult> {
   return run(async () => {
     await requireOwner();
-    const r = await runAgent(db(), { dueBy: "payday" });
+    const r = await runAgent((await appDb()), { dueBy: "payday" });
     followPayments();
     revalidatePath("/", "layout");
     if (!r.ran) return r.note ?? "The agent is busy; try again in a moment.";
@@ -401,7 +401,7 @@ export async function depositAddressAction(symbol: string, chain: string): Promi
   try {
     await requireOwner();
     if (readEnv().BURSAR_MODE === "dry-run") throw new Error("In practice mode, use \"Add practice money\".");
-    const address = await depositAddress(db(), symbol, chain);
+    const address = await depositAddress((await appDb()), symbol, chain);
     const qrSvg = await QRCode.toString(address.address, { type: "svg", margin: 1, width: 192 });
     return { ok: true, address, qrSvg };
   } catch (e) {
@@ -413,7 +413,7 @@ export async function depositAddressAction(symbol: string, chain: string): Promi
 export async function oneTapDepositAction(): Promise<{ ok: true; deposit: OneTapDeposit } | { ok: false; message: string }> {
   try {
     const owner = await requireOwner();
-    return { ok: true, deposit: await oneTapDeposit(db(), owner.accountId) };
+    return { ok: true, deposit: await oneTapDeposit((await appDb()), owner.accountId) };
   } catch (e) {
     return { ok: false, message: friendlyError(e, "Couldn't prepare the top-up.") };
   }
@@ -425,7 +425,7 @@ export async function practiceMoneyAction(_prev: FormResult, f: FormData): Promi
     if (readEnv().BURSAR_MODE !== "dry-run") throw new Error("Practice money is for practice mode only.");
     const amount = text(f, "amount") || "500";
     if (!/^\d{1,6}(\.\d{1,2})?$/.test(amount)) throw new Error("Enter an amount like 500.");
-    await addPracticeMoney(db(), amount);
+    await addPracticeMoney((await appDb()), amount);
     kickAgent();
     revalidatePath("/", "layout");
     return `Added $${amount} of practice money. The agent will use it for anything waiting.`;
@@ -447,7 +447,7 @@ export async function chatAction(history: ChatTurn[]): Promise<ChatReply> {
       .filter((h) => (h.role === "user" || h.role === "assistant") && typeof h.content === "string")
       .map((h) => ({ role: h.role, content: h.content.slice(0, 2000) }))
       .slice(-12);
-    return await chat(db(), owner, clean);
+    return await chat((await appDb()), owner, clean);
   } catch (e) {
     return { reply: friendlyError(e, "Something went wrong."), cards: [], ai: false };
   }
@@ -455,7 +455,7 @@ export async function chatAction(history: ChatTurn[]): Promise<ChatReply> {
 
 export async function confirmCardAction(token: string): Promise<FormResult> {
   return run(async () => {
-    const message = await confirmCard(db(), await requireOwner(), token);
+    const message = await confirmCard((await appDb()), await requireOwner(), token);
     followPayments();
     revalidatePath("/", "layout");
     return message;
@@ -500,23 +500,23 @@ export async function onboardBusinessAction(_prev: FormResult, f: FormData): Pro
     const tokens = await payoutTokens();
     const base = starterRules(tokens);
     const networks = WANTED_NETWORKS.map(([sym, chain]) => tokens.find((t) => t.symbol === sym && t.chain === chain)).filter((t): t is NonNullable<typeof t> => Boolean(t));
-    const existing = await getBusiness(db());
+    const existing = await getBusiness((await appDb()));
     const rules = existing
       ? { ...existing.rules, timeZone, paydayWeekday: Number(text(f, "payday")) }
       : { ...base, timeZone, paydayWeekday: Number(text(f, "payday")), payoutTokens: networks.length ? networks : base.payoutTokens };
-    await setupBusiness(db(), owner, { name: name.slice(0, 80), rules });
+    await setupBusiness((await appDb()), owner, { name: name.slice(0, 80), rules });
   });
 }
 
 export async function onboardLimitsAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return step(async () => {
     const owner = await requireOwner();
-    const business = await getBusiness(db());
+    const business = await getBusiness((await appDb()));
     if (!business) throw new Error("Add your business first.");
     const allowed = new Set(f.getAll("payoutToken").map(String));
     const chosen = (await payoutTokens()).filter((t) => allowed.has(t.assetId));
     if (chosen.length === 0) throw new Error("Pick at least one way to pay people.");
-    await updateRules(db(), owner, {
+    await updateRules((await appDb()), owner, {
       ...business.rules,
       weeklyCapUsd: dollars(f, "weeklyCap", "Weekly limit"),
       perPaymentCapUsd: dollars(f, "perPaymentCap", "Largest single payment"),
@@ -525,7 +525,7 @@ export async function onboardLimitsAction(_prev: FormResult, f: FormData): Promi
       autopilot: f.get("autopilot") === "on",
       invoiceTiming: text(f, "invoiceTiming") === "asap" ? "asap" : "due",
     });
-    await markOnboarding(db(), "limits");
+    await markOnboarding((await appDb()), "limits");
   });
 }
 
@@ -535,7 +535,7 @@ export async function onboardNextAction(_prev: FormResult, f: FormData): Promise
   if (what === "finished") {
     try {
       await requireOwner();
-      await markOnboarding(db(), "finished");
+      await markOnboarding((await appDb()), "finished");
     } catch (e) {
       return { ok: false, message: friendlyError(e, "Something went wrong.") };
     }
@@ -547,7 +547,7 @@ export async function onboardNextAction(_prev: FormResult, f: FormData): Promise
     await requireOwner();
     if (what === "agent" && readEnv().BURSAR_MODE !== "dry-run") throw new Error("Your wallet turns the agent on: use the buttons above.");
     if (what !== "people" && what !== "money" && what !== "agent") throw new Error("Unknown step.");
-    await markOnboarding(db(), what);
+    await markOnboarding((await appDb()), what);
   });
 }
 
@@ -555,8 +555,8 @@ export async function onboardNextAction(_prev: FormResult, f: FormData): Promise
 export async function startOwnPracticeAction(): Promise<FormResult> {
   if (readEnv().BURSAR_MODE !== "dry-run") return { ok: false, message: "This is for practice mode." };
   try {
-    await clearPracticeBusiness(db());
-    await clearOnboarding(db());
+    await clearPracticeBusiness((await appDb()));
+    await clearOnboarding((await appDb()));
   } catch (e) {
     return { ok: false, message: friendlyError(e, "Something went wrong.") };
   }
@@ -570,7 +570,7 @@ export async function createInviteAction(f: FormData): Promise<InviteResult> {
   try {
     const owner = await requireOwner();
     const category = PayeeCategory.parse(text(f, "category") || "staff");
-    const invite = await createInvite(db(), owner, { name: text(f, "name"), category, recurring: recurringFrom(f) });
+    const invite = await createInvite((await appDb()), owner, { name: text(f, "name"), category, recurring: recurringFrom(f) });
     revalidatePath("/", "layout");
     return { ok: true, link: `${readEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/join/${invite.token}`, name: invite.name };
   } catch (e) {
@@ -580,7 +580,7 @@ export async function createInviteAction(f: FormData): Promise<InviteResult> {
 
 export async function approveInviteAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
-    await approveInvite(db(), await requireOwner(), text(f, "inviteId"));
+    await approveInvite((await appDb()), await requireOwner(), text(f, "inviteId"));
     revalidatePath("/", "layout");
     return readEnv().BURSAR_MODE === "dry-run"
       ? "Added. Their first payment will still ask for your OK."
@@ -590,7 +590,7 @@ export async function approveInviteAction(_prev: FormResult, f: FormData): Promi
 
 export async function declineInviteAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
-    await declineInvite(db(), await requireOwner(), text(f, "inviteId"));
+    await declineInvite((await appDb()), await requireOwner(), text(f, "inviteId"));
     revalidatePath("/", "layout");
     return "Declined. Nothing was added.";
   });
@@ -599,7 +599,7 @@ export async function declineInviteAction(_prev: FormResult, f: FormData): Promi
 /** The invited person's form (no sign-in: the link is the key). */
 export async function submitInviteAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
-    await submitInvite(db(), text(f, "token"), { assetId: text(f, "token_asset"), address: text(f, "address"), memo: text(f, "memo") });
+    await submitInvite(rawDb(), text(f, "token"), { assetId: text(f, "token_asset"), address: text(f, "address"), memo: text(f, "memo") });
     return "Thanks! Sent. You'll be paid once the business confirms your details.";
   });
 }

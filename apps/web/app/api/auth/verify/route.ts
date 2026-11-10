@@ -2,10 +2,8 @@ import { JsonRpcProvider } from "near-api-js";
 import { verifyMessage } from "near-api-js/nep413";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { db } from "@/lib/db";
 import { readEnv } from "@/lib/env";
 import { checkChallenge, issueSessionCookie, SESSION_COOKIE, SIGN_IN_MESSAGE, signInRecipient } from "@/lib/owner";
-import { getBusiness } from "@/lib/store";
 import { friendlyError } from "@/lib/errors";
 
 // Live mode sign-in, step 2: verify the wallet's NEP-413 signature. near-api-js
@@ -48,10 +46,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: friendlyError(new Error("Signature not accepted")) }, { status: 401 });
   }
 
-  const business = await getBusiness(db());
-  if (business && business.ownerAccountId !== accountId) {
-    return NextResponse.json({ error: "This Bursar belongs to another wallet. Connect the wallet it was set up with." }, { status: 403 });
-  }
+  // Any wallet may sign in: it sees only the business it owns (lib/tenant.ts), or sets one up.
   const res = NextResponse.json({ accountId });
   res.cookies.set(SESSION_COOKIE, issueSessionCookie(accountId, publicKey), { httpOnly: true, sameSite: "strict", path: "/", maxAge: 12 * 60 * 60 });
   return res;

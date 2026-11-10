@@ -5,6 +5,7 @@
 import "./load-env";
 import { AgentApiError, createAgentApi } from "@near-intents-agent-api/sdk";
 import { db } from "../lib/db";
+import { scriptDb } from "../lib/tenant";
 import { readEnv } from "../lib/env";
 import { formatUnits, formatUsd } from "../lib/money";
 import { canReceiveOnNear, notRegisteredText } from "../lib/near-storage";
@@ -15,13 +16,14 @@ import { liveAgentConfig } from "../lib/agent-account";
 import { BALANCE_SOURCE, PRIVATE_PAYMENTS } from "../lib/agent-account/agent-api";
 
 const env = readEnv();
+const sdb = await scriptDb(db());
 if (env.BURSAR_MODE !== "live") throw new Error("Set BURSAR_MODE=live (and DATABASE_URL to the live database) first.");
-const { apiKey, baseUrl, agentId, grantToken } = await liveAgentConfig(db());
+const { apiKey, baseUrl, agentId, grantToken } = await liveAgentConfig(sdb);
 const api = createAgentApi({ apiKey, baseUrl });
 const agent = api.forGrant(grantToken);
-const business = (await getBusiness(db()))!;
+const business = (await getBusiness(sdb))!;
 const treasury = business.rules.treasury;
-const plan = await getLatestPlan(db());
+const plan = await getLatestPlan(sdb);
 if (!plan || plan.status !== "draft") throw new Error("Prepare a plan on the Plan page first (it must not be approved yet).");
 
 const balances = await api.getBalances(agentId, { source: BALANCE_SOURCE });
@@ -52,4 +54,4 @@ for (const i of plan.items.filter((x) => x.placement === "in" && x.payout)) {
   }
 }
 console.log(`\nPlan total ${formatUsd(total)} (${formatUnits(total, 6)} in USD terms). Nothing was moved.`);
-await db().$disconnect();
+await sdb.$disconnect();

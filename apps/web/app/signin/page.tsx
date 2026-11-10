@@ -4,9 +4,8 @@ import { connection } from "next/server";
 import { HeaderWallet } from "@/components/header-wallet";
 import { Logo } from "@/components/logo";
 import { ConnectWallet } from "@/components/onboarding";
-import { db } from "@/lib/db";
 import { readEnv } from "@/lib/env";
-import { getOwner } from "@/lib/session";
+import { getOwner, appDb } from "@/lib/session";
 import { getBusiness } from "@/lib/store";
 
 // Live mode: the only page a signed-out visitor sees of a business's Bursar.
@@ -15,7 +14,7 @@ export const metadata = { title: "Sign in to Bursar" };
 export default async function SignIn() {
   await connection();
   if (readEnv().BURSAR_MODE === "dry-run") redirect("/this-week");
-  const [business, owner] = await Promise.all([getBusiness(db()), getOwner()]);
+  const [business, owner] = await Promise.all([getBusiness((await appDb())), getOwner()]);
   if (!business) redirect("/welcome");
   if (owner && owner.accountId === business.ownerAccountId) redirect("/this-week");
   const wrongWallet = Boolean(owner);

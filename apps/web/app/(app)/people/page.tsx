@@ -5,8 +5,7 @@ import { ActionForm } from "@/components/forms";
 import { InvitesList } from "@/components/invites-list";
 import { InviteForm } from "@/components/onboarding";
 import { DetailFields, PayoutFields } from "@/components/payee-fields";
-import { db } from "@/lib/db";
-import { guardPage } from "@/lib/session";
+import { guardPage, appDb } from "@/lib/session";
 import { isOnPayoutHold, payoutHoldEndsAt } from "@/lib/domain";
 import { listInvites } from "@/lib/invites";
 import { formatUsd } from "@/lib/money";
@@ -17,7 +16,7 @@ import { chainName } from "@/lib/tokens";
 export default async function PayeesPage() {
   await guardPage();
   await connection();
-  const [business, payees, invites] = await Promise.all([getBusiness(db()), listPayees(db()), listInvites(db())]);
+  const [business, payees, invites] = await Promise.all([getBusiness((await appDb())), listPayees((await appDb())), listInvites((await appDb()))]);
   if (!business) {
     return (
       <p className="text-muted">

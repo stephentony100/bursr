@@ -4,9 +4,8 @@ import { AppNav, PageName } from "@/components/app-nav";
 import { HeaderWallet } from "@/components/header-wallet";
 import { Logo } from "@/components/logo";
 import { connection } from "next/server";
-import { db } from "@/lib/db";
 import { readEnv } from "@/lib/env";
-import { getOwner } from "@/lib/session";
+import { getOwner, appDb } from "@/lib/session";
 import { getBusiness } from "@/lib/store";
 
 /** Practice mode only: real money is the normal case and needs no label. */
@@ -26,7 +25,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const dryRun = readEnv().BURSAR_MODE === "dry-run";
   await connection();
   const owner = dryRun ? null : await getOwner();
-  const business = await getBusiness(db());
+  const business = await getBusiness((await appDb()));
   if (!dryRun && !business) redirect("/welcome");
   // Each page also checks (lib/session guardPage): a layout check alone doesn't stop a page rendering.
   if (!dryRun && (!owner || business?.ownerAccountId !== owner.accountId)) redirect("/signin");

@@ -11,7 +11,6 @@ import { ConnectWallet, InviteForm, LimitsForm, TimeZoneField } from "@/componen
 import { DetailFields, PayoutFields } from "@/components/payee-fields";
 import { WalletPanel } from "@/components/wallet-panel";
 import { comingUp } from "@/lib/agent/view";
-import { db } from "@/lib/db";
 import { grantState } from "@/lib/grant-store";
 import { listInvites } from "@/lib/invites";
 import { formatUsd } from "@/lib/money";
@@ -19,7 +18,7 @@ import { onboardingState, STEP_TITLES, STEPS, type Step } from "@/lib/onboarding
 import { policyNeedsSigning } from "@/lib/owner-actions";
 import { SAMPLE_NAME } from "@/lib/sample";
 import { scheduleWords } from "@/lib/schedule";
-import { getOwner } from "@/lib/session";
+import { getOwner, appDb } from "@/lib/session";
 import { getAccountRecord, getBusiness, listPayees } from "@/lib/store";
 import { chainName, payoutTokens } from "@/lib/tokens";
 
@@ -30,14 +29,13 @@ const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", 
 export default async function Welcome({ searchParams }: { searchParams: Promise<{ step?: string }> }) {
   await connection();
   const owner = await getOwner();
-  const state = await onboardingState(db(), owner);
+  const state = await onboardingState((await appDb()), owner);
   const asked = (await searchParams).step as Step | undefined;
   // An owner may go back to a step they have done; never ahead of the first open one.
   // Signed out (live): only the wallet step, whatever the link asks for; nothing about an existing business is shown.
   const step: Step =
     state.live && !owner ? "wallet" : asked && STEPS.includes(asked) && (state.done[asked] || asked === state.current) ? asked : state.current;
-  const business = await getBusiness(db());
-  if (state.live && owner && business && business.ownerAccountId !== owner.accountId) redirect("/this-week");
+  const business = await getBusiness((await appDb()));
   // Setup finished: a signed-in owner arriving here goes to their dashboard (going back to a step is still possible).
   if (owner && business && state.finished && !asked) redirect("/this-week");
   // Signed out (live): show a blank set of steps; whether this Bursar is set up, and how far, is the owner's business.
@@ -103,7 +101,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
           ) : (
             <>
               <h1 className="display text-3xl">{STEP_TITLES[step]}</h1>
-              <div className="mt-6">{await StepBody({ step, live: state.live, businessName: signedOut ? null : (business?.name ?? null), taken: signedOut && Boolean(business) })}</div>
+              <div className="mt-6">{await StepBody({ step, live: state.live, businessName: signedOut ? null : (business?.name ?? null) })}</div>
             </>
           )}
         </section>
@@ -112,8 +110,8 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
   );
 }
 
-async function StepBody({ step, live, businessName, taken = false }: { step: Step; live: boolean; businessName: string | null; taken?: boolean }) {
-  const business = await getBusiness(db());
+async function StepBody({ step, live, businessName }: { step: Step; live: boolean; businessName: string | null }) {
+  const business = await getBusiness((await appDb()));
   switch (step) {
     case "wallet":
       return (
@@ -124,11 +122,6 @@ async function StepBody({ step, live, businessName, taken = false }: { step: Ste
           <p className="text-sm">
             No wallet yet? Install a NEAR wallet app such as HOT Wallet, create an account, then come back here.
           </p>
-          {taken && (
-            <p className="rounded-lg border border-hold/40 bg-hold-soft/60 p-3 text-sm text-ink">
-              This Bursar is already set up for a business. If it&apos;s yours, connect the wallet you set it up with to sign in. A different business needs its own Bursar.
-            </p>
-          )}
           <ConnectWallet />
         </div>
       );
@@ -165,7 +158,7 @@ async function StepBody({ step, live, businessName, taken = false }: { step: Ste
       );
 
     case "people": {
-      const [payees, invites] = await Promise.all([listPayees(db()), listInvites(db())]);
+      const [payees, invites] = await Promise.all([listPayees((await appDb())), listInvites((await appDb()))]);
       const rules = business!.rules;
       return (
         <div className="space-y-8">
@@ -223,7 +216,7 @@ async function StepBody({ step, live, businessName, taken = false }: { step: Ste
         );
       }
       const owner = await getOwner();
-      const record = await getAccountRecord(db());
+      const record = await getAccountRecord((await appDb()));
       const grant = grantState(record);
       return (
         <div className="space-y-4">
@@ -237,7 +230,7 @@ async function StepBody({ step, live, businessName, taken = false }: { step: Ste
             businessExists
             businessOwner={business!.ownerAccountId}
             agentId={record?.agentId ?? null}
-            needsSigning={await policyNeedsSigning(db())}
+            needsSigning={await policyNeedsSigning((await appDb()))}
             hasGrant={grant.usable}
             grantRenewBy={null}
             frozen={business!.rules.frozen}
@@ -264,7 +257,7 @@ async function StepBody({ step, live, businessName, taken = false }: { step: Ste
       );
 
     case "done": {
-      const next = (await comingUp(db())).slice(0, 5);
+      const next = (await comingUp((await appDb()))).slice(0, 5);
       return (
         <div className="space-y-5">
           <p className="text-lg">Your agent is on. From now on it pays your people on their day and tells you what it did.</p>

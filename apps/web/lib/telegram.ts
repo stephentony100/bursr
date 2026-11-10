@@ -36,6 +36,12 @@ export async function createLinkCode(db: PrismaClient, owner: OwnerSession, now 
   return code;
 }
 
+/** Bot: is this the business's current (unexpired) link code? Used to find which business a /link is for. */
+export async function hasLinkCode(db: PrismaClient, code: string, now = Date.now()): Promise<boolean> {
+  const pending = await getSetting<{ code: string; expires: number }>(db, PENDING);
+  return Boolean(pending && pending.expires >= now && pending.code === code.trim().toUpperCase());
+}
+
 /** Bot: `/link CODE` from a chat. Returns a reply for the chat. */
 export async function linkChat(db: PrismaClient, chatId: number, code: string, now = Date.now()): Promise<string> {
   const pending = await getSetting<{ code: string; accountId: string; expires: number; wrong: number }>(db, PENDING);

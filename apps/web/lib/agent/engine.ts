@@ -1,5 +1,4 @@
 import { agentAccount } from "../agent-account";
-import { db as defaultDb } from "../db";
 import { PayoutSchema } from "../domain";
 import type { PrismaClient } from "../generated/prisma/client";
 import { formatUsd, rescale, USD_DECIMALS } from "../money";
@@ -45,15 +44,19 @@ export interface AgentRunOptions {
   quote?: typeof quotePayout;
 }
 
-// One run at a time per process; a lease in the database keeps a second process (the Telegram bot) out.
-const g = globalThis as unknown as { bursarAgentRun?: Promise<AgentRunReport> | null };
+// One run at a time per business in this process; a lease in the database keeps a second process (the Telegram bot) out.
+const g = globalThis as unknown as { bursarAgentRuns?: Map<string, Promise<AgentRunReport>> };
 
-export function runAgent(db: PrismaClient = defaultDb(), options: AgentRunOptions = {}): Promise<AgentRunReport> {
-  if (g.bursarAgentRun) return g.bursarAgentRun;
-  g.bursarAgentRun = withLease(db, () => agentRun(db, options)).finally(() => {
-    g.bursarAgentRun = null;
-  });
-  return g.bursarAgentRun;
+/** Runs the agent for one business. `db` must be limited to that business (lib/tenant.ts). */
+export async function runAgent(db: PrismaClient, options: AgentRunOptions = {}): Promise<AgentRunReport> {
+  const business = await getBusiness(db);
+  if (!business) return { ...EMPTY, note: "No business yet." };
+  const runs = (g.bursarAgentRuns ??= new Map());
+  const running = runs.get(business.id);
+  if (running) return running;
+  const run = withLease(db, () => agentRun(db, options)).finally(() => runs.delete(business.id));
+  runs.set(business.id, run);
+  return run;
 }
 
 async function withLease(db: PrismaClient, fn: () => Promise<AgentRunReport>): Promise<AgentRunReport> {

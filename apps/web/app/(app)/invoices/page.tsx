@@ -6,8 +6,7 @@ import { VerifiedPanel } from "@/components/verified-panel";
 import { DEFAULT_READER_MODEL } from "@/lib/reader";
 import { ActionForm } from "@/components/forms";
 import type { InvoiceStatus } from "@/lib/checks";
-import { db } from "@/lib/db";
-import { guardPage } from "@/lib/session";
+import { guardPage, appDb } from "@/lib/session";
 import { readEnv } from "@/lib/env";
 import { listInvoices } from "@/lib/invoices";
 import { formatUsd } from "@/lib/money";
@@ -27,7 +26,7 @@ export default async function InvoicesPage() {
   await guardPage();
   await connection();
   const dryRun = readEnv().BURSAR_MODE === "dry-run";
-  const business = await getBusiness(db());
+  const business = await getBusiness((await appDb()));
   if (!business) {
     return (
       <p className="text-muted">
@@ -39,7 +38,7 @@ export default async function InvoicesPage() {
       </p>
     );
   }
-  const invoices = await listInvoices(db());
+  const invoices = await listInvoices((await appDb()));
   const problems = invoices.filter((i) => !["ready", "flag"].includes(i.status)).length;
 
   return (

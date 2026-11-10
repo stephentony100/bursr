@@ -4,8 +4,7 @@ import { AddMoney } from "@/components/add-money";
 import { ActionForm } from "@/components/forms";
 import { agentAccount } from "@/lib/agent-account";
 import { nextPayday, paydayNeed } from "@/lib/agent/view";
-import { db } from "@/lib/db";
-import { guardPage } from "@/lib/session";
+import { guardPage, appDb } from "@/lib/session";
 import { readEnv } from "@/lib/env";
 import { formatUnits, formatUsd, rescale, USD_DECIMALS } from "@/lib/money";
 import { getBusiness } from "@/lib/store";
@@ -13,18 +12,18 @@ import { getBusiness } from "@/lib/store";
 export default async function AddMoneyPage() {
   await guardPage();
   await connection();
-  const business = await getBusiness(db());
+  const business = await getBusiness((await appDb()));
   if (!business) return <p className="text-muted">Set up your business first.</p>;
   const dryRun = readEnv().BURSAR_MODE === "dry-run";
   const t = business.rules.treasury;
   let balance: bigint | null = null;
   try {
-    const s = await (await agentAccount(db())).status();
+    const s = await (await agentAccount((await appDb()))).status();
     balance = rescale(s.balances[t.assetId] ?? 0n, t.decimals, USD_DECIMALS);
   } catch {
     balance = null;
   }
-  const need = await paydayNeed(db(), balance ?? 0n);
+  const need = await paydayNeed((await appDb()), balance ?? 0n);
   const payday = need?.payday ?? nextPayday(new Date(), business.rules.timeZone, business.rules.paydayWeekday);
   const due = need?.due ?? 0n;
   const short = balance !== null && due > balance ? due - balance : 0n;

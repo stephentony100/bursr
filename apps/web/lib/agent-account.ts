@@ -1,7 +1,6 @@
 import { AgentApiAccount } from "./agent-account/agent-api";
 import { SimulatedAccount } from "./agent-account/simulated";
 import type { AgentAccount } from "./agent-account/types";
-import { db as defaultDb } from "./db";
 import { readEnv } from "./env";
 import { readGrant } from "./grant-store";
 import type { PrismaClient } from "./generated/prisma/client";
@@ -13,7 +12,7 @@ import { getAccountRecord, getBusiness } from "./store";
 
 export type { AccountStatus, ActionOutcome, ActionRequest, AgentAccount } from "./agent-account/types";
 
-export async function agentAccount(db: PrismaClient = defaultDb()): Promise<AgentAccount> {
+export async function agentAccount(db: PrismaClient): Promise<AgentAccount> {
   const env = readEnv();
   const business = await getBusiness(db);
   if (!business) throw new Error("Set up the business first.");
@@ -27,7 +26,7 @@ export async function agentAccount(db: PrismaClient = defaultDb()): Promise<Agen
 }
 
 /** What the live account needs: the partner key from .env, the agent and its sealed pass from the database. */
-export async function liveAgentConfig(db: PrismaClient = defaultDb()) {
+export async function liveAgentConfig(db: PrismaClient) {
   const env = readEnv();
   if (!env.AGENT_API_KEY) throw new Error("Live mode needs AGENT_API_KEY in .env.");
   const record = await getAccountRecord(db);
