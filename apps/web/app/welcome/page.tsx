@@ -38,6 +38,11 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
     state.live && !owner ? "wallet" : asked && STEPS.includes(asked) && (state.done[asked] || asked === state.current) ? asked : state.current;
   const business = await getBusiness(db());
   if (state.live && owner && business && business.ownerAccountId !== owner.accountId) redirect("/this-week");
+  // Setup finished: a signed-in owner arriving here goes to their dashboard (going back to a step is still possible).
+  if (owner && business && state.finished && !asked) redirect("/this-week");
+  // Signed out (live): show a blank set of steps; whether this Bursar is set up, and how far, is the owner's business.
+  const signedOut = state.live && !owner;
+  const shownDone = signedOut ? (Object.fromEntries(STEPS.map((s) => [s, false])) as Record<Step, boolean>) : state.done;
   // Practice restaurant loaded: offer to start a business of your own instead.
   const onSample = !state.live && business?.name === SAMPLE_NAME;
 
@@ -55,12 +60,12 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
         <nav aria-label="Setup steps">
           <ol className="space-y-1">
             {STEPS.filter((s) => state.live || s !== "wallet").map((s, i) => {
-              const reachable = state.done[s] || s === state.current;
+              const reachable = !signedOut && (shownDone[s] || s === state.current);
               const here = s === step;
               const body = (
                 <>
-                  <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-semibold ${state.done[s] ? "bg-ledger text-white" : here ? "bg-ink text-white" : "bg-paper-2 text-muted"}`}>
-                    {state.done[s] ? <Check size={13} weight="bold" aria-hidden /> : i + 1}
+                  <span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-semibold ${shownDone[s] ? "bg-ledger text-white" : here ? "bg-ink text-white" : "bg-paper-2 text-muted"}`}>
+                    {shownDone[s] ? <Check size={13} weight="bold" aria-hidden /> : i + 1}
                   </span>
                   {STEP_TITLES[s]}
                 </>
@@ -98,7 +103,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
           ) : (
             <>
               <h1 className="display text-3xl">{STEP_TITLES[step]}</h1>
-              <div className="mt-6">{await StepBody({ step, live: state.live, businessName: business?.name ?? null })}</div>
+              <div className="mt-6">{await StepBody({ step, live: state.live, businessName: signedOut ? null : (business?.name ?? null), taken: signedOut && Boolean(business) })}</div>
             </>
           )}
         </section>
@@ -107,7 +112,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
   );
 }
 
-async function StepBody({ step, live, businessName }: { step: Step; live: boolean; businessName: string | null }) {
+async function StepBody({ step, live, businessName, taken = false }: { step: Step; live: boolean; businessName: string | null; taken?: boolean }) {
   const business = await getBusiness(db());
   switch (step) {
     case "wallet":
@@ -119,6 +124,11 @@ async function StepBody({ step, live, businessName }: { step: Step; live: boolea
           <p className="text-sm">
             No wallet yet? Install a NEAR wallet app such as HOT Wallet, create an account, then come back here.
           </p>
+          {taken && (
+            <p className="rounded-lg border border-hold/40 bg-hold-soft/60 p-3 text-sm text-ink">
+              This Bursar is already set up for a business. If it&apos;s yours, connect the wallet you set it up with to sign in. A different business needs its own Bursar.
+            </p>
+          )}
           <ConnectWallet />
         </div>
       );
