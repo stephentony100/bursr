@@ -10,6 +10,7 @@ import { getBusiness } from "../store";
 import { chainName } from "../tokens";
 import { say, sayOnce } from "./say";
 import { paydayNeed } from "./view";
+import { pendingChanges } from "../pending-changes";
 import { friendlyError } from "../errors";
 
 // Bursar's agent. It wakes every minute (lib/agent/loop.ts) and on events,
@@ -125,6 +126,18 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
       20 * HOUR,
       "needs_money",
       `Payday (${dayWords(need.payday)}) needs ${formatUsd(need.due)} and your Bursar wallet holds ${formatUsd(held)}. Please add ${formatUsd(need.short)} so nobody waits.`,
+    );
+  }
+
+  // Changes the owner made that their wallet hasn't confirmed: new people and higher limits wait for it.
+  const unsigned = await pendingChanges(db);
+  if (unsigned && !unsigned.onlyTighter) {
+    await sayOnce(
+      db,
+      "unsigned-changes",
+      12 * HOUR,
+      "needs_owner",
+      `Your wallet hasn't confirmed your latest changes yet (${unsigned.lines.join(", ")}). New people and higher limits take effect once you confirm, from the bar at the top of any page.`,
     );
   }
 

@@ -40,11 +40,7 @@ export default async function PayeesPage({ searchParams }: { searchParams: Promi
           {live && (
             <>
               {" "}
-              Confirm the updated list with your wallet on{" "}
-              <Link href="/spending-rules" className="text-indigo underline">
-                Spending rules
-              </Link>{" "}
-              so your agent&apos;s wallet knows too.
+              Your agent won&apos;t pay them from now on. To lock it into your agent&apos;s wallet too, use <strong>Confirm with my wallet</strong> at the top of the page.
             </>
           )}
         </p>

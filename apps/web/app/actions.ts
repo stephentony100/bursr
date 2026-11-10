@@ -98,7 +98,7 @@ export async function saveRules(_prev: FormResult, f: FormData): Promise<FormRes
       invoiceTiming: text(f, "invoiceTiming") === "asap" ? "asap" : "due",
     });
     kickAgent();
-    return readEnv().BURSAR_MODE === "dry-run" ? "Saved. Your new limits apply straight away." : "Saved. Now confirm them with your wallet above so they take effect.";
+    return readEnv().BURSAR_MODE === "dry-run" ? "Saved. Your new limits apply straight away." : "Saved. Lower limits apply right away; to make higher limits count, confirm with your wallet from the bar at the top of the page.";
   });
 }
 
@@ -593,7 +593,7 @@ export async function approveInviteAction(_prev: FormResult, f: FormData): Promi
     revalidatePath("/", "layout");
     return readEnv().BURSAR_MODE === "dry-run"
       ? "Added. Their first payment will still ask for your OK."
-      : "Added. Now confirm the updated list with your wallet (Spending rules) so they can be paid.";
+      : "Added. Confirm with your wallet from the bar at the top of the page, and then they can be paid.";
   });
 }
 

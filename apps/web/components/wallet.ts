@@ -37,3 +37,53 @@ export async function signInWithWallet() {
 export async function signOut() {
   await post("/api/auth/signout", {});
 }
+
+export type OwnerIntentKind = "agent_create" | "policy_update" | "agent_freeze" | "agent_unfreeze" | "grant_issue";
+
+export interface PreparedIntent {
+  kind: OwnerIntentKind;
+  correlationId: string;
+  agentId: string;
+  expiresAt: string;
+  summary: string;
+  policy?: unknown;
+  intent: { standard: string; payload: Record<string, unknown> };
+}
+
+/** Asks Bursar's server to prepare a change for the owner's wallet to sign (nothing is signed yet). */
+export function prepareIntent(kind: OwnerIntentKind): Promise<PreparedIntent> {
+  return post<PreparedIntent>("/api/owner/intent", { step: "prepare", kind });
+}
+
+/** The owner's wallet signs the prepared change and Bursar submits it. Throws a plain-words error if it isn't applied. */
+export async function signAndSubmitIntent(prepared: PreparedIntent): Promise<void> {
+  const w = await wallet();
+  const { intent } = prepared;
+  let signedData: Record<string, unknown>;
+  if (intent.standard === "nep366") {
+    const out = await w.signDelegateActions({ delegateActions: [intent.payload as never] });
+    signedData = { ...intent, signed_delegate: out.signedDelegateActions[0] };
+  } else if (intent.standard === "nep413") {
+    const p = intent.payload as { message: string; recipient: string; nonce: string };
+    const nonce = Uint8Array.from(atob(p.nonce), (ch) => ch.charCodeAt(0));
+    const out = await w.signMessage({ message: p.message, recipient: p.recipient, nonce });
+    signedData = { ...intent, public_key: out.publicKey, signature: out.signature };
+  } else {
+    throw new Error("This wallet can't sign this kind of confirmation. Try HOT Wallet.");
+  }
+  const result = await post<{ status: string; failureCode: string | null }>("/api/owner/intent", {
+    step: "submit",
+    kind: prepared.kind,
+    correlationId: prepared.correlationId,
+    agentId: prepared.agentId,
+    signedData,
+  });
+  if (result.status !== "SUCCESS") {
+    throw new Error(
+      friendlyError(
+        { code: result.failureCode ?? "" },
+        result.status === "REFUSED" ? "Your wallet's confirmation wasn't accepted, so nothing changed. Please try again." : "That didn't go through, so nothing changed. Please try again in a minute.",
+      ),
+    );
+  }
+}

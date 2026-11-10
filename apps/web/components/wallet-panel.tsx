@@ -2,24 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { post, signInWithWallet, signOut as walletSignOut, wallet } from "./wallet";
+import { prepareIntent, signAndSubmitIntent, signInWithWallet, signOut as walletSignOut, type OwnerIntentKind, type PreparedIntent } from "./wallet";
 import { friendlyError } from "@/lib/errors";
 
 // Live mode only. The owner's wallet (HOT, via @hot-labs/near-connect) signs
 // everything; Bursar's server never sees the owner's key. Before any signature
 // the owner sees exactly what the Agent API prepared.
 
-type Kind = "agent_create" | "policy_update" | "agent_freeze" | "agent_unfreeze" | "grant_issue";
-
-interface Prepared {
-  kind: Kind;
-  correlationId: string;
-  agentId: string;
-  expiresAt: string;
-  summary: string;
-  policy?: unknown;
-  intent: { standard: string; payload: Record<string, unknown> };
-}
+type Kind = OwnerIntentKind;
+type Prepared = PreparedIntent;
 
 const LABELS: Record<Kind, string> = {
   agent_create: "Set up my Bursar wallet with these limits",
@@ -75,35 +66,14 @@ export function WalletPanel(props: {
   const prepare = (kind: Kind) =>
     guard(async () => {
       setNotice(null);
-      setPrepared(await post<Prepared>("/api/owner/intent", { step: "prepare", kind }));
+      setPrepared(await prepareIntent(kind));
     });
 
   const signAndSubmit = () =>
     guard(async () => {
       if (!prepared) return;
-      const w = await wallet();
-      const { intent } = prepared;
-      let signedData: Record<string, unknown>;
-      if (intent.standard === "nep366") {
-        const out = await w.signDelegateActions({ delegateActions: [intent.payload as never] });
-        signedData = { ...intent, signed_delegate: out.signedDelegateActions[0] };
-      } else if (intent.standard === "nep413") {
-        const p = intent.payload as { message: string; recipient: string; nonce: string };
-        const nonce = Uint8Array.from(atob(p.nonce), (ch) => ch.charCodeAt(0));
-        const out = await w.signMessage({ message: p.message, recipient: p.recipient, nonce });
-        signedData = { ...intent, public_key: out.publicKey, signature: out.signature };
-      } else {
-        throw new Error(`This wallet cannot sign ${intent.standard}.`);
-      }
-      const result = await post<{ status: string; failureCode: string | null }>("/api/owner/intent", {
-        step: "submit",
-        kind: prepared.kind,
-        correlationId: prepared.correlationId,
-        agentId: prepared.agentId,
-        signedData,
-      });
+      await signAndSubmitIntent(prepared);
       setPrepared(null);
-      if (result.status !== "SUCCESS") throw new Error(friendlyError({ code: result.failureCode ?? "" }, result.status === "REFUSED" ? "Your wallet's confirmation wasn't accepted, so nothing changed. Please try again." : "That didn't go through, so nothing changed. Please try again in a minute."));
       setNotice(prepared.kind === "grant_issue" ? "Done. Bursar can now make payments inside your limits." : "Done. Your wallet now enforces this.");
       router.refresh();
     });

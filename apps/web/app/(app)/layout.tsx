@@ -7,6 +7,8 @@ import { connection } from "next/server";
 import { readEnv } from "@/lib/env";
 import { getOwner, appDb } from "@/lib/session";
 import { getBusiness } from "@/lib/store";
+import { pendingChanges } from "@/lib/pending-changes";
+import { PendingChangesBar } from "@/components/pending-changes-bar";
 
 /** Practice mode only: real money is the normal case and needs no label. */
 function PracticeBadge() {
@@ -30,6 +32,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Each page also checks (lib/session guardPage): a layout check alone doesn't stop a page rendering.
   if (!dryRun && !owner) redirect("/signin");
   if (!dryRun && !business) redirect("/welcome");
+  // Live: changes made in Bursar that the owner's wallet hasn't confirmed yet, shown on every page.
+  const pending = !dryRun && business ? await pendingChanges(await appDb()) : null;
   return (
     <div className="min-h-[100dvh] lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
       <a href="#main" className="skip-link">
@@ -83,6 +87,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </div>
+
+        {pending && <PendingChangesBar lines={pending.lines} onlyTighter={pending.onlyTighter} />}
 
         <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 [overflow-wrap:anywhere] sm:px-8">{children}</main>
       </div>

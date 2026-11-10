@@ -136,6 +136,16 @@ export async function payItem(
       return stop({ kind: "final", message: "Their payment details changed recently and are on a 48-hour safety hold, so they weren't paid." });
     }
 
+    // The owner's current limits apply at once, even before their wallet confirms a lower limit.
+    const rules = business.rules;
+    if (item.amountUsd > BigInt(rules.perPaymentCapUsd)) {
+      return stop({ kind: "final", message: `This is more than your largest single payment (${formatUsd(BigInt(rules.perPaymentCapUsd))}). Raise the limit on Spending rules, or pay it in parts.` });
+    }
+    const usage = await account.status();
+    if (usage.spentThisWeekUsd + item.amountUsd > BigInt(rules.weeklyCapUsd)) {
+      return stop({ kind: "budget", message: "Your weekly limit is used up. I'll pay it when the limit refills.", until: usage.weekResetsAt });
+    }
+
     // A NEAR account must be registered with the token before it can receive it; check before swapping anything.
     if (account.backend === "agent-api" && planned.token.chain === "near") {
       const ok = await canReceiveOnNear(planned.token.assetId, planned.address);
