@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CheckCircle, LockSimple } from "@phosphor-icons/react/dist/ssr";
 import { Logo } from "@/components/logo";
+import { readEnv } from "@/lib/env";
 import { Badge } from "@/components/ui/badge";
 import { TryButton } from "./hero";
 
@@ -143,6 +144,7 @@ export function Pricing() {
 }
 
 export function Closing() {
+  const live = readEnv().BURSAR_MODE === "live";
   return (
     <section aria-labelledby="close-title" className="bg-night text-white">
       <div className="mx-auto w-full max-w-7xl px-5 pb-20 pt-24">
@@ -160,7 +162,7 @@ export function Closing() {
             <a href="#checks" className="hover:text-white">What it checks</a>
             <a href="#limits" className="hover:text-white">Your limits</a>
             <a href="#pricing" className="hover:text-white">Pricing</a>
-            <Link href="/this-week" className="text-white underline decoration-white/40 hover:decoration-white">Open the app</Link>
+            <Link href={live ? "/signin" : "/this-week"} className="text-white underline decoration-white/40 hover:decoration-white">{live ? "Sign in" : "Open the app"}</Link>
           </nav>
           <span>Payments run on NEAR. Invoices are read privately with NEAR AI.</span>
         </div>

@@ -26,9 +26,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   await connection();
   const owner = dryRun ? null : await getOwner();
   const business = await getBusiness((await appDb()));
-  if (!dryRun && !business) redirect("/welcome");
+  // Signed out first (returning owners sign in), then a signed-in wallet with no business yet goes to setup.
   // Each page also checks (lib/session guardPage): a layout check alone doesn't stop a page rendering.
-  if (!dryRun && (!owner || business?.ownerAccountId !== owner.accountId)) redirect("/signin");
+  if (!dryRun && !owner) redirect("/signin");
+  if (!dryRun && !business) redirect("/welcome");
   return (
     <div className="min-h-[100dvh] lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
       <a href="#main" className="skip-link">

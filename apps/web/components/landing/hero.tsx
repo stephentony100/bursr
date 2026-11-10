@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { readEnv } from "@/lib/env";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { Logo } from "@/components/logo";
 import { HeroPreview } from "./hero-preview";
@@ -12,6 +13,8 @@ const NAV = [
 ];
 
 export function SiteNav() {
+  // Live: returning owners sign in, new ones get started. Practice mode opens the sample at once.
+  const live = readEnv().BURSAR_MODE === "live";
   return (
     <header className="border-b border-line bg-card/80 backdrop-blur-[2px]">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-6 px-5">
@@ -24,9 +27,20 @@ export function SiteNav() {
               {n.label}
             </a>
           ))}
-          <Link href="/this-week" className="rounded-lg border border-line px-3 py-1.5 font-medium text-ink hover:border-ink/40">
-            Open the app
-          </Link>
+          {live ? (
+            <>
+              <Link href="/signin" className="font-medium text-ink hover:text-indigo">
+                Sign in
+              </Link>
+              <Link href="/welcome" className="rounded-lg bg-ledger px-3 py-1.5 font-semibold text-white hover:bg-indigo">
+                Get started
+              </Link>
+            </>
+          ) : (
+            <Link href="/this-week" className="rounded-lg border border-line px-3 py-1.5 font-medium text-ink hover:border-ink/40">
+              Open the app
+            </Link>
+          )}
         </nav>
       </div>
     </header>
