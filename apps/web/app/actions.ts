@@ -42,6 +42,8 @@ import { db as rawDb } from "@/lib/db";
 import { getBusiness, getPayee, listPayees } from "@/lib/store";
 import { payoutTokens } from "@/lib/tokens";
 import { friendlyError } from "@/lib/errors";
+import { pendingChanges } from "@/lib/pending-changes";
+import { trustSignedPayees } from "@/lib/trust";
 
 // Every action is an untrusted entry point: each one resolves the owner from
 // the session itself and validates its input. Owner-only changes go through
@@ -101,7 +103,10 @@ export async function saveRules(_prev: FormResult, f: FormData): Promise<FormRes
       invoiceTiming: text(f, "invoiceTiming") === "asap" ? "asap" : "due",
     });
     kickAgent();
-    return readEnv().BURSAR_MODE === "dry-run" ? "Saved. Your new limits apply straight away." : "Saved. Lower limits apply right away; to make higher limits count, confirm with your wallet from the bar at the top of the page.";
+    if (readEnv().BURSAR_MODE === "dry-run") return "Saved. Your new limits apply straight away.";
+    return (await walletMustConfirm())
+      ? "Saved. Lower limits apply right away; to make higher limits count, confirm with your wallet from the bar at the top of the page."
+      : "Saved. Your agent follows the new limits now.";
   });
 }
 
@@ -149,6 +154,18 @@ function recurringFrom(f: FormData) {
   return { amountUsd, every: "week" as const };
 }
 
+/**
+ * Live, after the owner changes who gets paid: people whose address the wallet already
+ * confirmed (e.g. the same address as someone else) are confirmed now, not on the agent's
+ * next run. True when there is still something for the wallet to confirm (the bar shows).
+ */
+async function walletMustConfirm(): Promise<boolean> {
+  if (readEnv().BURSAR_MODE === "dry-run") return false;
+  const sdb = await appDb();
+  await trustSignedPayees(sdb);
+  return Boolean(await pendingChanges(sdb));
+}
+
 export async function addPayeeAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
     const name = text(f, "name");
@@ -160,7 +177,10 @@ export async function addPayeeAction(_prev: FormResult, f: FormData): Promise<Fo
       prices: parsePrices(text(f, "prices")),
       recurring: recurringFrom(f),
     });
-    return `${name} added. You can now pay them.`;
+    revalidatePath("/", "layout");
+    if (await walletMustConfirm()) return `${name} added. Confirm with your wallet from the bar at the top, and then they can be paid.`;
+    kickAgent();
+    return readEnv().BURSAR_MODE === "dry-run" ? `${name} added. Their first payment will ask for your OK.` : `${name} added. Your wallet already allows this address, so they can be paid now.`;
   });
 }
 
@@ -184,10 +204,11 @@ export async function changePayoutAction(_prev: FormResult, f: FormData): Promis
     if (!payee) throw new Error("Payee not found.");
     const { hold } = await changePayout((await appDb()), await requireOwner(), id, await payoutFrom(f));
     const live = readEnv().BURSAR_MODE === "live";
+    const mustConfirm = !hold && live && (await walletMustConfirm());
     if (!hold) kickAgent();
     return hold
       ? `Saved. For your safety, payments to ${payee.name} are on hold for 48 hours.`
-      : live
+      : mustConfirm
         ? `Saved. Confirm the new address with your wallet (bar at the top), and the agent pays ${payee.name} straight after, including any payment that didn't go through.`
         : `Saved. The agent is paying ${payee.name} at the new address now, including any payment that didn't go through.`;
   });
@@ -600,9 +621,10 @@ export async function approveInviteAction(_prev: FormResult, f: FormData): Promi
   return run(async () => {
     await approveInvite((await appDb()), await requireOwner(), text(f, "inviteId"));
     revalidatePath("/", "layout");
-    return readEnv().BURSAR_MODE === "dry-run"
-      ? "Added. Their first payment will still ask for your OK."
-      : "Added. Confirm with your wallet from the bar at the top of the page, and then they can be paid.";
+    if (readEnv().BURSAR_MODE === "dry-run") return "Added. Their first payment will still ask for your OK.";
+    if (await walletMustConfirm()) return "Added. Confirm with your wallet from the bar at the top of the page, and then they can be paid.";
+    kickAgent();
+    return "Added. Your wallet already allows this address, so they can be paid now.";
   });
 }
 
@@ -648,12 +670,13 @@ export async function payOnceAction(f: FormData): Promise<PayOnceResult> {
       };
     }
     await payOnce(sdb, owner, { name, amountUsd, note, payout: await payoutFrom(f), removeAfterPaid });
-    if (!live) kickAgent();
+    const mustConfirm = live && (await walletMustConfirm());
+    if (!mustConfirm) kickAgent();
     revalidatePath("/", "layout");
     return {
       ok: true,
       name,
-      message: live
+      message: mustConfirm
         ? `${name} is added. Confirm with your wallet from the bar at the top, and the agent pays them ${formatUsd(amountUsd)} straight away.`
         : `The agent is paying ${name} ${formatUsd(amountUsd)} now. Watch it in the feed on This week.`,
     };

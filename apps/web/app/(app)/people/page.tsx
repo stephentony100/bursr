@@ -14,6 +14,7 @@ import { scheduleWords } from "@/lib/schedule";
 import { getBusiness, listPayees } from "@/lib/store";
 import { chainName } from "@/lib/tokens";
 import { readEnv } from "@/lib/env";
+import { pendingChanges } from "@/lib/pending-changes";
 
 export default async function PayeesPage({ searchParams }: { searchParams: Promise<{ removed?: string }> }) {
   await guardPage();
@@ -33,12 +34,14 @@ export default async function PayeesPage({ searchParams }: { searchParams: Promi
   const now = new Date();
   const removed = (await searchParams).removed;
   const live = readEnv().BURSAR_MODE === "live";
+  // Removing someone whose address another person still uses changes nothing in the wallet.
+  const removedPending = live && removed !== undefined && Boolean(await pendingChanges(await appDb()));
   return (
     <div className="space-y-10">
       {removed !== undefined && (
         <p role="status" className="rounded-xl border border-ledger/40 bg-ledger-soft px-5 py-4 text-sm">
           <span className="font-semibold">{removed ? `${removed} was removed.` : "Removed."}</span> Bursar can no longer pay them.
-          {live && (
+          {removedPending && (
             <>
               {" "}
               Your agent won&apos;t pay them from now on. To lock it into your agent&apos;s wallet too, use <strong>Confirm with my wallet</strong> at the top of the page.
