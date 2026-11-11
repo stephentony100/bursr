@@ -74,6 +74,7 @@ export default async function PayeesPage({ searchParams }: { searchParams: Promi
                     · {formatUsd(BigInt(p.recurring.amountUsd))} {scheduleWords(p.recurring, business.rules.paydayWeekday)}
                   </span>
                 )}
+                {!p.recurring && " · Paid when they send an invoice"}
               </p>
             </div>
             <div className="text-sm">

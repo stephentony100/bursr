@@ -46,6 +46,9 @@ export function DetailFields({ payee }: { payee?: Payee }) {
             <option value="month">Month</option>
           </select>
         </label>
+        <p className="col-span-2 text-sm text-muted sm:col-span-3 sm:order-last">
+          Leave it empty for suppliers you pay by invoice: Bursar then pays them only when they send one and it passes the checks.
+        </p>
         <label className="col-span-2 block text-sm font-medium sm:col-span-1">
           If monthly, pay on
           <select name="recurringDay" defaultValue={payee?.recurring?.day ?? ""} className={input}>
