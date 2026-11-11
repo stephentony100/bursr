@@ -4,6 +4,9 @@ import { addPayeeAction } from "@/app/actions";
 import { ActionForm } from "@/components/forms";
 import { InvitesList } from "@/components/invites-list";
 import { InviteForm } from "@/components/onboarding";
+import { PeopleImport } from "@/components/people-import";
+import { importTemplate } from "@/lib/people-import";
+import { MAX_ADDRESSES } from "@/lib/owner-actions";
 import { PayOnce } from "@/components/pay-once";
 import { DetailFields, PayoutFields } from "@/components/payee-fields";
 import { guardPage, appDb } from "@/lib/session";
@@ -111,6 +114,16 @@ export default async function PayeesPage({ searchParams }: { searchParams: Promi
         </div>
         <InvitesList invites={invites} />
         <InviteForm />
+      </section>
+
+      <section className="space-y-4 rounded-xl border border-line bg-card p-6">
+        <div>
+          <h2 className="text-xl font-bold">Add many people at once</h2>
+          <p className="mt-1 text-sm text-muted">
+            From a spreadsheet, or with a group link above. Your agent&apos;s wallet can hold up to {MAX_ADDRESSES} different payout addresses.
+          </p>
+        </div>
+        <PeopleImport template={importTemplate(business.rules.payoutTokens)} live={live} />
       </section>
 
       <section className="rounded-xl border border-line bg-card p-6">

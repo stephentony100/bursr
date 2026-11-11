@@ -15,6 +15,7 @@ export interface StatementLine {
   amountUsd: bigint;
   sent: string;
   received: string;
+  networkFee: string;
   receivedAs: string;
   status: string;
   approval: string;
@@ -51,6 +52,7 @@ export async function statementLines(db: PrismaClient): Promise<StatementLine[]>
         amountUsd: i.amountUsd,
         sent: i.amountSent !== null ? `${formatUnits(i.amountSent, treasury.decimals)} ${treasury.symbol} (${chainName(treasury.chain)})` : "",
         received: i.amountReceived !== null ? formatUnits(i.amountReceived, token.decimals) : "",
+        networkFee: i.networkFee !== null ? formatUnits(i.networkFee, token.decimals) : "",
         receivedAs: `${token.symbol} on ${chainName(token.chain)} to ${i.payout.address}`,
         status: STATUS_WORDS[i.payStatus],
         approval:
@@ -65,7 +67,7 @@ export async function statementLines(db: PrismaClient): Promise<StatementLine[]>
   return lines;
 }
 
-const CSV_HEADERS = ["Date (UTC)", "Paid to", "For", "Amount (USD)", "Sent from Bursar wallet", "They received", "Where it went", "Status", "Approved", "Payment list", "References", "Note"];
+const CSV_HEADERS = ["Date (UTC)", "Paid to", "For", "Amount (USD)", "Sent from Bursar wallet", "They received", "Network fee (paid by you)", "Where it went", "Status", "Approved", "Payment list", "References", "Note"];
 
 function cell(v: string): string {
   // Quote every cell; neutralise spreadsheet formulas (a value starting with = + - @).
@@ -81,6 +83,7 @@ export function statementCsv(lines: StatementLine[]): string {
     formatUsd(l.amountUsd).replace(/[$,]/g, ""),
     l.sent,
     l.received,
+    l.networkFee,
     l.receivedAs,
     l.status,
     l.approval,

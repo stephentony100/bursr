@@ -58,7 +58,10 @@ export default async function StatementPage() {
                   <td className="px-4 py-3 whitespace-nowrap tabular-nums">{l.date.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</td>
                   <td className="px-4 py-3">{l.payee}</td>
                   <td className="px-4 py-3">{l.forWhat}</td>
-                  <td className="num px-4 py-3 text-right">{formatUsd(l.amountUsd)}</td>
+                  <td className="num px-4 py-3 text-right">
+                    {formatUsd(l.amountUsd)}
+                    {l.networkFee && Number(l.networkFee) > 0 && <p className="text-xs text-muted">+ {l.networkFee} network fee</p>}
+                  </td>
                   <td className="px-4 py-3">
                     <span className="num text-xs break-all">{l.receivedAs}</span>
                     {l.references && <p className="num mt-1 text-xs text-muted">proof: {l.references}</p>}

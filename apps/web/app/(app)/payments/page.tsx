@@ -139,12 +139,16 @@ export default async function PlanPage() {
                     <td className="px-3 py-3 text-right">
                       <p className="num font-medium">{formatUsd(i.amountUsd)}</p>
                       <p className="text-xs tabular-nums text-muted">
-                        {i.quote ? (
+                        {i.networkFee !== null ? (
                           <>
-                            fee <FeeText raw={BigInt(i.quote.withdrawFee)} decimals={i.payout?.token.decimals ?? 6} />, arrives in about {i.quote.timeEstimateSec}s
+                            + <FeeText raw={i.networkFee} decimals={i.payout?.token.decimals ?? 6} /> network fee, paid by you
+                          </>
+                        ) : i.quote ? (
+                          <>
+                            + about <FeeText raw={BigInt(i.quote.withdrawFee)} decimals={i.payout?.token.decimals ?? 6} /> network fee, paid by you · arrives in about {i.quote.timeEstimateSec}s
                           </>
                         ) : (
-                          "fee worked out when paid"
+                          "network fee worked out when paid"
                         )}
                       </p>
                     </td>

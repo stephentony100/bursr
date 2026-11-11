@@ -167,6 +167,8 @@ model PlanItem {
   /// What was sent from the account (treasury token) and received by the payee (payee token), smallest units
   amountSent     String?
   amountReceived String?
+  /// The network fee the business paid on top so the payee received the full amount (payee token units)
+  networkFee     String?
   /// Account correlation ids (swap, withdraw) as JSON
   references     String    @default("[]")
   /// What this payment is for, so the agent never schedules it twice: "<payeeId>@<due date>" or "inv:<invoiceId>".
@@ -235,6 +237,10 @@ model PayeeInvite {
   /// "Pay someone once": the payment to make when the owner approves their details (JSON { amountUsd, note }).
   oneOff      String?
   payeeId     String?
+  /// A group link: one link for many people (each types their own name); it stays open until it expires.
+  group       Boolean   @default(false)
+  /// For a person who answered a group link: the group link's id.
+  groupId     String?
 
   @@index([businessId])
 }

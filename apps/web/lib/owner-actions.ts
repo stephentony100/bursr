@@ -128,9 +128,25 @@ function cleanPayout(rules: Rules, payout: Payout): Payout {
   return { ...p, address: normaliseAddress(p.address), memo: p.memo?.trim() || null };
 }
 
+/** The agent's wallet holds at most 256 payout addresses ("The list holds up to 256 entries": Agent API policies-and-limits). */
+export const MAX_ADDRESSES = 256;
+
+/** How many different payout addresses the wallet's list would hold with these people added (shared addresses count once). */
+export async function addressesWith(db: PrismaClient, rules: Rules, extra: Payout[]): Promise<number> {
+  const payees = await listPayees(db);
+  const added = extra.map((payout, i) => ({ ...payees[0], id: `new-${i}`, payout }) as Payee);
+  return buildPolicy(rules, [...payees, ...added]).destinations.list.length;
+}
+
+function tooManyText(count: number) {
+  return `Your agent's wallet can hold up to ${MAX_ADDRESSES} different payout addresses, and this would make ${count}. Remove people you no longer pay first.`;
+}
+
 export async function addPayee(db: PrismaClient, owner: OwnerSession, input: PayeeInput): Promise<string> {
   const business = await assertOwner(db, owner);
   const payout = cleanPayout(business.rules, input.payout);
+  const count = await addressesWith(db, business.rules, [payout]);
+  if (count > MAX_ADDRESSES) throw new Error(tooManyText(count));
   const row = await db.payee.create({
     data: {
       name: input.name.trim(),
@@ -143,6 +159,33 @@ export async function addPayee(db: PrismaClient, owner: OwnerSession, input: Pay
   await audit(db, owner, "payee_added", `You added ${input.name}`, { id: row.id, payout });
   await applyToSimulatedAccount(db);
   return row.id;
+}
+
+/** A list checked row by row (e.g. a spreadsheet): all are added, or none if any row has a problem. */
+export async function addPayees(db: PrismaClient, owner: OwnerSession, inputs: PayeeInput[]): Promise<string[]> {
+  const business = await assertOwner(db, owner);
+  if (inputs.length === 0) throw new Error("There's nobody to add.");
+  const clean = inputs.map((input) => ({ ...input, name: input.name.trim(), payout: cleanPayout(business.rules, input.payout) }));
+  const count = await addressesWith(db, business.rules, clean.map((c) => c.payout));
+  if (count > MAX_ADDRESSES) throw new Error(tooManyText(count));
+  const ids: string[] = [];
+  await db.$transaction(async (tx) => {
+    for (const c of clean) {
+      const row = await tx.payee.create({
+        data: {
+          name: c.name,
+          category: c.category,
+          payout: JSON.stringify(c.payout),
+          prices: JSON.stringify(c.prices.map((p) => PriceItemSchema.parse(p))),
+          recurring: JSON.stringify(c.recurring),
+        },
+      });
+      ids.push(row.id);
+    }
+  });
+  await audit(db, owner, "payees_added", `You added ${ids.length} people at once`, { ids });
+  await applyToSimulatedAccount(db);
+  return ids;
 }
 
 /** Name, category, prices and recurring pay. Does not touch payout details. */

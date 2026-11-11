@@ -13,12 +13,14 @@ import { demoEvmAddress, demoNearImplicit, demoTronAddress } from "@/lib/demo-ad
 import { PayeeCategory, type Payout, type PriceItem } from "@/lib/domain";
 import { addPracticeMoney, depositAddress, oneTapDeposit, type DepositAddress, type OneTapDeposit } from "@/lib/funding";
 import { readEnv } from "@/lib/env";
-import { approveInvite, createInvite, declineInvite, submitInvite } from "@/lib/invites";
+import { approveAllInvites, approveInvite, createInvite, declineInvite, submitInvite } from "@/lib/invites";
+import { readImport, type ImportRow } from "@/lib/people-import";
 import { clearOnboarding, markOnboarding } from "@/lib/onboarding";
 import { starterRules } from "@/lib/starter-rules";
 import { formatUsd, parseUnits, rescale, USD_DECIMALS } from "@/lib/money";
 import {
   addPayee,
+  addPayees,
   approvePlan,
   approvePlanItem,
   cancelPayment,
@@ -603,15 +605,15 @@ export async function startOwnPracticeAction(): Promise<FormResult> {
   redirect("/welcome");
 }
 
-export type InviteResult = { ok: true; link: string; name: string } | { ok: false; message: string };
+export type InviteResult = { ok: true; link: string; name: string; group: boolean } | { ok: false; message: string };
 
 export async function createInviteAction(f: FormData): Promise<InviteResult> {
   try {
     const owner = await requireOwner();
     const category = PayeeCategory.parse(text(f, "category") || "staff");
-    const invite = await createInvite((await appDb()), owner, { name: text(f, "name"), category, recurring: recurringFrom(f) });
+    const invite = await createInvite((await appDb()), owner, { name: text(f, "name"), category, recurring: recurringFrom(f), group: f.get("group") === "on" });
     revalidatePath("/", "layout");
-    return { ok: true, link: `${readEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/join/${invite.token}`, name: invite.name };
+    return { ok: true, link: `${readEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/join/${invite.token}`, name: invite.name, group: invite.group };
   } catch (e) {
     return { ok: false, message: friendlyError(e, "Couldn't make the link.") };
   }
@@ -628,6 +630,75 @@ export async function approveInviteAction(_prev: FormResult, f: FormData): Promi
   });
 }
 
+export async function approveAllInvitesAction(): Promise<FormResult> {
+  return run(async () => {
+    const { approved, problems } = await approveAllInvites(await appDb(), await requireOwner());
+    revalidatePath("/", "layout");
+    const confirm = approved > 0 && (await walletMustConfirm());
+    if (approved > 0 && !confirm) kickAgent();
+    const head =
+      approved === 0
+        ? "Nobody was added."
+        : `Added ${approved} ${approved === 1 ? "person" : "people"}.${confirm ? " Confirm them with your wallet from the bar at the top, and then they can be paid." : ""}`;
+    return problems.length ? `${head} Not added: ${problems.join(" · ")}` : head;
+  });
+}
+
+// --- Adding many people from a spreadsheet ---------------------------------------
+
+export type ImportPreview = { ok: true; rows: ImportRow[] } | { ok: false; message: string };
+
+const MAX_IMPORT_BYTES = 1_000_000;
+
+async function importText(f: FormData): Promise<string> {
+  const file = f.get("file");
+  if (!(file instanceof File) || file.size === 0) throw new Error("Choose your spreadsheet first (saved as CSV).");
+  if (file.size > MAX_IMPORT_BYTES) throw new Error("That file is too big. Keep it under 1 MB (about 5,000 rows).");
+  if (/\.xlsx?$/i.test(file.name)) throw new Error("Save the spreadsheet as CSV first (File → Save as / Download → CSV), then choose that file.");
+  return await file.text();
+}
+
+/** Step 1: read the spreadsheet and show every row with its problem, if any. Nothing is added. */
+export async function previewImportAction(f: FormData): Promise<ImportPreview> {
+  try {
+    await requireOwner();
+    const business = await getBusiness(await appDb());
+    if (!business) throw new Error("Set up the business first.");
+    const { rows, problem } = readImport(await importText(f), business.rules.payoutTokens);
+    if (problem) return { ok: false, message: problem };
+    return { ok: true, rows };
+  } catch (e) {
+    return { ok: false, message: friendlyError(e) };
+  }
+}
+
+/** Step 2: add everyone whose row is fine, all at once. */
+export async function importPeopleAction(f: FormData): Promise<{ ok: boolean; message: string }> {
+  try {
+    const owner = await requireOwner();
+    const sdb = await appDb();
+    const business = await getBusiness(sdb);
+    if (!business) throw new Error("Set up the business first.");
+    const { rows, problem } = readImport(await importText(f), business.rules.payoutTokens);
+    if (problem) throw new Error(problem);
+    const good = rows.filter((r) => r.input).map((r) => r.input!);
+    const ids = await addPayees(sdb, owner, good);
+    revalidatePath("/", "layout");
+    const skipped = rows.length - good.length;
+    const confirm = await walletMustConfirm();
+    if (!confirm) kickAgent();
+    return {
+      ok: true,
+      message:
+        `Added ${ids.length} ${ids.length === 1 ? "person" : "people"}.` +
+        (skipped ? ` ${skipped} row${skipped === 1 ? " was" : "s were"} skipped; fix ${skipped === 1 ? "it" : "them"} and upload just those rows again.` : "") +
+        (confirm ? " Confirm them with your wallet from the bar at the top, and then they can be paid." : readEnv().BURSAR_MODE === "dry-run" ? " Each person's first payment asks for your OK." : ""),
+    };
+  } catch (e) {
+    return { ok: false, message: friendlyError(e) };
+  }
+}
+
 export async function declineInviteAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
     await declineInvite((await appDb()), await requireOwner(), text(f, "inviteId"));
@@ -639,7 +710,7 @@ export async function declineInviteAction(_prev: FormResult, f: FormData): Promi
 /** The invited person's form (no sign-in: the link is the key). */
 export async function submitInviteAction(_prev: FormResult, f: FormData): Promise<FormResult> {
   return run(async () => {
-    await submitInvite(rawDb(), text(f, "token"), { assetId: text(f, "token_asset"), address: text(f, "address"), memo: text(f, "memo") });
+    await submitInvite(rawDb(), text(f, "token"), { assetId: text(f, "token_asset"), address: text(f, "address"), memo: text(f, "memo"), name: text(f, "name") });
     return "Thanks! Sent. You'll be paid once the business confirms your details.";
   });
 }

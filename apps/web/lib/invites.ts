@@ -14,6 +14,9 @@ import { scoped } from "./tenant";
 // The person can only fill in their own invite, once, before it expires.
 
 const INVITE_DAYS = 7;
+const GROUP_DAYS = 14;
+/** The agent's wallet holds up to 256 payout addresses, so a group link takes at most that many answers. */
+const GROUP_MAX = 256;
 const Recurring = PayeeSchema.shape.recurring;
 
 export interface InviteView {
@@ -29,6 +32,8 @@ export interface InviteView {
   submittedAt: Date | null;
   /** "Pay someone once": what to pay them when their details are approved. */
   oneOff: OneOff | null;
+  /** One link for many people; `name` is the group's name. */
+  group: boolean;
 }
 
 export interface OneOff {
@@ -51,6 +56,7 @@ function view(r: Row): InviteView {
     payout: r.payout ? (JSON.parse(r.payout) as Payout) : null,
     submittedAt: r.submittedAt,
     oneOff: r.oneOff ? (JSON.parse(r.oneOff) as OneOff) : null,
+    group: r.group,
   };
 }
 
@@ -63,23 +69,30 @@ async function assertOwner(db: PrismaClient, owner: OwnerSession) {
 export async function createInvite(
   db: PrismaClient,
   owner: OwnerSession,
-  input: { name: string; category: z.infer<typeof PayeeCategory>; recurring: z.infer<typeof Recurring>; oneOff?: OneOff },
+  input: { name: string; category: z.infer<typeof PayeeCategory>; recurring: z.infer<typeof Recurring>; oneOff?: OneOff; group?: boolean },
   now = new Date(),
 ): Promise<InviteView> {
   await assertOwner(db, owner);
   const name = input.name.trim();
-  if (!name) throw new Error("Add their name.");
+  if (!name) throw new Error(input.group ? "Give the group a name, like Kitchen staff." : "Add their name.");
   const row = await db.payeeInvite.create({
     data: {
       token: randomBytes(18).toString("base64url"),
       name: name.slice(0, 80),
       category: PayeeCategory.parse(input.category),
       recurring: JSON.stringify(Recurring.parse(input.recurring)),
-      expiresAt: new Date(now.getTime() + INVITE_DAYS * 24 * 60 * 60_000),
+      expiresAt: new Date(now.getTime() + (input.group ? GROUP_DAYS : INVITE_DAYS) * 24 * 60 * 60_000),
       oneOff: input.oneOff ? JSON.stringify(input.oneOff) : null,
+      group: Boolean(input.group),
     },
   });
-  await db.auditEvent.create({ data: { kind: "invite_created", actor: owner.accountId, message: `You invited ${name} to share how they want to be paid` } });
+  await db.auditEvent.create({
+    data: {
+      kind: "invite_created",
+      actor: owner.accountId,
+      message: input.group ? `You made a group link for ${name}: each person sends their own details` : `You invited ${name} to share how they want to be paid`,
+    },
+  });
   return view(row);
 }
 
@@ -93,6 +106,8 @@ export async function listInvites(db: PrismaClient): Promise<InviteView[]> {
 export interface PublicInvite {
   businessName: string;
   name: string;
+  /** A group link: the person types their own name, and the link stays open for others. */
+  group: boolean;
   state: "open" | "sent" | "closed";
   tokens: PayoutToken[];
 }
@@ -103,10 +118,10 @@ export async function publicInvite(db: PrismaClient, token: string, now = new Da
   const business = row ? await getBusiness(scoped(db, row.businessId)) : null;
   if (!row || !business) return null;
   const state = row.status === "open" && row.expiresAt > now ? "open" : row.status === "submitted" ? "sent" : "closed";
-  return { businessName: business.name, name: row.name, state, tokens: business.rules.payoutTokens };
+  return { businessName: business.name, name: row.name, group: row.group, state, tokens: business.rules.payoutTokens };
 }
 
-export async function submitInvite(raw: PrismaClient, token: string, input: { assetId: string; address: string; memo: string }, now = new Date()) {
+export async function submitInvite(raw: PrismaClient, token: string, input: { assetId: string; address: string; memo: string; name?: string }, now = new Date()) {
   const found = await raw.payeeInvite.findUnique({ where: { token } });
   const db = scoped(raw, found?.businessId ?? "none");
   const row = found;
@@ -117,6 +132,30 @@ export async function submitInvite(raw: PrismaClient, token: string, input: { as
   const problem = addressProblem(tokenChoice.chain, input.address);
   if (problem) throw new Error(problem.replace("Check it with the payee.", "Please check it."));
   const payout: Payout = { token: tokenChoice, address: normaliseAddress(input.address), memo: input.memo.trim() || null };
+  if (row.group) {
+    // A group link stays open: each answer becomes its own entry for the owner to check.
+    const name = (input.name ?? "").trim().slice(0, 80);
+    if (!name) throw new Error("Please type your name.");
+    const answers = await db.payeeInvite.count({ where: { groupId: row.id } });
+    if (answers >= GROUP_MAX) throw new Error("This link is full. Ask the business for a new one.");
+    await db.payeeInvite.create({
+      data: {
+        token: randomBytes(18).toString("base64url"),
+        name,
+        category: row.category,
+        recurring: row.recurring,
+        expiresAt: row.expiresAt,
+        status: "submitted",
+        payout: JSON.stringify(payout),
+        submittedAt: now,
+        groupId: row.id,
+      },
+    });
+    await db.auditEvent.create({
+      data: { kind: "invite_submitted", actor: "invitee", message: `${name} (${row.name}) sent how they want to be paid (${tokenChoice.symbol} on ${tokenChoice.chain}). It waits for your OK.` },
+    });
+    return;
+  }
   // Only an open invite can be filled in, and only once.
   const done = await db.payeeInvite.updateMany({ where: { id: row.id, status: "open" }, data: { status: "submitted", payout: JSON.stringify(payout), submittedAt: now } });
   if (done.count !== 1) throw new Error("This link was already used.");
@@ -140,6 +179,23 @@ export async function approveInvite(db: PrismaClient, owner: OwnerSession, id: s
     await requestOneOffPayment(db, owner, { payeeId, amountUsd: BigInt(v.oneOff.amountUsd), note: v.oneOff.note });
   }
   return payeeId;
+}
+
+/** Approves everyone who sent their details; one person's problem doesn't stop the rest. */
+export async function approveAllInvites(db: PrismaClient, owner: OwnerSession): Promise<{ approved: number; problems: string[] }> {
+  await assertOwner(db, owner);
+  const waiting = await db.payeeInvite.findMany({ where: { status: "submitted" }, orderBy: { submittedAt: "asc" } });
+  let approved = 0;
+  const problems: string[] = [];
+  for (const w of waiting) {
+    try {
+      await approveInvite(db, owner, w.id);
+      approved++;
+    } catch (e) {
+      problems.push(`${w.name}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  return { approved, problems };
 }
 
 export async function declineInvite(db: PrismaClient, owner: OwnerSession, id: string) {

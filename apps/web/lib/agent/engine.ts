@@ -12,6 +12,7 @@ import { say, sayOnce } from "./say";
 import { paydayNeed } from "./view";
 import { pendingChanges } from "../pending-changes";
 import { trustSignedPayees } from "../trust";
+import { applyPlatformFee } from "../platform-fee";
 import { friendlyError } from "../errors";
 
 // Bursar's agent. It wakes every minute (lib/agent/loop.ts) and on events,
@@ -119,6 +120,7 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
   }
 
   // People the owner's wallet has signed in are trusted (their wallet OK covers the first payment).
+  await applyPlatformFee(db);
   const trusted = await trustSignedPayees(db, now);
   if (trusted.length) await say(db, "agent_run", `Your wallet confirmed ${trusted.join(", ")}, so I'll pay them on their day without asking again.`);
 

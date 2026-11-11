@@ -136,13 +136,32 @@ export async function payItem(
       return stop({ kind: "final", message: "Their payment details changed recently and are on a 48-hour safety hold, so they weren't paid." });
     }
 
-    // The owner's current limits apply at once, even before their wallet confirms a lower limit.
     const rules = business.rules;
-    if (item.amountUsd > BigInt(rules.perPaymentCapUsd)) {
-      return stop({ kind: "final", message: `This is more than your largest single payment (${formatUsd(BigInt(rules.perPaymentCapUsd))}). Raise the limit on Spending rules, or pay it in parts.` });
+    const treasury = rules.treasury;
+    const token = planned.token;
+    const amountOut = amountOutFor(item.amountUsd, token);
+
+    // The business pays the network fee, so they receive the full amount: send what they're owed plus
+    // the fee 1Click's quote estimates for their network (its withdrawFee is "already accounted for in
+    // the final amountOut", so the quote's amountIn buys both). NEAR payments in the treasury token
+    // need no quote and carry no bridge fee.
+    let q: Awaited<ReturnType<typeof quote>> | null = null;
+    if (token.assetId !== treasury.assetId) {
+      q = await quote(treasury, planned, item.amountUsd);
+      if (!q.ok) return stop({ kind: "transient", message: q.reason, definite: true });
+    }
+    const networkFee = q?.ok ? BigInt(q.quote.withdrawFee) : 0n;
+    const gross = amountOut + networkFee;
+    const grossUsd = rescale(gross, token.decimals, USD_DECIMALS);
+    const feeWords = networkFee > 0n ? ` With the network fee (${formatUsd(rescale(networkFee, token.decimals, USD_DECIMALS))}) it comes to ${formatUsd(grossUsd)}.` : "";
+
+    // The owner's current limits apply at once, even before their wallet confirms a lower limit.
+    // The wallet counts everything that leaves it, fee included.
+    if (grossUsd > BigInt(rules.perPaymentCapUsd)) {
+      return stop({ kind: "final", message: `This is more than your largest single payment (${formatUsd(BigInt(rules.perPaymentCapUsd))}).${feeWords} Raise the limit on Spending rules, or pay it in parts.` });
     }
     const usage = await account.status();
-    if (usage.spentThisWeekUsd + item.amountUsd > BigInt(rules.weeklyCapUsd)) {
+    if (usage.spentThisWeekUsd + grossUsd > BigInt(rules.weeklyCapUsd)) {
       return stop({ kind: "budget", message: "Your weekly limit is used up. I'll pay it when the limit refills.", until: usage.weekResetsAt });
     }
 
@@ -153,28 +172,15 @@ export async function payItem(
     }
 
     await db.planItem.update({ where: { id: item.id }, data: { payStatus: "paying" } });
-    const treasury = business.rules.treasury;
-    const token = planned.token;
-    const amountOut = amountOutFor(item.amountUsd, token);
     const references: string[] = [];
     let amountSent = amountOut;
     const status = account.backend === "agent-api" ? await account.status() : null;
 
     // Already holding enough of their currency (e.g. an earlier exchange whose send was refused):
     // send it without exchanging again, so a retry never buys twice or spends the weekly limit twice.
-    const alreadyHeld = token.assetId !== treasury.assetId && status !== null && (status.balances[token.assetId] ?? 0n) >= amountOut;
-    if (token.assetId !== treasury.assetId && !alreadyHeld) {
-      // Different token: swap inside the account first, sized by a fresh quote.
-      const q = await quote(treasury, planned, item.amountUsd);
-      if (!q.ok) return stop({ kind: "transient", message: q.reason, definite: true });
-      // The network fee comes out of what they receive: if it eats the whole payment, say so instead of retrying.
-      if (BigInt(q.quote.withdrawFee) >= amountOut) {
-        const fee = formatUsd(rescale(BigInt(q.quote.withdrawFee), token.decimals, USD_DECIMALS));
-        return stop({
-          kind: "final",
-          message: `Sending ${formatUsd(item.amountUsd)} to ${chainName(token.chain)} costs about ${fee} in network fees, more than the payment itself. Pay a larger amount, or ask them for an address on a cheaper network.`,
-        });
-      }
+    const alreadyHeld = token.assetId !== treasury.assetId && status !== null && (status.balances[token.assetId] ?? 0n) >= gross;
+    if (q?.ok && !alreadyHeld) {
+      // Different token: swap inside the account first, sized by the fresh quote (amount owed + network fee).
       amountSent = BigInt(q.quote.amountIn);
       await step("payment_exchanging", `Exchanging ${formatUsd(rescale(amountSent, treasury.decimals, USD_DECIMALS))} of ${treasury.symbol} on ${chainName(treasury.chain)} into ${token.symbol} on ${chainName(token.chain)} for ${item.payeeName}…`);
       const swap = await account.execute({ kind: "swap", asset: treasury.assetId, amount: amountSent, destinationAsset: token.assetId }, key("swap"));
@@ -189,10 +195,19 @@ export async function payItem(
       await step("payment_exchanged", `Exchange done. ${item.payeeName}'s ${token.symbol} on ${chainName(token.chain)} is ready to send.`);
     }
 
-    await step("payment_sending", `Sending ${formatUsd(item.amountUsd)} of ${token.symbol} to ${item.payeeName}'s wallet on ${chainName(token.chain)}…`);
+    await step(
+      "payment_sending",
+      `Sending ${formatUsd(item.amountUsd)} of ${token.symbol} to ${item.payeeName}'s wallet on ${chainName(token.chain)}${networkFee > 0n ? `, plus about ${formatUsd(rescale(networkFee, token.decimals, USD_DECIMALS))} network fee from your wallet so they get the full amount` : ""}…`,
+    );
 
+    // An exchange can land a hair under the quote: never ask the wallet for more than it holds.
+    let withdrawAmount = gross;
+    if (account.backend === "agent-api" && networkFee > 0n) {
+      const held = (await account.status()).balances[token.assetId] ?? gross;
+      if (held < gross && held >= amountOut) withdrawAmount = held;
+    }
     const withdraw = await account.execute(
-      { kind: "withdraw", asset: token.assetId, amount: amountOut, chain: token.chain, recipient: planned.address, memo: planned.memo },
+      { kind: "withdraw", asset: token.assetId, amount: withdrawAmount, chain: token.chain, recipient: planned.address, memo: planned.memo },
       key("withdraw"),
     );
     if (withdraw.status === "refused") return stop(problemFromRefusal(withdraw, status?.weekResetsAt ?? null));
@@ -208,6 +223,7 @@ export async function payItem(
         sentAt: now,
         amountSent: amountSent.toString(),
         amountReceived: amountOut.toString(),
+        networkFee: (withdrawAmount - amountOut).toString(),
         references: JSON.stringify(references),
       },
     });
@@ -251,11 +267,25 @@ export async function refreshLivePayments(db: PrismaClient, account: AgentAccoun
     const o = await account.outcome(last);
     if (o.state === "pending") continue;
     const next = o.state === "done" ? "delivered" : o.state === "refunded" ? "refunded" : "failed";
+    // What actually arrived settles the real network fee; if the estimate was low, say so plainly.
+    let payReason = o.state === "done" ? null : (o.reason ?? null);
+    let networkFee = i.networkFee;
+    if (o.state === "done" && o.amountOut !== undefined && i.networkFee !== null) {
+      const token = (JSON.parse(i.payout) as Payout).token;
+      const owed = amountOutFor(BigInt(i.amountUsd), token);
+      const withdrawn = BigInt(i.amountReceived ?? owed.toString()) + BigInt(i.networkFee);
+      networkFee = (withdrawn - o.amountOut).toString();
+      if (o.amountOut < owed) {
+        const got = formatUsd(rescale(o.amountOut, token.decimals, USD_DECIMALS));
+        payReason = `They received ${got} of ${formatUsd(BigInt(i.amountUsd))}: the network fee was a little higher than estimated.`;
+      }
+    }
     await db.planItem.update({
       where: { id: i.id },
       data: {
         payStatus: next,
-        payReason: o.state === "done" ? null : o.reason ?? null,
+        payReason,
+        networkFee,
         amountReceived: o.amountOut !== undefined ? o.amountOut.toString() : i.amountReceived,
         references: JSON.stringify(o.txHash ? [...refs, `tx:${o.txHash}`] : refs),
       },

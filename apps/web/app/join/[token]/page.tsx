@@ -29,13 +29,20 @@ export default async function Join({ params }: { params: Promise<{ token: string
           <p className="rounded-xl border border-line bg-card p-6">Thanks, {invite.name}. Your details were sent to {invite.businessName}. You&apos;ll be paid once they confirm them.</p>
         ) : (
           <section className="rounded-xl border border-line bg-card p-6 sm:p-8">
-            <h1 className="display text-3xl">Hi {invite.name}, how do you want to be paid?</h1>
+            <h1 className="display text-3xl">{invite.group ? "How do you want to be paid?" : `Hi ${invite.name}, how do you want to be paid?`}</h1>
             <p className="mt-3 text-muted">
               {invite.businessName} pays with Bursar, in digital dollars (USDC or USDT) sent to your own wallet. Choose the network your wallet uses and paste your address. The
               business checks it with you before anything is paid.
             </p>
             <ActionForm action={submitInviteAction} submit="Send my details" className="mt-6 space-y-5">
               <input type="hidden" name="token" value={token} />
+              {invite.group && (
+                <label className="block text-sm font-medium">
+                  Your full name
+                  <input name="name" required autoComplete="name" className="mt-1 block w-full rounded-lg border border-line bg-card px-3 py-2" />
+                  <span className="mt-1 block font-normal text-muted">As {invite.businessName} knows you ({invite.name}).</span>
+                </label>
+              )}
               <label className="block text-sm font-medium">
                 I want to be paid in
                 <select name="token_asset" required className="mt-1 block w-full rounded-lg border border-line bg-card px-3 py-2">

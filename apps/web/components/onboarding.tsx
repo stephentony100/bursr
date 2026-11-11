@@ -168,6 +168,7 @@ export function InviteForm() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<InviteResult | null>(null);
   const [copied, setCopied] = useState(false);
+  const [group, setGroup] = useState(false);
   return (
     <div className="space-y-4">
       <form
@@ -186,9 +187,26 @@ export function InviteForm() {
         }}
         className="grid gap-4 sm:grid-cols-2"
       >
+        <fieldset className="sm:col-span-2">
+          <legend className="sr-only">Who is this link for?</legend>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                [false, "One person"],
+                [true, "A whole group (one link for everyone)"],
+              ] as const
+            ).map(([value, label]) => (
+              <label key={label} className={`cursor-pointer rounded-lg border px-3 py-2 text-sm ${group === value ? "border-ledger bg-ledger-soft" : "border-line"}`}>
+                <input type="radio" name="groupChoice" checked={group === value} onChange={() => setGroup(value)} className="sr-only" />
+                {label}
+              </label>
+            ))}
+          </div>
+          {group && <input type="hidden" name="group" value="on" />}
+        </fieldset>
         <label className="block text-sm font-medium">
-          Their name
-          <input name="name" required className={input} />
+          {group ? "Group name" : "Their name"}
+          <input name="name" required placeholder={group ? "e.g. Kitchen staff" : undefined} className={input} />
         </label>
         <label className="block text-sm font-medium">
           They are
@@ -199,7 +217,7 @@ export function InviteForm() {
           </select>
         </label>
         <label className="block text-sm font-medium">
-          Regular pay <span className="font-normal text-muted">(optional)</span>
+          Regular pay <span className="font-normal text-muted">{group ? "(optional, same for everyone)" : "(optional)"}</span>
           <span className="mt-1 flex items-center rounded-lg border border-line bg-card">
             <span className="pl-3 text-muted">$</span>
             <input name="recurringAmount" inputMode="decimal" className="num w-full bg-transparent px-2 py-2 outline-none" />
@@ -215,7 +233,7 @@ export function InviteForm() {
         </label>
         <div className="sm:col-span-2">
           <button disabled={busy} className="rounded-lg bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60">
-            {busy ? "Making the link…" : "Make their invite link"}
+            {busy ? "Making the link…" : group ? "Make the group link" : "Make their invite link"}
           </button>
         </div>
       </form>
@@ -226,7 +244,11 @@ export function InviteForm() {
       )}
       {result?.ok && (
         <div className="rounded-lg border border-ledger/40 bg-ledger-soft/60 p-4 text-sm">
-          <p className="font-medium">Send this link to {result.name}. They choose how they want to be paid; you approve it before anything is paid.</p>
+          <p className="font-medium">
+            {result.group
+              ? `Share this link in your ${result.name} group chat. Each person types their name and how they want to be paid; you approve them all at once on People. It works for 14 days.`
+              : `Send this link to ${result.name}. They choose how they want to be paid; you approve it before anything is paid.`}
+          </p>
           <p className="num mt-2 break-all rounded bg-card px-2 py-1.5">{result.link}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <button
@@ -239,7 +261,7 @@ export function InviteForm() {
               <Copy size={16} aria-hidden /> {copied ? "Copied" : "Copy link"}
             </button>
             <a
-              href={`https://wa.me/?text=${encodeURIComponent(`Hi ${result.name}, please tell me how you'd like to be paid: ${result.link}`)}`}
+              href={`https://wa.me/?text=${encodeURIComponent(result.group ? `Hi all, please tell me how you'd like to be paid: ${result.link}` : `Hi ${result.name}, please tell me how you'd like to be paid: ${result.link}`)}`}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 rounded-md border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"

@@ -36,6 +36,8 @@ export interface PlanItemView {
   sentAt: Date | null;
   amountSent: bigint | null;
   amountReceived: bigint | null;
+  /** Network fee the business paid on top (payee token units), once sent. */
+  networkFee: bigint | null;
   references: string[];
 }
 
@@ -83,6 +85,7 @@ function planFromRow(r: PlanRow): PlanView {
       sentAt: i.sentAt,
       amountSent: i.amountSent ? BigInt(i.amountSent) : null,
       amountReceived: i.amountReceived ? BigInt(i.amountReceived) : null,
+      networkFee: i.networkFee ? BigInt(i.networkFee) : null,
       references: JSON.parse(i.references) as string[],
       retryAt: i.retryAt,
       attempts: i.attempts,

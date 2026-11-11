@@ -44,7 +44,9 @@ export function buildPolicy(rules: Rules, payees: Payee[]): Policy {
     owner_approval: false,
     assets: [...byAsset.keys()].sort(),
     limits: { per_transaction: perTransaction },
-    max_actions_per_hour: 30,
+    // Each payment is up to two actions (exchange, then send), plus room for retries and Bursar's fee.
+    // The wallet also caps custody operations at 1,000 a day (Agent API network-and-quotas).
+    max_actions_per_hour: Math.min(1000, Math.max(30, list.length * 3)),
     destinations: { mode: "only", list },
     budget: {
       daily_usd: null,
