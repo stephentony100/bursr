@@ -84,7 +84,7 @@ export default async function PayeesPage({ searchParams }: { searchParams: Promi
                   Safety hold until {payoutHoldEndsAt(p)!.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                 </span>
               ) : !p.trustedAt ? (
-                <span className="inline-flex w-fit items-center rounded-full bg-paper-2 px-2 py-0.5 text-xs font-medium text-muted">First payment needs your OK</span>
+                <span className="inline-flex w-fit items-center rounded-full bg-paper-2 px-2 py-0.5 text-xs font-medium text-muted">{live ? "Waiting for your wallet to confirm" : "First payment needs your OK"}</span>
               ) : null}
             </div>
           </li>

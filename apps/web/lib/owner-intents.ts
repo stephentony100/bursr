@@ -12,6 +12,7 @@ import { desiredPolicy, NotOwnerError, setFrozen } from "./owner-actions";
 import { isOwnerSession, type OwnerSession } from "./owner";
 import { dataKey, saveGrant } from "./grant-store";
 import { getAccountRecord, getBusiness } from "./store";
+import { trustSignedPayees } from "./trust";
 
 // Live mode owner actions on the Agent API. Every one follows the documented
 // four steps: our server prepares (generateIntent), the owner's wallet signs
@@ -158,6 +159,8 @@ export async function submitOwnerIntent(
       data: { policy: JSON.stringify(applied), policyRevision: view.revision ?? 0, signedAt: new Date() },
     });
   }
+  // The owner's wallet just signed the payee list: that is their OK for each person's first payment too.
+  if (p.kind === "agent_create" || p.kind === "policy_update") await trustSignedPayees(db);
   await db.auditEvent.create({
     data: { kind: `owner_${p.kind}`, actor: owner.accountId, message: OWNER_INTENT_WORDS[p.kind], data: JSON.stringify({ correlationId: p.correlationId }) },
   });
