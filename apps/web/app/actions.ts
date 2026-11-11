@@ -184,9 +184,12 @@ export async function changePayoutAction(_prev: FormResult, f: FormData): Promis
     if (!payee) throw new Error("Payee not found.");
     const { hold } = await changePayout((await appDb()), await requireOwner(), id, await payoutFrom(f));
     const live = readEnv().BURSAR_MODE === "live";
+    if (!hold) kickAgent();
     return hold
       ? `Saved. For your safety, payments to ${payee.name} are on hold for 48 hours.`
-      : `Saved. ${payee.name} will be paid at the new address${live ? " once you confirm it with your wallet (bar at the top)" : ""}. To send a payment that didn't go through, use Try again.`;
+      : live
+        ? `Saved. Confirm the new address with your wallet (bar at the top), and the agent pays ${payee.name} straight after, including any payment that didn't go through.`
+        : `Saved. The agent is paying ${payee.name} at the new address now, including any payment that didn't go through.`;
   });
 }
 

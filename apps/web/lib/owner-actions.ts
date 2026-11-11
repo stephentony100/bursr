@@ -201,11 +201,24 @@ export async function changePayout(db: PrismaClient, owner: OwnerSession, id: st
   const paidBefore = Boolean(before.trustedAt) && (await db.planItem.count({ where: { payeeId: id, payStatus: "delivered" } })) > 0;
   await db.payee.update({ where: { id }, data: { payout: JSON.stringify(clean), payoutChangedAt: paidBefore ? now : null } });
   if (!paidBefore) {
-    // Their payments not sent yet go to the new address (a failed one does too, when the owner tries it again).
+    // Their payments not sent yet go to the new address.
     await db.planItem.updateMany({
-      where: { payeeId: id, placement: "in", payStatus: { in: ["planned", "waiting", "failed"] } },
+      where: { payeeId: id, placement: "in", payStatus: { in: ["planned", "waiting"] } },
       data: { payout: JSON.stringify(clean), quote: null, quoteError: null },
     });
+    // A payment that failed is tried again at the new address: changing where they're paid is the owner's fix.
+    // New request bodies get new idempotency keys (nothing went out under the old ones).
+    const failed = await db.planItem.findMany({ where: { payeeId: id, placement: "in", payStatus: { in: ["failed", "refunded"] } }, select: { id: true, planId: true } });
+    if (failed.length) {
+      await db.planItem.updateMany({
+        where: { id: { in: failed.map((f) => f.id) } },
+        data: { payout: JSON.stringify(clean), payStatus: "planned", payReason: null, payCode: null, retryAt: null, attempts: { increment: 1 }, quote: null, quoteError: null },
+      });
+      await db.plan.updateMany({ where: { id: { in: failed.map((f) => f.planId) }, status: "done" }, data: { status: "approved" } });
+    }
+    // Live: the new address isn't payable until the owner's wallet confirms it, so the agent waits for that
+    // (confirming trusts them again: lib/trust.ts) instead of being refused by the account.
+    if ((await getAccountRecord(db))?.backend === "agent-api") await db.payee.update({ where: { id }, data: { trustedAt: null } });
   }
   await audit(
     db,

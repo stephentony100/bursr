@@ -74,12 +74,29 @@ describe("pay someone once", () => {
     expect(hold).toBe(false);
     expect((await t.db.payee.findUnique({ where: { id: deonId } }))!.payoutChangedAt).toBeNull();
 
+    // It fails again; the owner tries once more with a new amount.
+    await t.db.planItem.update({ where: { id: item.id }, data: { payStatus: "failed", payReason: "Something went wrong." } });
     await retryPayment(t.db, owner, item.id, 5_000_000n);
     const retried = (await t.db.planItem.findUnique({ where: { id: item.id } }))!;
     expect(retried).toMatchObject({ payStatus: "planned", amountUsd: "5000000", payReason: null });
     expect(JSON.parse(retried.payout).address).toBe("deon.near");
     const r = await runAgent(t.db, { quote: fakeQuote });
     expect(r.sent).toBeGreaterThanOrEqual(1);
+  });
+
+  it("changing a never-paid person's address puts their failed payment back in the queue", async () => {
+    const tokens = (await getBusiness(t.db))!.rules.payoutTokens;
+    const tron = tokens.find((x) => x.chain === "tron")!;
+    const near = tokens.find((x) => x.chain === "near")!;
+    const id = await payOnce(t.db, owner, { name: "Deon", amountUsd: 100_000n, note: "Fixing the AC", payout: { token: tron, address: demoTronAddress("deon"), memo: null }, removeAfterPaid: true });
+    const item = (await t.db.planItem.findFirst({ where: { payeeId: id } }))!;
+    await t.db.planItem.update({ where: { id: item.id }, data: { payStatus: "failed", payReason: "Sending $0.10 to Tron costs about $1." } });
+    await changePayout(t.db, owner, id, { token: near, address: "deon.near", memo: null });
+    const after = (await t.db.planItem.findUnique({ where: { id: item.id } }))!;
+    expect(after).toMatchObject({ payStatus: "planned", payReason: null, attempts: item.attempts + 1 });
+    expect(JSON.parse(after.payout).address).toBe("deon.near");
+    expect((await needsYou(t.db)).some((n) => n.kind === "failed")).toBe(false);
+    expect((await runAgent(t.db, { quote: fakeQuote })).sent).toBeGreaterThanOrEqual(1);
   });
 
   it("cancelling a one-time payment takes the person off the list", async () => {
