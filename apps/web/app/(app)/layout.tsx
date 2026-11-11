@@ -32,7 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Each page also checks (lib/session guardPage): a layout check alone doesn't stop a page rendering.
   if (!dryRun && !owner) redirect("/signin");
   if (!dryRun && !business) redirect("/welcome");
-  // Live: changes made in Bursar that the owner's wallet hasn't confirmed yet, shown on every page.
+  // Live: changes made in Bursr that the owner's wallet hasn't confirmed yet, shown on every page.
   const pending = !dryRun && business ? await pendingChanges(await appDb()) : null;
   return (
     <div className="min-h-[100dvh] lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
@@ -42,7 +42,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* Sidebar (large screens) */}
       <div className="hidden bg-night lg:block">
       <aside className="sticky top-0 flex h-[100dvh] flex-col px-3 py-5 text-card">
-        <Link href="/this-week" aria-label="Bursar, this week" className="px-3">
+        <Link href="/this-week" aria-label="Bursr, this week" className="px-3">
           <Logo tone="light" />
         </Link>
         <p className="mt-6 px-3 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-card/65">Workspace</p>
@@ -51,9 +51,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
         <div className="mt-auto space-y-3 border-t border-card/10 px-3 pt-4 text-xs text-card/55">
           {!dryRun && <HeaderWallet accountId={owner?.accountId ?? null} />}
-          <p>Bursar pays only inside the limits you set. Your invoices are read privately.</p>
+          <p>Bursr pays only inside the limits you set. Your invoices are read privately.</p>
           <Link href="/" className="inline-block text-card/80 underline decoration-card/30 hover:text-card">
-            About Bursar
+            About Bursr
           </Link>
         </div>
       </aside>
@@ -63,7 +63,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {/* Phone header */}
         <header className="bg-night px-4 pb-2 pt-3 text-card lg:hidden">
           <div className="mb-2 flex items-center justify-between gap-3">
-            <Link href="/this-week" aria-label="Bursar, this week">
+            <Link href="/this-week" aria-label="Bursr, this week">
               <Logo tone="light" />
             </Link>
             {!dryRun && <HeaderWallet accountId={owner?.accountId ?? null} />}

@@ -29,8 +29,8 @@ beforeAll(async () => {
 
 describe("statement", () => {
   it("has one line per payment, with who approved it and the account's references", () => {
-    expect(lines).toHaveLength(6); // 5 payments + Bursar's fee
-    expect(lines.find((l) => l.payee === "Bursar")!.forWhat).toBe("Bursar fee (0.5% of $658.00)");
+    expect(lines).toHaveLength(6); // 5 payments + Bursr's fee
+    expect(lines.find((l) => l.payee === "Bursr")!.forWhat).toBe("Bursr fee (0.5% of $658.00)");
     const farm = lines.find((l) => l.payee === "Mama Put Farms Ltd")!;
     expect(farm.forWhat).toBe("Invoice #MPF-0412");
     expect(farm.received).toBe("118");
@@ -44,7 +44,7 @@ describe("statement", () => {
     const csv = statementCsv(lines);
     const rows = csv.trim().split("\r\n");
     expect(rows).toHaveLength(7);
-    expect(rows[0]).toBe('"Date (UTC)","Paid to","For","Amount (USD)","Sent from Bursar wallet","They received","Network fee (paid by you)","Where it went","Status","Approved","Payment list","References","Note"');
+    expect(rows[0]).toBe('"Date (UTC)","Paid to","For","Amount (USD)","Sent from Bursr wallet","They received","Network fee (paid by you)","Where it went","Status","Approved","Payment list","References","Note"');
     expect(csv).toContain('"Mama Put Farms Ltd","Invoice #MPF-0412","118.00"');
   });
 
@@ -52,7 +52,7 @@ describe("statement", () => {
     const f = await monthFacts(t.db);
     expect([f.paidUsd, f.staffUsd, f.suppliersUsd, f.feesUsd]).toEqual([661_290_000n, 450_000_000n, 208_000_000n, 3_290_000n]);
     expect([f.payments, f.invoices, f.invoicesReady, f.invoicesBlocked, f.invoicesHeld]).toEqual([6, 6, 2, 2, 2]);
-    expect(plainSummary(f)).toContain("Bursar paid $661.29 in 6 payments: $450.00 to staff and $208.00 to suppliers, and $3.29 in Bursar fees.");
+    expect(plainSummary(f)).toContain("Bursr paid $661.29 in 6 payments: $450.00 to staff and $208.00 to suppliers, and $3.29 in Bursr fees.");
   });
 
   it("cannot be turned into a spreadsheet formula", () => {

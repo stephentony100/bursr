@@ -27,7 +27,7 @@ export function PeopleImport({ template, live }: { template: string; live: boole
     <div className="space-y-4">
       <p className="text-sm text-muted">
         Put one person per row in a spreadsheet (Excel, Google Sheets, Numbers) with these headings, then save or download it as CSV.{" "}
-        <a href={`data:text/csv;charset=utf-8,${encodeURIComponent(template)}`} download="bursar-people.csv" className="inline-flex items-center gap-1 text-indigo underline">
+        <a href={`data:text/csv;charset=utf-8,${encodeURIComponent(template)}`} download="bursr-people.csv" className="inline-flex items-center gap-1 text-indigo underline">
           <DownloadSimple size={14} aria-hidden /> Download the template
         </a>
       </p>

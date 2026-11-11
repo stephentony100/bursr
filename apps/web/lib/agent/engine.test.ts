@@ -107,7 +107,7 @@ describe("the agent on autopilot", () => {
 
     await addPracticeMoney(t.db, "500");
     await runAgent(t.db, { now: wednesday, quote: fakeQuote });
-    expect((await agentLog()).some((e) => e.kind === "money_in" && e.message.startsWith("Your Bursar wallet received $500.00"))).toBe(true);
+    expect((await agentLog()).some((e) => e.kind === "money_in" && e.message.startsWith("Your Bursr wallet received $500.00"))).toBe(true);
   });
 
   it("changing someone's regular pay updates their payment that is still waiting", async () => {

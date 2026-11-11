@@ -4,7 +4,7 @@ import { formatUnits, rescale, USD_DECIMALS } from "./money";
 
 // Turns the owner's rules and payee list into the Agent API policy the owner
 // signs. This is the only place rules become enforceable: after signing, the
-// agent account (not Bursar, not the AI) refuses anything outside it.
+// agent account (not Bursr, not the AI) refuses anything outside it.
 // Field meanings: docs.agentsonintents.com …/policies-and-limits.
 
 export function destinationFor(p: Payee): Policy["destinations"]["list"][number] {
@@ -51,7 +51,7 @@ export function buildPolicy(rules: Rules, payees: Payee[], ownerAccountId?: stri
     owner_approval: false,
     assets: [...byAsset.keys()].sort(),
     limits: { per_transaction: perTransaction },
-    // Each payment is up to two actions (exchange, then send), plus room for retries and Bursar's fee.
+    // Each payment is up to two actions (exchange, then send), plus room for retries and Bursr's fee.
     // The wallet also caps custody operations at 1,000 a day (Agent API network-and-quotas).
     max_actions_per_hour: Math.min(1000, Math.max(30, list.length * 3)),
     destinations: { mode: "only", list },
@@ -63,6 +63,6 @@ export function buildPolicy(rules: Rules, payees: Payee[], ownerAccountId?: stri
     timelock_ms: 0,
     // `native` is deliberately absent: native methods bypass destinations and
     // budget ("destinations, budget, timelock_ms, schedule and owner_approval
-    // don't apply"), so Bursar never enables them.
+    // don't apply"), so Bursr never enables them.
   };
 }

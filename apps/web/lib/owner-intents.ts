@@ -17,16 +17,16 @@ import { trustSignedPayees } from "./trust";
 // Live mode owner actions on the Agent API. Every one follows the documented
 // four steps: our server prepares (generateIntent), the owner's wallet signs
 // `intent.payload` exactly as returned, our server submits, then we follow the
-// status. Bursar's server never holds the owner's key.
+// status. Bursr's server never holds the owner's key.
 
 export type OwnerIntentKind = "agent_create" | "policy_update" | "agent_freeze" | "agent_unfreeze" | "grant_issue";
 
 const OWNER_INTENT_WORDS: Record<OwnerIntentKind, string> = {
-  agent_create: "You set up your Bursar wallet with your spending rules",
+  agent_create: "You set up your Bursr wallet with your spending rules",
   policy_update: "You confirmed your new spending rules with your wallet",
   agent_freeze: "You paused all payments",
   agent_unfreeze: "You turned payments back on",
-  grant_issue: "You allowed Bursar to make payments inside your rules",
+  grant_issue: "You allowed Bursr to make payments inside your rules",
 };
 
 export interface PreparedIntent {
@@ -56,7 +56,7 @@ async function assertLiveOwner(db: PrismaClient, owner: OwnerSession) {
   if (!isOwnerSession(owner) || owner.demo) throw new NotOwnerError("Sign in with your NEAR wallet first.");
   const business = await getBusiness(db);
   if (!business || business.ownerAccountId !== owner.accountId) throw new NotOwnerError();
-  if (!owner.publicKey) throw new NotOwnerError("Sign in again so Bursar knows your wallet key.");
+  if (!owner.publicKey) throw new NotOwnerError("Sign in again so Bursr knows your wallet key.");
   return business;
 }
 
@@ -82,7 +82,7 @@ export async function prepareOwnerIntent(db: PrismaClient, owner: OwnerSession, 
     const policy = (await desiredPolicy(db))!;
     const g = await client.generateIntent({
       type: "agent_create",
-      name: `Bursar: ${business.name}`.slice(0, 64),
+      name: `Bursr: ${business.name}`.slice(0, 64),
       owner: { type: "near", account_id: owner.accountId, public_key: owner.publicKey! },
       policy,
     });
@@ -105,7 +105,7 @@ export async function prepareOwnerIntent(db: PrismaClient, owner: OwnerSession, 
   const g = await client.generateIntent({
     type: "grant_issue",
     agent_id: record.agentId,
-    label: "Bursar payments",
+    label: "Bursr payments",
     credential: commitment,
     expires_at: grantExpiresAt.toISOString(),
   });
@@ -126,7 +126,7 @@ export async function submitOwnerIntent(
   await assertLiveOwner(db, owner);
   if (p.kind === "grant_issue" && !pendingGrantTokens.has(p.correlationId)) {
     // Without the token kept at prepare time, an accepted grant could never be used.
-    return { status: "FAILED", failureCode: "Bursar restarted before your OK arrived. Please press the button again." };
+    return { status: "FAILED", failureCode: "Bursr restarted before your OK arrived. Please press the button again." };
   }
   const client = api();
   try {
@@ -167,10 +167,10 @@ export async function submitOwnerIntent(
   if (p.kind === "grant_issue") {
     const pending = pendingGrantTokens.get(p.correlationId);
     pendingGrantTokens.delete(p.correlationId);
-    if (!pending) return { status: "FAILED", failureCode: "Bursar restarted before your OK arrived. Please press the button again." };
+    if (!pending) return { status: "FAILED", failureCode: "Bursr restarted before your OK arrived. Please press the button again." };
     // Bind the pass to the agent recorded when it was prepared, not to anything the browser sent.
     const current = await getAccountRecord(db);
-    if (!current || current.agentId !== pending.agentId) return { status: "FAILED", failureCode: "Your Bursar wallet changed. Please press the button again." };
+    if (!current || current.agentId !== pending.agentId) return { status: "FAILED", failureCode: "Your Bursr wallet changed. Please press the button again." };
     await saveGrant(db, pending.agentId, pending.token, pending.grantExpiresAt);
   }
   return result;

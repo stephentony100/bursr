@@ -77,7 +77,7 @@ export async function readWithNearAi(file: InvoiceFile): Promise<ReadResult> {
   } else if (file.mediaType.startsWith("text/")) {
     content = [{ type: "text", text: `Extract this invoice as JSON.\n\n---\n${file.bytes.toString("utf8").slice(0, 20_000)}\n---` }];
   } else {
-    return { ok: false, readBy, reason: "Bursar reads photos (PNG, JPG) and pasted text. For a PDF, send a photo or screenshot of it." };
+    return { ok: false, readBy, reason: "Bursr reads photos (PNG, JPG) and pasted text. For a PDF, send a photo or screenshot of it." };
   }
 
   const client = new OpenAI({ baseURL: env.NEAR_AI_BASE_URL, apiKey: env.NEAR_AI_API_KEY, timeout: 90_000, maxRetries: 1 });

@@ -18,7 +18,7 @@ export interface FeedEntry {
 
 export interface NeedsYou {
   itemId: string;
-  /** The person the payment is for ("" for an invite or Bursar's fee). */
+  /** The person the payment is for ("" for an invite or Bursr's fee). */
   payeeId: string;
   kind: "approve" | "failed" | "funds" | "payee" | "invite" | "wallet";
   payeeName: string;
@@ -158,7 +158,7 @@ export function nextPayday(now: Date, timeZone: string, paydayWeekday: number): 
 }
 
 
-/** What the coming payday needs against what the Bursar wallet holds (USD, 6 decimals). */
+/** What the coming payday needs against what the Bursr wallet holds (USD, 6 decimals). */
 export async function paydayNeed(db: PrismaClient, balanceUsd: bigint, now = new Date()) {
   const business = await getBusiness(db);
   if (!business) return null;

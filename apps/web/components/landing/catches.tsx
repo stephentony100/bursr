@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { Tone } from "@/components/ui/badge";
 
-// The four checks Bursar runs on every invoice, each with its example from
+// The four checks Bursr runs on every invoice, each with its example from
 // the sample week. Shown on the home page's checks section.
 
 export interface Catch {
@@ -39,7 +39,7 @@ export function catches(usualAddress: string, newAddress: string): Catch[] {
       title: "Look-alike names",
       tone: "block",
       outcome: "Blocked: not paid",
-      line: "A zero where an O should be is easy to miss at the end of a long day. Bursar compares every name with the people you pay.",
+      line: "A zero where an O should be is easy to miss at the end of a long day. Bursr compares every name with the people you pay.",
       show: (
         <div className="space-y-2">
           <Field label="On your list">
@@ -86,7 +86,7 @@ export function catches(usualAddress: string, newAddress: string): Catch[] {
       title: "Prices creeping up",
       tone: "hold",
       outcome: "Held: waits for you",
-      line: "Bursar knows the prices you agreed and holds anything more than 5% over. Six crates at $23.40 is $32.40 more than you agreed.",
+      line: "Bursr knows the prices you agreed and holds anything more than 5% over. Six crates at $23.40 is $32.40 more than you agreed.",
       show: (
         <Field label="Tomatoes (crate) · invoice #MPF-0419">
           <div className="mt-2 space-y-3 text-sm">

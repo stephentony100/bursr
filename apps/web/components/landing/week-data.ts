@@ -92,14 +92,14 @@ export interface WeekPayment {
   network: Network;
 }
 
-/** This week's list: the two clean invoices, the staff's weekly pay and Bursar's 0.5% fee. */
+/** This week's list: the two clean invoices, the staff's weekly pay and Bursr's 0.5% fee. */
 export const WEEK_PAYMENTS: WeekPayment[] = [
   { who: "Mama Put Farms Ltd", what: "Invoice #MPF-0412", cents: 11800, token: "USDC", network: "NEAR" },
   { who: "Ikeja Gas & Charcoal", what: "Invoice #IGC-2291", cents: 9000, token: "USDC", network: "Base" },
   { who: "Bisi Adeyemi", what: "Weekly pay · head chef", cents: 22000, token: "USDC", network: "Base" },
   { who: "Tunde Okafor", what: "Weekly pay · server", cents: 11000, token: "USDT", network: "Tron" },
   { who: "Amaka Eze", what: "Weekly pay · cashier", cents: 12000, token: "USDC", network: "Solana" },
-  { who: "Bursar fee", what: "0.5% of $658.00", cents: 329, token: "USDC", network: "NEAR" },
+  { who: "Bursr fee", what: "0.5% of $658.00", cents: 329, token: "USDC", network: "NEAR" },
 ];
 
 export const WEEK_TOTAL_CENTS = WEEK_PAYMENTS.reduce((s, p) => s + p.cents, 0);

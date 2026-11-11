@@ -151,7 +151,7 @@ export function buildPlan(input: PlanInput): DraftPlan {
   }
 
   // 3. Place candidates in order (staff, then by due date) under the weekly limit,
-  // leaving room for Bursar's fee on everything placed.
+  // leaving room for Bursr's fee on everything placed.
   candidates.sort((a, b) => a.due.localeCompare(b.due));
   const feeOn = (amount: bigint) => (rules.fee ? (amount * BigInt(rules.fee.bps)) / 10_000n : 0n);
   let used = 0n;
@@ -203,15 +203,15 @@ export function buildPlan(input: PlanInput): DraftPlan {
     });
   }
 
-  // 4. Bursar's fee: one line for the plan, paid to the fee address on the owner's signed list.
+  // 4. Bursr's fee: one line for the plan, paid to the fee address on the owner's signed list.
   const fee = feeOn(used);
   if (rules.fee && fee > 0n) {
     items.push({
       kind: "fee",
       invoiceId: null,
       payeeId: "",
-      payeeName: "Bursar",
-      forWhat: `Bursar fee (${(rules.fee.bps / 100).toFixed(2).replace(/\.?0+$/, "")}% of ${formatUsd(used)})`,
+      payeeName: "Bursr",
+      forWhat: `Bursr fee (${(rules.fee.bps / 100).toFixed(2).replace(/\.?0+$/, "")}% of ${formatUsd(used)})`,
       amountUsd: fee,
       payout: rules.fee.payout,
       placement: "in",

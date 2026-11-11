@@ -3,7 +3,7 @@ import { getBusiness } from "./store";
 import { readEnv } from "./env";
 import { findPayoutToken, payoutTokens } from "./tokens";
 
-// Bursar's own fee is the platform's term, set by whoever runs Bursar
+// Bursr's own fee is the platform's term, set by whoever runs Bursr
 // (BURSAR_FEE_BPS, BURSAR_FEE_ACCOUNT_ID), not by the agent. A business set up
 // before the fee was switched on gets it here, once, with a line in its feed.
 // The fee address is on the list the owner's wallet signs like any payee, so
@@ -24,7 +24,7 @@ export async function applyPlatformFee(db: PrismaClient): Promise<boolean> {
     data: {
       kind: "fee_terms",
       actor: "agent",
-      message: `Bursar's fee is ${pct}% of each payment run. It shows as its own line on Payments, and you can see it on Spending rules.`,
+      message: `Bursr's fee is ${pct}% of each payment run. It shows as its own line on Payments, and you can see it on Spending rules.`,
       data: JSON.stringify({ bps: fee.bps }),
     },
   });

@@ -31,7 +31,7 @@ export default async function Join({ params }: { params: Promise<{ token: string
           <section className="rounded-xl border border-line bg-card p-6 sm:p-8">
             <h1 className="display text-3xl">{invite.group ? "How do you want to be paid?" : `Hi ${invite.name}, how do you want to be paid?`}</h1>
             <p className="mt-3 text-muted">
-              {invite.businessName} pays with Bursar, in digital dollars (USDC or USDT) sent to your own wallet. Choose the network your wallet uses and paste your address. The
+              {invite.businessName} pays with Bursr, in digital dollars (USDC or USDT) sent to your own wallet. Choose the network your wallet uses and paste your address. The
               business checks it with you before anything is paid.
             </p>
             <ActionForm action={submitInviteAction} submit="Send my details" className="mt-6 space-y-5">

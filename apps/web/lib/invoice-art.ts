@@ -71,7 +71,7 @@ ${rows}
 <text x="590" y="${endY + 30}" font-size="19" font-weight="bold" text-anchor="end">TOTAL</text>
 <text x="740" y="${endY + 30}" font-size="19" font-weight="bold" text-anchor="end">${esc(p.total)}</text>
 ${pay.join("\n")}
-<text x="60" y="960" font-size="13" fill="#888">Sample invoice for the Bursar demo. Fictional business; not a real bill.</text>
+<text x="60" y="960" font-size="13" fill="#888">Sample invoice for the Bursr demo. Fictional business; not a real bill.</text>
 </g>
 </svg>`;
 }

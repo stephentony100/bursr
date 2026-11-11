@@ -35,11 +35,11 @@ beforeEach(async () => {
 const M = 1_000_000n;
 
 describe("weekly plan → approval → payment (practice mode)", () => {
-  it("the sample week: 3 staff + 2 suppliers + Bursar's fee in the plan, 4 held with reasons, under the cap", async () => {
+  it("the sample week: 3 staff + 2 suppliers + Bursr's fee in the plan, 4 held with reasons, under the cap", async () => {
     const plan = await prepareWeeklyPlan(t.db, new Date(), fakeQuote);
     const fee = plan.items.find((i) => i.kind === "fee")!;
     expect(fee.amountUsd).toBe(3_290_000n); // 0.5% of $658.00
-    expect(fee.forWhat).toBe("Bursar fee (0.5% of $658.00)");
+    expect(fee.forWhat).toBe("Bursr fee (0.5% of $658.00)");
     const inPlan = plan.items.filter((i) => i.placement === "in" && i.kind !== "fee");
     expect(inPlan.map((i) => i.payeeName).sort()).toEqual(
       ["Amaka Eze (cashier)", "Bisi Adeyemi (head chef)", "Ikeja Gas & Charcoal", "Mama Put Farms Ltd", "Tunde Okafor (server)"].sort(),

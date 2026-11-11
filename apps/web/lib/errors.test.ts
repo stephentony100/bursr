@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { friendlyError } from "./errors";
 
 describe("errors in plain words", () => {
-  it("keeps Bursar's own plain messages", () => {
+  it("keeps Bursr's own plain messages", () => {
     expect(friendlyError(new Error("Add their name."))).toBe("Add their name.");
   });
 

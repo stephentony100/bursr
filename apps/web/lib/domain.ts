@@ -29,7 +29,7 @@ export const RulesSchema = z
     autopilot: z.boolean().default(true),
     /** Invoices: "due" = the day before their due date; "asap" = as soon as they pass every check. */
     invoiceTiming: z.enum(["due", "asap"]).default("due"),
-    /** Bursar's own fee per plan, paid like any payee to an address on the signed list. null = no fee. */
+    /** Bursr's own fee per plan, paid like any payee to an address on the signed list. null = no fee. */
     fee: z
       .object({ bps: z.number().int().min(1).max(500), payout: z.lazy(() => PayoutSchema) })
       .nullable()

@@ -24,12 +24,12 @@ async function signedBusiness() {
 describe("changes waiting for the owner's wallet", () => {
   beforeEach(() => t.reset());
 
-  it("nothing to confirm when Bursar and the wallet agree", async () => {
+  it("nothing to confirm when Bursr and the wallet agree", async () => {
     await signedBusiness();
     expect(await pendingChanges(t.db)).toBeNull();
   });
 
-  it("a removal is listed by name and counts as tighter (Bursar already follows it)", async () => {
+  it("a removal is listed by name and counts as tighter (Bursr already follows it)", async () => {
     const kemi = await signedBusiness();
     await removePayee(t.db, owner, kemi);
     expect(await pendingChanges(t.db)).toEqual({ lines: ["Remove Kemi"], onlyTighter: true });

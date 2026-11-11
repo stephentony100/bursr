@@ -44,7 +44,7 @@ function Refusal({ title, line }: { title: string; line: string }) {
 }
 
 const RULES: Rule[] = [
-  { icon: HandCoins, label: "Weekly limit", value: "$2,500.00", body: "The most that can leave your Bursar wallet in a week. It refills on payday.", visual: <Meter /> },
+  { icon: HandCoins, label: "Weekly limit", value: "$2,500.00", body: "The most that can leave your Bursr wallet in a week. It refills on payday.", visual: <Meter /> },
   { icon: CheckCircle, label: "Per payment", value: "$900.00", body: "Anything bigger is refused by the wallet itself, even if the AI asks for it.", visual: <LimitWall /> },
   {
     icon: UserCheck,

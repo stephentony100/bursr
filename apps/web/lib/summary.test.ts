@@ -20,9 +20,9 @@ const facts: MonthFacts = {
 };
 
 describe("monthly summary", () => {
-  it("Bursar's own summary states the facts exactly", () => {
+  it("Bursr's own summary states the facts exactly", () => {
     expect(plainSummary(facts)).toBe(
-      "In November 2026 Bursar paid $658.00 in 5 payments: $450.00 to staff and $208.00 to suppliers. " +
+      "In November 2026 Bursr paid $658.00 in 5 payments: $450.00 to staff and $208.00 to suppliers. " +
         "The largest was Bisi Adeyemi (head chef) at $220.00. " +
         "6 invoices came in: 2 passed every check, 2 were blocked as possible fraud and 2 were held for you to check. " +
         "Your spending rules blocked 1 payment that broke your limits.",
@@ -39,7 +39,7 @@ describe("monthly summary", () => {
     expect(inventedNumbers("You paid about $660 this month.", facts)).toEqual(["660"]);
     expect(inventedNumbers("Staff took 68% of spending.", facts)).toEqual(["68"]);
     expect(inventedNumbers("You saved $1,200 by blocking fraud.", facts)).toEqual(["1,200"]);
-    expect(inventedNumbers("Bursar made seven payments.", facts)).toEqual(["seven"]);
-    expect(inventedNumbers("Bursar made five payments; six invoices arrived; one was refused.", facts)).toEqual([]);
+    expect(inventedNumbers("Bursr made seven payments.", facts)).toEqual(["seven"]);
+    expect(inventedNumbers("Bursr made five payments; six invoices arrived; one was refused.", facts)).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-// The Agent API is faked: these tests cover what Bursar does with its answers.
+// The Agent API is faked: these tests cover what Bursr does with its answers.
 const fake = vi.hoisted(() => ({
   generateIntent: vi.fn(async (b: { type: string; agent_id?: string }) => ({
     correlation_id: `corr-${b.type}-${Math.random()}`,

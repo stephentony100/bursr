@@ -1,6 +1,6 @@
-# Bursar — build plan
+# Bursr — build plan
 
-Built in parallel with Wetin (separate repo). Deadline **14 Nov 2026, 23:59 UTC** (00:59 on 15 Nov in Lagos).
+Deadline **14 Nov 2026, 23:59 UTC** (00:59 on 15 Nov in Lagos).
 **10 Nov rule:** if the dry-run demo (PRD §9, steps 1–5 simulated) does not work end to end by 10 Nov, stop adding features and spend the remaining days making P0 solid.
 
 Each milestone ends at a checkpoint: `/ship-check`, report, wait for OK.
@@ -47,13 +47,13 @@ Each milestone ends at a checkpoint: `/ship-check`, report, wait for OK.
 
 - [x] Telegram bot: plan summary + Approve / Review; alerts (chat linked with a one-time code from the owner's web session; alerts idempotent by key)
 - [x] NEAR AI Cloud Verified panel
-- [x] Monthly summary (Bursar computes the facts; NEAR AI only rephrases; any figure not in the records is rejected)
-- [x] Bursar fee: 0.5% per plan as one line paid through the account to a fee address on the owner's signed list (the Agent API has no app-fee field; see DECISIONS)
+- [x] Monthly summary (Bursr computes the facts; NEAR AI only rephrases; any figure not in the records is rejected)
+- [x] Bursr fee: 0.5% per plan as one line paid through the account to a fee address on the owner's signed list (the Agent API has no app-fee field; see DECISIONS)
 - [ ] **With the human:** live mainnet run with tiny amounts (one same-chain, one cross-chain payment); save links for README. 7 Nov: payees + rules signed (revision 3), live dry preview clean; paused because the account is not funded (owner chose to defer)
 
 ## M5 — Submission (12–14 Nov)
 
-- [ ] README final: problem, how it works, how NEAR is used (concrete), trust model, try-it steps (dry-run first), live-run evidence, limitations, Built with, link to Wetin
+- [ ] README final: problem, how it works, how NEAR is used (concrete), trust model, try-it steps (dry-run first), live-run evidence, limitations, Built with
 - [ ] `/ship-check`; tag `hackathon-submission`
 - [ ] Demo video ≤ 2 min + X post draft per `docs/hackathon/SUBMITTING.md` — **human posts**
 - [ ] Submission payload (tracks: business, realworld, privacy, security) — **human confirms before sending**

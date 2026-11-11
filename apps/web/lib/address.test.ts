@@ -35,7 +35,7 @@ describe("shortenAddresses", () => {
   it("shortens long addresses inside a sentence and leaves short words alone", async () => {
     const { shortenAddresses } = await import("./address");
     const hex = "d55acc2289345e95a8c5b0328bd27b9646cca817a095be820b7eae9ad502179";
-    expect(shortenAddresses(`Bursar only ever pays at ${hex}.`)).toBe("Bursar only ever pays at d55acc…2179.");
+    expect(shortenAddresses(`Bursr only ever pays at ${hex}.`)).toBe("Bursr only ever pays at d55acc…2179.");
     expect(shortenAddresses("Invoice #MPF-0412 from Mama Put Farms Ltd")).toBe("Invoice #MPF-0412 from Mama Put Farms Ltd");
   });
 });

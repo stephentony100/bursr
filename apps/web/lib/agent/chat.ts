@@ -16,7 +16,7 @@ import { chainName } from "../tokens";
 import { runAgent } from "./engine";
 import { comingUp, needsYou, nextPayday } from "./view";
 
-// Talking to Bursar's agent. The model (on NEAR AI Cloud, inside a TEE) can
+// Talking to Bursr's agent. The model (on NEAR AI Cloud, inside a TEE) can
 // read the business's data through tools and can PROPOSE actions; every
 // action becomes a card the owner confirms. It cannot add payees or change
 // rules, and an amount is only accepted if the owner wrote it in their own
@@ -80,11 +80,11 @@ export function ownerWroteAmount(message: string, amount: string): boolean {
 // --- tools -------------------------------------------------------------------
 
 const TOOLS: ChatCompletionTool[] = [
-  { type: "function", function: { name: "get_overview", description: "Money in the Bursar wallet, what is left of the weekly limit, the limits, autopilot, paused or not, the next payday and what it needs.", parameters: { type: "object", properties: {} } } },
+  { type: "function", function: { name: "get_overview", description: "Money in the Bursr wallet, what is left of the weekly limit, the limits, autopilot, paused or not, the next payday and what it needs.", parameters: { type: "object", properties: {} } } },
   { type: "function", function: { name: "list_people", description: "Everyone the business pays: name, type, how and on which network they are paid, and their regular pay schedule.", parameters: { type: "object", properties: {} } } },
   { type: "function", function: { name: "recent_payments", description: "The most recent payments the agent made or tried, with status and reason.", parameters: { type: "object", properties: { limit: { type: "integer", minimum: 1, maximum: 30 } } } } },
   { type: "function", function: { name: "coming_up", description: "Payments the agent will make over the next two weeks, with their dates.", parameters: { type: "object", properties: {} } } },
-  { type: "function", function: { name: "list_invoices", description: "Supplier invoices Bursar has read, with their check results and reasons.", parameters: { type: "object", properties: { only_problems: { type: "boolean" } } } } },
+  { type: "function", function: { name: "list_invoices", description: "Supplier invoices Bursr has read, with their check results and reasons.", parameters: { type: "object", properties: { only_problems: { type: "boolean" } } } } },
   { type: "function", function: { name: "needs_you", description: "Things waiting for the owner: payments to OK, payments that failed, money needed.", parameters: { type: "object", properties: {} } } },
   {
     type: "function",
@@ -212,7 +212,7 @@ async function runTool(name: string, rawArgs: string, ctx: ToolContext): Promise
 function systemPrompt(businessName: string, live: boolean) {
   const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   return [
-    `You are Bursar's agent for ${businessName}, a small business. You pay its staff and suppliers in digital dollars (stablecoins) inside limits the owner set. Today is ${today}. Mode: ${live ? "live, real money" : "practice money"}.`,
+    `You are Bursr's agent for ${businessName}, a small business. You pay its staff and suppliers in digital dollars (stablecoins) inside limits the owner set. Today is ${today}. Mode: ${live ? "live, real money" : "practice money"}.`,
     "Talk to the owner in short, plain sentences. Plain text only: no markdown, no ** or #; use • for lists. No crypto jargon unless they use it. Use the tools to look things up; never guess numbers, names or dates.",
     "You can propose actions (a one-off payment to someone already on their list, running payday, pausing). Each becomes a card the owner confirms; say so.",
     "Never invent an amount: only propose a payment when the owner wrote the amount. You cannot add people, change where someone is paid, or change limits; point the owner to the People or Spending rules page for that.",
@@ -235,7 +235,7 @@ const QUICK: Record<string, (ctx: ToolContext) => Promise<string>> = {
   },
   "How much is left this week?": async (ctx) => {
     const o = (await runTool("get_overview", "{}", ctx)) as Record<string, string>;
-    return `You have ${o.left_this_week} left of your ${o.weekly_limit} weekly limit, and ${o.bursar_wallet} in your Bursar wallet. Next payday is ${o.next_payday} and needs ${o.due_by_next_payday}.`;
+    return `You have ${o.left_this_week} left of your ${o.weekly_limit} weekly limit, and ${o.bursar_wallet} in your Bursr wallet. Next payday is ${o.next_payday} and needs ${o.due_by_next_payday}.`;
   },
   "Run payday now": async (ctx) => {
     await runTool("propose_run_payday", "{}", ctx);

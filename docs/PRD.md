@@ -1,15 +1,14 @@
-# Bursar — Product Requirements Document
+# Bursr — Product Requirements Document
 
-Working name. Built for NEAR HACKATHON (1–14 Nov 2026).
+Built for NEAR HACKATHON (1–14 Nov 2026).
 Main track: **Autonomous Business** (`business`). Also entered in **Real-World Money** (`realworld`), **Privacy & Private AI** (`privacy`) and **AI Security & Defense** (`security`).
 
-Sister project by the same builder (independent repo, no shared code): **Wetin** — AI agents pay people for real market prices. Both READMEs must name each other (hackathon rule for one person entering two projects).
 
 ---
 
 ## 1. One line
 
-Bursar is an AI that pays a small business's bills: it reads supplier invoices, catches mistakes and fraud, proposes one payment plan a week that the owner approves with one tap, then pays everyone in stablecoins on whatever chain they use — privately and never above the owner's limits.
+Bursr is an AI that pays a small business's bills: it reads supplier invoices, catches mistakes and fraud, proposes one payment plan a week that the owner approves with one tap, then pays everyone in stablecoins on whatever chain they use — privately and never above the owner's limits.
 
 ## 2. The problem (ground level)
 
@@ -30,8 +29,8 @@ Businesses that already hold stablecoins have the same problem, plus suppliers w
 | User | What they do |
 | --- | --- |
 | **Owner** (primary) | Sets the rules once, adds approved payees, forwards invoices, approves the weekly plan, reads statements |
-| **Bursar agent** | Reads invoices, checks them, builds the plan, pays within the rules, writes the records |
-| **Payee** (supplier, staff) | Receives stablecoins on their chosen chain and token; never needs to use Bursar |
+| **Bursr agent** | Reads invoices, checks them, builds the plan, pays within the rules, writes the records |
+| **Payee** (supplier, staff) | Receives stablecoins on their chosen chain and token; never needs to use Bursr |
 | **Accountant** | Opens the monthly export |
 
 ## 4. What NEAR pieces do (and why each is needed)
@@ -47,13 +46,13 @@ Businesses that already hold stablecoins have the same problem, plus suppliers w
 
 ### 5.1 Setup (owner, once)
 
-1. Owner signs in with a NEAR account (wallet selector) and creates the Bursar agent account.
+1. Owner signs in with a NEAR account (wallet selector) and creates the Bursr agent account.
 2. Owner sets the rules in plain fields:
    - weekly spending cap and per-payment cap (USD);
    - approval threshold (any single payment above this needs its own approval);
    - which tokens the agent may spend;
    - payday schedule (e.g. every Friday).
-3. Owner signs the policy. Bursar records it in the agent account (Agent API policy, or vault contract settings).
+3. Owner signs the policy. Bursr records it in the agent account (Agent API policy, or vault contract settings).
 4. Owner funds the agent account with USDC on NEAR (live mode) or uses demo funds (dry-run).
 
 ### 5.2 Payees
@@ -66,7 +65,7 @@ Businesses that already hold stablecoins have the same problem, plus suppliers w
 
 - Upload (PDF, image, or pasted text) in the web app. P1: forward by email; P1: send to the Telegram bot.
 - The **Reader** step (NEAR AI Cloud, structured output validated with zod) extracts: supplier name, invoice number, date, due date, line items, total, currency, payout details if present.
-- If a field is unclear, the invoice goes to "needs owner" with the reason; Bursar never guesses an amount.
+- If a field is unclear, the invoice goes to "needs owner" with the reason; Bursr never guesses an amount.
 
 ### 5.4 Checks (every invoice)
 
@@ -85,17 +84,17 @@ Hard rules first, then AI judgement, each with a plain-English reason:
 
 ### 5.5 The weekly plan
 
-1. On payday (or on demand) Bursar builds a plan: payments ready to go, payments held (with reasons), recurring staff pay, total vs weekly cap, cost of any swaps (from 1Click dry quotes).
+1. On payday (or on demand) Bursr builds a plan: payments ready to go, payments held (with reasons), recurring staff pay, total vs weekly cap, cost of any swaps (from 1Click dry quotes).
 2. The owner approves the whole plan with one tap — in the web app (always available) or in Telegram (P1).
 3. Items above the approval threshold or to payees added in the last 7 days need their own tap.
 4. The owner can remove any item before approving.
 
 ### 5.6 Paying
 
-- For each approved item, Bursar pays from the agent account:
+- For each approved item, Bursr pays from the agent account:
   - payee on NEAR with USDC → direct transfer;
   - any other chain/token → 1Click quote (`EXACT_OUTPUT`, payee receives exactly the invoice amount) and deposit from the agent account.
-- The agent account's own rules (Agent API policy or vault) are the final gate: if a payment breaks them, it fails, and Bursar records why.
+- The agent account's own rules (Agent API policy or vault) are the final gate: if a payment breaks them, it fails, and Bursr records why.
 - Status for every payment: pending → sent → delivered / refunded / failed, with links where available.
 - **Kill switch:** one button freezes the agent account; no payments until the owner unfreezes.
 
@@ -124,7 +123,7 @@ Hard rules first, then AI judgement, each with a plain-English reason:
 | B11 | Telegram bot: plan summary with Approve / Review buttons; alerts for holds and blocks | P1 |
 | B12 | NEAR AI Cloud "Verified" panel: attestation fetched with a fresh nonce and checked per docs | P1 |
 | B13 | Monthly plain-English summary | P1 |
-| B14 | Small Bursar fee per payment via 1Click `appFees`, shown openly | P1 |
+| B14 | Small Bursr fee per payment via 1Click `appFees`, shown openly | P1 |
 | B15 | Invoices by email forwarding | P2 |
 | B16 | Staff payslip page per payment | P2 |
 
@@ -153,7 +152,7 @@ bursar/
 - The owner's rules are enforced by the agent account (Agent API policy or vault contract), not by the AI.
 - The AI reads and judges; it never holds a full-access key.
 - Payout address changes need the owner.
-- Bursar's server runs the checks; NEAR AI Cloud runs the AI parts in TEEs with verifiable attestation.
+- Bursr's server runs the checks; NEAR AI Cloud runs the AI parts in TEEs with verifiable attestation.
 
 ## 8. Edge cases
 
@@ -172,7 +171,7 @@ bursar/
 ## 9. Demo (2 minutes; also the README "try it" path)
 
 1. A restaurant owner's week: 6 invoices arrive (uploaded in the demo).
-2. Bursar reads them and flags 4 problems in plain words: a look-alike supplier name, a duplicate, "our bank details changed", tomatoes billed 30% above the agreed price.
+2. Bursr reads them and flags 4 problems in plain words: a look-alike supplier name, a duplicate, "our bank details changed", tomatoes billed 30% above the agreed price.
 3. The weekly plan: 2 supplier payments + 3 staff salaries ready, 4 held with reasons, total under the weekly cap.
 4. Owner taps **Approve plan** (web; Telegram if built).
 5. Payments go out: USDC on NEAR to one supplier, USDT on another chain to another, salaries to staff — private by default. Live run on mainnet with tiny amounts, recorded separately; dry-run in the README.
@@ -189,7 +188,7 @@ bursar/
 | Avichal, Eddy | An app on stablecoin rails with accountability, not infrastructure |
 | Kain | Feels like a normal business app; a fee per payment as revenue |
 | Technical | Checks with tests, rules enforced outside the AI, real cross-chain payments |
-| Ahead of NEAR | NEAR Business (20 Oct) is a team treasury with no AI and spending policies "in development"; Bursar is the AI-run version on NEAR's own agent accounts |
+| Ahead of NEAR | NEAR Business (20 Oct) is a team treasury with no AI and spending policies "in development"; Bursr is the AI-run version on NEAR's own agent accounts |
 
 ## 11. Out of scope
 

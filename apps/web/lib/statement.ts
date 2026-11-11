@@ -4,7 +4,7 @@ import { getPlan, type PlanItemView } from "./plans";
 import { getBusiness } from "./store";
 import { chainName } from "./tokens";
 
-// The statement: one line per payment Bursar sent or tried to send. Because
+// The statement: one line per payment Bursr sent or tried to send. Because
 // settlement is confidential, this is the owner's main record of what
 // happened, so each line keeps the account's references.
 
@@ -67,7 +67,7 @@ export async function statementLines(db: PrismaClient): Promise<StatementLine[]>
   return lines;
 }
 
-const CSV_HEADERS = ["Date (UTC)", "Paid to", "For", "Amount (USD)", "Sent from Bursar wallet", "They received", "Network fee (paid by you)", "Where it went", "Status", "Approved", "Payment list", "References", "Note"];
+const CSV_HEADERS = ["Date (UTC)", "Paid to", "For", "Amount (USD)", "Sent from Bursr wallet", "They received", "Network fee (paid by you)", "Where it went", "Status", "Approved", "Payment list", "References", "Note"];
 
 function cell(v: string): string {
   // Quote every cell; neutralise spreadsheet formulas (a value starting with = + - @).

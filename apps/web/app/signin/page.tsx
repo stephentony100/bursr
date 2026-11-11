@@ -7,7 +7,7 @@ import { getOwner } from "@/lib/session";
 
 // Live mode: the one door for everyone. Connect a wallet; an owner goes
 // straight to their business, a new wallet goes to setup (/this-week decides).
-export const metadata = { title: "Sign in to Bursar" };
+export const metadata = { title: "Sign in to Bursr" };
 
 export default async function SignIn() {
   await connection();
@@ -19,7 +19,7 @@ export default async function SignIn() {
         <Logo />
         <h1 className="display mt-6 text-3xl">Continue with your wallet</h1>
         <p className="mt-2 text-muted">
-          Already use Bursar? You&apos;ll go straight to your business. New here? We&apos;ll set your business up together, step by step.
+          Already use Bursr? You&apos;ll go straight to your business. New here? We&apos;ll set your business up together, step by step.
         </p>
         <div className="mt-6">
           <ConnectWallet />

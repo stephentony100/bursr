@@ -23,7 +23,7 @@ export function DetailFields({ payee }: { payee?: Payee }) {
       <label className="block text-sm font-medium sm:col-span-2">
         Prices you agreed <span className="font-normal text-muted">(optional, one per line, in dollars)</span>
         <textarea name="prices" defaultValue={prices} rows={3} placeholder="Tomatoes (crate) = 18.00" className={`${input} num`} />
-        <span className="mt-1 block font-normal text-muted">If an invoice charges more than 5% above these, Bursar holds it for you to check.</span>
+        <span className="mt-1 block font-normal text-muted">If an invoice charges more than 5% above these, Bursr holds it for you to check.</span>
       </label>
       <div className="grid grid-cols-2 gap-3 sm:col-span-2 sm:max-w-xl sm:grid-cols-3">
         <label className="block text-sm font-medium">
@@ -47,7 +47,7 @@ export function DetailFields({ payee }: { payee?: Payee }) {
           </select>
         </label>
         <p className="col-span-2 text-sm text-muted sm:col-span-3 sm:order-last">
-          Leave it empty for suppliers you pay by invoice: Bursar then pays them only when they send one and it passes the checks.
+          Leave it empty for suppliers you pay by invoice: Bursr then pays them only when they send one and it passes the checks.
         </p>
         <label className="col-span-2 block text-sm font-medium sm:col-span-1">
           If monthly, pay on

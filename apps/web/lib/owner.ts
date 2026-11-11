@@ -94,7 +94,7 @@ export function sessionFromCookie(value: string | undefined, now = Date.now()): 
 
 // --- sign-in challenge -------------------------------------------------------
 
-export const SIGN_IN_MESSAGE = "Sign in to Bursar as the owner of this business";
+export const SIGN_IN_MESSAGE = "Sign in to Bursr as the owner of this business";
 
 export function signInRecipient(): string {
   return new URL(readEnv().NEXT_PUBLIC_APP_URL).host;

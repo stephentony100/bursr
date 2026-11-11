@@ -73,7 +73,7 @@ function refuse(code: RefusalCode, layer: Refusal["layer"], message: string): Ve
 export function evaluate(state: AccountState, req: ActionRequest, now: Date): Verdict {
   const { policy } = state;
   const decimals = state.decimals[req.asset];
-  if (decimals === undefined) return refuse("unsupported_token", "request", "Bursar can't pay in this currency.");
+  if (decimals === undefined) return refuse("unsupported_token", "request", "Bursr can't pay in this currency.");
   if (req.amount <= 0n) return refuse("unsupported_token", "request", "The amount must be more than zero.");
 
   if (policy.frozen) {
@@ -139,7 +139,7 @@ export function evaluate(state: AccountState, req: ActionRequest, now: Date): Ve
 
   const balance = state.balances[req.asset] ?? 0n;
   if (req.amount > balance) {
-    return refuse("insufficient_balance", "balance", "There isn't enough money in your Bursar wallet for this payment.");
+    return refuse("insufficient_balance", "balance", "There isn't enough money in your Bursr wallet for this payment.");
   }
 
   return { ok: true, usdMicros };

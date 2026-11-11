@@ -24,7 +24,7 @@ export default function Landing() {
               <span id="limits-title">The AI does the work. Your wallet keeps the rules.</span>
             </Reveal>
             <p className="mt-5 max-w-[60ch] text-lg leading-relaxed text-muted">
-              Your limits live in your Bursar wallet, not in the AI, so even a confused or tricked AI can&apos;t go past them.
+              Your limits live in your Bursr wallet, not in the AI, so even a confused or tricked AI can&apos;t go past them.
             </p>
             <div className="mt-12">
               <LimitsTabs />

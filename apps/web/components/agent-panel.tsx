@@ -63,7 +63,7 @@ export function AgentStatus({ autopilot, frozen, nextPayday }: { autopilot: bool
         </span>
         <div className="min-w-0">
           <p className="flex items-center gap-2 font-semibold">
-            Your Bursar agent <span aria-hidden className={`h-2 w-2 rounded-full ${state.dot}`} />
+            Your Bursr agent <span aria-hidden className={`h-2 w-2 rounded-full ${state.dot}`} />
           </p>
           <p className="text-sm text-white/75">{state.text}</p>
         </div>

@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 // AGENTS.md rule 4: only the owner changes payees or payout addresses; no code
-// path lets the agent do it. The agent side of Bursar (reading invoices,
+// path lets the agent do it. The agent side of Bursr (reading invoices,
 // checks, planning, paying) must never import the owner-only modules.
 
 const LIB = import.meta.dirname;

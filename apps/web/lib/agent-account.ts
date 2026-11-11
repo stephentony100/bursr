@@ -30,7 +30,7 @@ export async function liveAgentConfig(db: PrismaClient) {
   const env = readEnv();
   if (!env.AGENT_API_KEY) throw new Error("Live mode needs AGENT_API_KEY in .env.");
   const record = await getAccountRecord(db);
-  if (!record || record.backend !== "agent-api") throw new Error("Set up your Bursar wallet first (Spending rules).");
+  if (!record || record.backend !== "agent-api") throw new Error("Set up your Bursr wallet first (Spending rules).");
   if (env.AGENT_API_AGENT_ID && env.AGENT_API_AGENT_ID !== record.agentId) {
     throw new Error("AGENT_API_AGENT_ID in .env names a different agent than this business's wallet. Remove it from .env.");
   }

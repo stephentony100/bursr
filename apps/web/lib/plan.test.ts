@@ -82,11 +82,11 @@ describe("weekly plan", () => {
     const both = invoice({
       id: "h",
       status: "block",
-      needsOwner: "Bursar couldn't read the supplier's name clearly.",
+      needsOwner: "Bursr couldn't read the supplier's name clearly.",
       results: [{ check: "payout-changed", status: "block", reason: "Payment details changed." }],
     });
     expect(placement(buildPlan(input({ invoices: [both] })), "Invoice #H").reason).toBe(
-      "Payment details changed. Bursar couldn't read the supplier's name clearly.",
+      "Payment details changed. Bursr couldn't read the supplier's name clearly.",
     );
   });
 

@@ -9,7 +9,7 @@ Run this checklist and report each item as PASS / FAIL with evidence. Do not fix
 3. Follow every numbered step in README "Try it" exactly as written in dry-run mode. Report any step whose result differs from the README.
 4. Rules hold: a test proves a payment above the cap, to a non-approved payee, or while frozen is rejected by the agent account itself (not just by app code).
 5. Fixtures: the sample invoices produce exactly the expected holds/blocks and reasons.
-6. README has: what it is, the problem, try-it steps, how NEAR is used (concrete), trust model, limitations, Built with, link to Wetin. No placeholders left (`<`, `TODO`).
+6. README has: what it is, the problem, try-it steps, how NEAR is used (concrete), trust model, limitations, Built with. No placeholders left (`<`, `TODO`).
 7. LICENSE exists; `.env.example` lists every variable the code reads (`grep -r "process.env."`).
 8. All P0 items in docs/TASKS.md for finished milestones are ticked.
 8a. Reuse (AGENTS.md rule 9): every library and every piece of third-party code is listed in README "Built with"; any third-party code kept in the repo has a license that allows reuse (e.g. MIT, Apache-2.0) with its notice kept; no website's own scripts or stylesheets without a reuse license are in the repo.

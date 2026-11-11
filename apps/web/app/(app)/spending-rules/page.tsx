@@ -41,8 +41,8 @@ export default async function SetupPage() {
       <div>
         <h1 className="display text-4xl">Spending rules</h1>
         <p className="mt-2 max-w-2xl text-muted">
-          You set the limits once. They&apos;re locked into your Bursar wallet itself, so any payment that breaks them is stopped there,
-          no matter what. Bursar&apos;s AI can only ask to pay; it can never change your limits or who you pay.
+          You set the limits once. They&apos;re locked into your Bursr wallet itself, so any payment that breaks them is stopped there,
+          no matter what. Bursr&apos;s AI can only ask to pay; it can never change your limits or who you pay.
         </p>
       </div>
 
@@ -98,7 +98,7 @@ export default async function SetupPage() {
               </label>
             </fieldset>
             <p className="mt-5 text-sm">
-              <span className="font-medium">Bursar&apos;s fee: </span>
+              <span className="font-medium">Bursr&apos;s fee: </span>
               {r.fee ? (
                 <>
                   {(r.fee.bps / 100).toFixed(2).replace(/\.?0+$/, "")}% of each week&apos;s payments, shown as its own line before you approve. Like
@@ -111,7 +111,7 @@ export default async function SetupPage() {
             </p>
             <fieldset className="mt-5">
               <legend className="text-sm font-medium">How people can get paid</legend>
-              <p className="text-sm text-muted">Your Bursar wallet holds digital dollars ({r.treasury.symbol}). Each person can choose to receive any of these, on the network they already use.</p>
+              <p className="text-sm text-muted">Your Bursr wallet holds digital dollars ({r.treasury.symbol}). Each person can choose to receive any of these, on the network they already use.</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {tokens.map((t) => (
                   <label key={t.assetId} className="flex items-center gap-2 rounded-md border border-line px-3 py-1.5 text-sm has-[:checked]:border-ledger has-[:checked]:bg-ledger-soft">
@@ -142,7 +142,7 @@ export default async function SetupPage() {
         <section className="rounded-xl border border-line bg-card p-6">
           <h2 className="text-xl font-bold">Telegram</h2>
           <p className="mt-1 max-w-2xl text-sm text-muted">
-            Get a message the moment Bursar stops a suspicious invoice, and approve the week&apos;s payments from your phone.{" "}
+            Get a message the moment Bursr stops a suspicious invoice, and approve the week&apos;s payments from your phone.{" "}
             {telegram ? <strong className="text-ledger">Connected.</strong> : "Not connected yet."}
           </p>
           <ActionForm action={telegramLinkAction} submit={telegram ? "Connect a different chat" : "Connect my Telegram"} tone="quiet" />
@@ -153,7 +153,7 @@ export default async function SetupPage() {
         <section className="rounded-xl border border-line bg-card p-6">
           <h2 className="text-xl font-bold">See your limits in action</h2>
           <p className="mt-1 max-w-2xl text-sm text-muted">
-            Pick a payment and Bursar asks your wallet whether it would let it through. Nothing is actually paid.{" "}
+            Pick a payment and Bursr asks your wallet whether it would let it through. Nothing is actually paid.{" "}
             {dryRun ? "In the demo, the wallet follows the same rules with practice money." : "The answer comes from your real wallet."}
           </p>
           <div className="mt-4">

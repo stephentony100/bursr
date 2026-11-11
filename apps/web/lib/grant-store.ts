@@ -12,7 +12,7 @@ const RENEW_WARNING_MS = 3 * 24 * 60 * 60 * 1000;
 
 export class GrantUnreadableError extends Error {
   constructor() {
-    super("Bursar can't read its payment pass (the data key changed or the pass was damaged). Press \"Let Bursar make payments\" again on Spending rules.");
+    super("Bursr can't read its payment pass (the data key changed or the pass was damaged). Press \"Let Bursr make payments\" again on Spending rules.");
   }
 }
 
@@ -65,7 +65,7 @@ export function grantState(record: { grantSealed: string | null; grantExpiresAt:
 
 /** The plain pass for the live agent account; only lib/agent-account.ts and the live scripts call this. */
 export function readGrant(record: { agentId: string; grantSealed: string | null; grantExpiresAt: Date | null }, now = new Date(), key = dataKey()): string {
-  if (!record.grantSealed) throw new Error("Bursar isn't allowed to make payments yet. On Spending rules, press \"Let Bursar make payments inside my limits\".");
-  if (!grantState(record, now).usable) throw new Error("Bursar's permission to make payments has run out. On Spending rules, press \"Renew Bursar's permission to pay\".");
+  if (!record.grantSealed) throw new Error("Bursr isn't allowed to make payments yet. On Spending rules, press \"Let Bursr make payments inside my limits\".");
+  if (!grantState(record, now).usable) throw new Error("Bursr's permission to make payments has run out. On Spending rules, press \"Renew Bursr's permission to pay\".");
   return openGrant(record.grantSealed, record.agentId, key);
 }

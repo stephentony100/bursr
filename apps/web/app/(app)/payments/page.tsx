@@ -219,7 +219,7 @@ export default async function PlanPage() {
       <section className="rounded-xl border border-line bg-card p-6">
         <h2 className="text-xl font-bold">Can anyone get around your limits?</h2>
         <p className="mt-1 max-w-2xl text-sm text-muted">
-          Try it yourself: Bursar sends one payment bigger than your limit straight to your wallet, skipping this list and your approval.
+          Try it yourself: Bursr sends one payment bigger than your limit straight to your wallet, skipping this list and your approval.
           Your spending rules live in the wallet itself, so it should be stopped there.{" "}
           {dryRun ? "In the demo, the wallet follows the same rules with practice money." : "In live mode this only asks the wallet; nothing is sent."}
         </p>

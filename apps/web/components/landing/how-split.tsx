@@ -14,7 +14,7 @@ const STEPS: { when: string; title: string; body: string; panel: string; ink: st
   {
     when: "Monday to Thursday",
     title: "Invoices come in.",
-    body: "Snap a photo of each supplier invoice and upload it. Bursar reads it privately: who it's from, what you bought, how much, and where they want the money.",
+    body: "Snap a photo of each supplier invoice and upload it. Bursr reads it privately: who it's from, what you bought, how much, and where they want the money.",
     panel: "#eceef2",
     ink: "#0f1623",
     rings: [

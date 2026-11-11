@@ -48,7 +48,7 @@ export function PendingChangesBar({ lines, onlyTighter }: { lines: string[]; onl
           </p>
           <p className="text-muted">
             {onlyTighter
-              ? "Bursar already follows this. Confirming locks it into your agent's wallet too."
+              ? "Bursr already follows this. Confirming locks it into your agent's wallet too."
               : "New people and higher limits take effect once you confirm. Until then your agent won't use them."}
           </p>
           {error && (

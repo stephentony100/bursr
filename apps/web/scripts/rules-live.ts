@@ -1,5 +1,5 @@
 // npm run rules:live: proves the owner's rules are enforced by the agent
-// account itself (the NEAR Intents Agent API on mainnet), not by Bursar.
+// account itself (the NEAR Intents Agent API on mainnet), not by Bursr.
 // It asks the live account for payments the rules forbid and records what the
 // account answers. Use an UNFUNDED agent: even if a rule were missing, there is
 // nothing to move. Needs AGENT_API_KEY and BURSAR_DATA_KEY in .env, and the

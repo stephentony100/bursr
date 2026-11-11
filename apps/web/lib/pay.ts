@@ -11,7 +11,7 @@ import { chainName } from "./tokens";
 import { friendlyError } from "./errors";
 
 // Pays an approved plan, item by item, through the agent account
-// (lib/agent-account.ts). Bursar re-checks each item against the payee record
+// (lib/agent-account.ts). Bursr re-checks each item against the payee record
 // as it is now; the account then applies the owner's signed rules and has the
 // final say. Every request carries an idempotency key derived from the item,
 // so retrying never pays twice. Agent-side code: it cannot change payees.
@@ -43,7 +43,7 @@ function refusedText(o: ActionOutcome): string | null {
 
 /** Self-repair: why a payment didn't go out decides whether the agent waits and tries again, or hands it to the owner. */
 type Problem =
-  | { kind: "funds"; message: string } // not enough money in the Bursar wallet: retry when it arrives
+  | { kind: "funds"; message: string } // not enough money in the Bursr wallet: retry when it arrives
   | { kind: "budget"; message: string; until: Date | null } // weekly limit used up: retry when it refills
   | { kind: "paused"; message: string } // owner paused payments: retry when they're back on
   | { kind: "payee"; message: string } // their NEAR account can't hold the token yet: check again daily
@@ -58,7 +58,7 @@ function problemFromRefusal(o: ActionOutcome & { status: "refused" }, weekResets
   const text = refusedText(o)!;
   switch (o.refusal.code) {
     case "insufficient_balance":
-      return { kind: "funds", message: "Not enough money in your Bursar wallet for this payment yet. I'll pay it as soon as you add money." };
+      return { kind: "funds", message: "Not enough money in your Bursr wallet for this payment yet. I'll pay it as soon as you add money." };
     case "spend_budget_exceeded":
       return { kind: "budget", message: "Your weekly limit is used up. I'll pay it when the limit refills.", until: weekResetsAt };
     case "wallet_frozen":
@@ -127,7 +127,7 @@ export async function payItem(
         ? business.rules.fee && { payout: business.rules.fee.payout, payoutChangedAt: null }
         : (await listPayees(db)).find((p) => p.id === item.payeeId);
     if (!payee) {
-      return stop({ kind: "final", message: item.kind === "fee" ? "Bursar's fee was removed from your rules, so it wasn't paid." : "You removed this person, so they weren't paid." });
+      return stop({ kind: "final", message: item.kind === "fee" ? "Bursr's fee was removed from your rules, so it wasn't paid." : "You removed this person, so they weren't paid." });
     }
     if (!samePayout(payee.payout, planned)) {
       return stop({ kind: "final", message: "Their payment details changed after this payment was set up, so it wasn't paid. It will come back with their new details." });

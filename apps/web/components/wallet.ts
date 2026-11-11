@@ -50,12 +50,12 @@ export interface PreparedIntent {
   intent: { standard: string; payload: Record<string, unknown> };
 }
 
-/** Asks Bursar's server to prepare a change for the owner's wallet to sign (nothing is signed yet). */
+/** Asks Bursr's server to prepare a change for the owner's wallet to sign (nothing is signed yet). */
 export function prepareIntent(kind: OwnerIntentKind): Promise<PreparedIntent> {
   return post<PreparedIntent>("/api/owner/intent", { step: "prepare", kind });
 }
 
-/** The owner's wallet signs the prepared change and Bursar submits it. Throws a plain-words error if it isn't applied. */
+/** The owner's wallet signs the prepared change and Bursr submits it. Throws a plain-words error if it isn't applied. */
 export async function signAndSubmitIntent(prepared: PreparedIntent): Promise<void> {
   const w = await wallet();
   const { intent } = prepared;

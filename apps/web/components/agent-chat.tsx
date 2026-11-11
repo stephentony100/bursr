@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { chatAction, confirmCardAction } from "@/app/actions";
 import type { ActionCard, ChatTurn } from "@/lib/agent/chat";
 
-// The chat with Bursar's agent. Answers come from the agent's tools; any
+// The chat with Bursr's agent. Answers come from the agent's tools; any
 // action comes back as a card the owner confirms.
 
 type Line = ChatTurn & { cards?: ActionCard[] };

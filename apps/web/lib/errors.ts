@@ -1,5 +1,5 @@
 // One place that turns any error into words a shop owner understands: what
-// happened, and what to do next. Bursar's own messages are already plain and
+// happened, and what to do next. Bursr's own messages are already plain and
 // pass through; technical ones (wallet objects, network failures, service
 // codes, stack traces) are translated. Safe in the browser and on the server.
 
@@ -23,7 +23,7 @@ function parts(e: unknown): { text: string; code: string; status: number | null 
 
 // What the agent account's codes mean for the owner.
 const CODES: Record<string, string> = {
-  insufficient_balance: "There isn't enough money in your Bursar wallet for this. Add money and try again.",
+  insufficient_balance: "There isn't enough money in your Bursr wallet for this. Add money and try again.",
   spend_budget_exceeded: "This would go over your weekly limit. It can go out when the limit refills, or you can raise the limit on Spending rules.",
   policy_transaction_limit_exceeded: "This is more than your largest single payment allowed. Pay it in parts, or raise the limit on Spending rules.",
   policy_destination_denied: "This wallet isn't on your list of people you pay. Only you can add someone, on the People page.",
@@ -31,15 +31,15 @@ const CODES: Record<string, string> = {
   invalid_address: "That wallet address can't receive this payment. Check the address and the network with the person.",
   policy_asset_denied: "Your spending rules don't allow paying in this currency. You can change that on Spending rules.",
   rate_limited: "Too many tries in a short time. Wait a minute and try again.",
-  idempotency_conflict: "This payment was already started with different details. Bursar stopped it so nothing is paid twice.",
-  validation_failed: "The payment service couldn't process this request. Nothing was sent. Bursar will try again shortly.",
+  idempotency_conflict: "This payment was already started with different details. Bursr stopped it so nothing is paid twice.",
+  validation_failed: "The payment service couldn't process this request. Nothing was sent. Bursr will try again shortly.",
   unauthorized: "Your session has ended. Please sign in again.",
 };
 
 const PLAIN: [RegExp, string][] = [
   [/user (rejected|cancel|denied)|rejected by user|request rejected|cancel(l)?ed|closed (the )?(window|popup|modal)|popup closed|window closed|user closed/i, "You closed your wallet before confirming, so nothing changed. Try again when you're ready."],
-  [/no wallet|wallet not (found|installed|selected)|not installed|no (selected|connected) wallet/i, "Bursar couldn't find a wallet to connect. Install a NEAR wallet app such as HOT Wallet, then try again."],
-  [/failed to fetch|fetch failed|networkerror|network error|econn|enotfound|etimedout|timed? ?out|aborted|socket hang up|load failed/i, "Bursar couldn't reach the network just now. Check your internet connection and try again."],
+  [/no wallet|wallet not (found|installed|selected)|not installed|no (selected|connected) wallet/i, "Bursr couldn't find a wallet to connect. Install a NEAR wallet app such as HOT Wallet, then try again."],
+  [/failed to fetch|fetch failed|networkerror|network error|econn|enotfound|etimedout|timed? ?out|aborted|socket hang up|load failed/i, "Bursr couldn't reach the network just now. Check your internet connection and try again."],
   [/\b429\b|too many requests|rate.?limit/i, CODES.rate_limited],
   [/\b402\b|no credits|insufficient credits|payment required/i, "The AI service used to read invoices has run out of credits. The business owner needs to top it up."],
   [/signature not accepted|invalid signature|signature.*(invalid|mismatch)/i, "Your wallet's signature couldn't be checked. Please sign in again."],

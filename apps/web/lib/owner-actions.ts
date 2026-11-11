@@ -11,7 +11,7 @@ import { getAccountRecord, getBusiness, getPayee, listPayees } from "./store";
 
 // Everything that changes the owner's rules or payees. Each function needs an
 // OwnerSession (lib/owner.ts), and the session must belong to the business's
-// owner. The agent side of Bursar has no way to call these (see
+// owner. The agent side of Bursr has no way to call these (see
 // lib/boundaries.test.ts), and in live mode nothing here takes effect on the
 // account until the owner signs the new policy with their wallet.
 
@@ -93,7 +93,7 @@ export async function setupBusiness(db: PrismaClient, owner: OwnerSession, input
       update: {},
     });
   }
-  await audit(db, owner, "business_setup", `Welcome to Bursar, ${input.name}`, rules);
+  await audit(db, owner, "business_setup", `Welcome to Bursr, ${input.name}`, rules);
 }
 
 export async function updateRules(db: PrismaClient, owner: OwnerSession, rules: Rules) {
@@ -366,13 +366,13 @@ export async function removePlanItem(db: PrismaClient, owner: OwnerSession, item
   await assertOwner(db, owner);
   const item = await draftItem(db, itemId);
   if (item.placement !== "in") throw new Error("Only payments in this week's list can be taken out.");
-  if (item.kind === "fee") throw new Error("Bursar's fee is part of your spending rules.");
+  if (item.kind === "fee") throw new Error("Bursr's fee is part of your spending rules.");
   await db.planItem.update({ where: { id: itemId }, data: { placement: "removed", reason: "Removed by the owner." } });
   await audit(db, owner, "plan_item_removed", `You took ${item.payeeName} (${item.forWhat}) out of this week's payments`, { itemId });
   await recomputeFee(db, item.planId);
 }
 
-/** Bursar's fee is a share of the payments in the plan; after a removal it shrinks with them. */
+/** Bursr's fee is a share of the payments in the plan; after a removal it shrinks with them. */
 async function recomputeFee(db: PrismaClient, planId: string) {
   const business = await getBusiness(db);
   const items = await db.planItem.findMany({ where: { planId } });
@@ -381,7 +381,7 @@ async function recomputeFee(db: PrismaClient, planId: string) {
   const base = items.filter((i) => i.kind !== "fee" && i.placement === "in").reduce((a, i) => a + BigInt(i.amountUsd), 0n);
   const amount = (base * BigInt(business.rules.fee.bps)) / 10_000n;
   const pct = (business.rules.fee.bps / 100).toFixed(2).replace(/\.?0+$/, "");
-  const forWhat = `Bursar fee (${pct}% of ${formatUsd(base)})`;
+  const forWhat = `Bursr fee (${pct}% of ${formatUsd(base)})`;
   if (amount === 0n) await db.planItem.update({ where: { id: fee.id }, data: { placement: "removed", reason: "Nothing left to charge a fee on." } });
   else await db.planItem.update({ where: { id: fee.id }, data: { amountUsd: amount.toString(), forWhat, quote: null } });
 }

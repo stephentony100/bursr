@@ -22,7 +22,7 @@ import { getOwner, appDb } from "@/lib/session";
 import { getAccountRecord, getBusiness, listPayees } from "@/lib/store";
 import { chainName, payoutTokens } from "@/lib/tokens";
 
-export const metadata = { title: "Set up Bursar" };
+export const metadata = { title: "Set up Bursr" };
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -38,7 +38,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
   const business = await getBusiness((await appDb()));
   // Setup finished: a signed-in owner arriving here goes to their dashboard (going back to a step is still possible).
   if (owner && business && state.finished && !asked) redirect("/this-week");
-  // Signed out (live): show a blank set of steps; whether this Bursar is set up, and how far, is the owner's business.
+  // Signed out (live): show a blank set of steps; whether this Bursr is set up, and how far, is the owner's business.
   const signedOut = state.live && !owner;
   const shownDone = signedOut ? (Object.fromEntries(STEPS.map((s) => [s, false])) as Record<Step, boolean>) : state.done;
   // Practice restaurant loaded: offer to start a business of your own instead.
@@ -48,7 +48,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
     <div className="min-h-screen bg-paper">
       <header className="border-b border-line bg-card">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
-          <Link href="/" aria-label="Bursar home">
+          <Link href="/" aria-label="Bursr home">
             <Logo />
           </Link>
           {!state.live && <span className="text-sm text-hold">Practice mode · practice money</span>}
@@ -117,7 +117,7 @@ async function StepBody({ step, live, businessName }: { step: Step; live: boolea
       return (
         <div className="space-y-4 text-muted">
           <p>
-            Your wallet is how Bursar knows it&apos;s you. Only your wallet can change your limits or who gets paid; your agent never can. Connecting is free and moves no money.
+            Your wallet is how Bursr knows it&apos;s you. Only your wallet can change your limits or who gets paid; your agent never can. Connecting is free and moves no money.
           </p>
           <p className="text-sm">
             No wallet yet? Install a NEAR wallet app such as HOT Wallet, create an account, then come back here.

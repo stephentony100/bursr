@@ -4,7 +4,7 @@ import { parseUnits, USD_DECIMALS } from "../money";
 import type { ActionRequest, RefusalCode } from "./evaluate";
 import type { AccountStatus, ActionOutcome, AgentAccount, Outcome } from "./types";
 
-// Live agent account on the NEAR Intents Agent API (mainnet). Bursar only
+// Live agent account on the NEAR Intents Agent API (mainnet). Bursr only
 // asks; the API (destinations, budget) and its TEE wallet provider (assets,
 // limits, freeze) refuse anything outside the owner's signed policy.
 // The agent acts with a grant token only; it never holds the owner's key.
@@ -35,7 +35,7 @@ function refusalFrom(e: AgentApiError): ActionOutcome {
   return { status: "refused", refusal: { code: e.code as RefusalCode, layer, message } };
 }
 
-// The SDK makes UUID keys; Bursar's keys are "<plan item>:<step>" so a retry can
+// The SDK makes UUID keys; Bursr's keys are "<plan item>:<step>" so a retry can
 // never pay twice. Sent as a name-based UUID (v5) of that key: the same payment
 // step always sends the same Idempotency-Key.
 const KEY_NAMESPACE = Buffer.from("6ba7b8119dad11d180b400c04fd430c8", "hex"); // RFC 4122 URL namespace

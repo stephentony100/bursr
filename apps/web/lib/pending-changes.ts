@@ -6,9 +6,9 @@ import { formatUsd, parseUnits, rescale, USD_DECIMALS } from "./money";
 import { buildPolicy, destinationFor } from "./policy";
 import { getAccountRecord, getBusiness, listPayees } from "./store";
 
-// Live mode: what the owner changed in Bursar that their wallet hasn't signed
+// Live mode: what the owner changed in Bursr that their wallet hasn't signed
 // into the agent's wallet yet, in plain words. Removals and lower limits are
-// already applied by Bursar itself (lib/pay.ts); additions and higher limits
+// already applied by Bursr itself (lib/pay.ts); additions and higher limits
 // only take effect once the owner's wallet confirms.
 
 export interface PendingChanges {

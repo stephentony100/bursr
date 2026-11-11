@@ -70,5 +70,5 @@ export function AppNav({ variant }: { variant: "sidebar" | "bar" }) {
 export function PageName() {
   const path = usePathname();
   const n = NAV.find((x) => isActive(path, x.href));
-  return <span className="text-sm font-semibold text-ink">{n?.label ?? "Bursar"}</span>;
+  return <span className="text-sm font-semibold text-ink">{n?.label ?? "Bursr"}</span>;
 }

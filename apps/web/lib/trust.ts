@@ -4,7 +4,7 @@ import { destinationFor } from "./policy";
 import { getAccountRecord, getBusiness, listPayees } from "./store";
 
 // Live mode: the owner's wallet signing someone into the agent's wallet is the
-// strongest approval Bursar has, so it also counts as the "first payment"
+// strongest approval Bursr has, so it also counts as the "first payment"
 // OK. People on the signed list are trusted; their first routine payment
 // goes out on autopilot like any other. (Practice mode has no wallet
 // signature, so there the owner's in-app OK still does this.)

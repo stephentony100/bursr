@@ -53,7 +53,7 @@ export default async function PayeePage({ params }: PageProps<"/people/[id]">) {
 
       <section className="rounded-xl border border-line bg-card p-6">
         <h2 className="text-xl font-bold">Stop paying them</h2>
-        <p className="mt-1 text-sm text-muted">Bursar won&apos;t be able to pay them any more. You can add them again later.</p>
+        <p className="mt-1 text-sm text-muted">Bursr won&apos;t be able to pay them any more. You can add them again later.</p>
         <ActionForm action={removePayeeAction} submit={`Remove ${payee.name}`} tone="danger">
           <input type="hidden" name="id" value={payee.id} />
         </ActionForm>

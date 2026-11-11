@@ -5,7 +5,7 @@
 3. Paste the prompt below. Claude Code stops at each milestone checkpoint and waits for your OK.
 
 ```text
-You are building Bursar for NEAR HACKATHON (submissions close 14 Nov 2026, 23:59 UTC). I am building a second, independent project (Wetin) in parallel in another repo; never touch it or share code with it.
+You are building Bursr for NEAR HACKATHON (submissions close 14 Nov 2026, 23:59 UTC).
 
 1. Read, in this order: AGENTS.md, CLAUDE.md, docs/PRD.md, docs/TASKS.md, docs/DECISIONS.md, docs/NEAR-NOTES.md and everything in docs/hackathon/. Then read https://nearhackathon.com/HACKATHON.md in full. AGENTS.md is your rulebook; follow it exactly, especially the "never without my OK" list.
 

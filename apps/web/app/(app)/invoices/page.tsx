@@ -46,7 +46,7 @@ export default async function InvoicesPage() {
       <div>
         <h1 className="display text-4xl">Invoices</h1>
         <p className="mt-2 max-w-2xl text-muted">
-          Before a single payment goes out, Bursar checks every invoice for the tricks that cost small businesses money: fake suppliers
+          Before a single payment goes out, Bursr checks every invoice for the tricks that cost small businesses money: fake suppliers
           with look-alike names, &ldquo;our bank details have changed&rdquo; messages, the same bill sent twice, prices above what you
           agreed, and sums that don&apos;t add up.
         </p>
@@ -60,7 +60,7 @@ export default async function InvoicesPage() {
 
       <section className="rounded-xl border border-line bg-card p-6">
         <h2 className="text-xl font-bold">Add an invoice</h2>
-        <p className="mt-1 text-sm text-muted">Got a bill by WhatsApp, email or on paper? Add it here and Bursar checks it in seconds.</p>
+        <p className="mt-1 text-sm text-muted">Got a bill by WhatsApp, email or on paper? Add it here and Bursr checks it in seconds.</p>
         <ActionForm action={uploadInvoiceAction} submit="Check this invoice" className="mt-4 space-y-4">
           <label className="block text-sm font-medium">
             A photo or screenshot of the invoice
@@ -72,8 +72,8 @@ export default async function InvoicesPage() {
           </label>
           <p className="text-sm text-muted">
             {dryRun
-              ? "In the demo, Bursar already knows the six sample invoices. Reading your own invoices needs Bursar's AI reader switched on."
-              : "Read by Bursar's AI inside a sealed, verifiable computer that keeps your invoice private."}
+              ? "In the demo, Bursr already knows the six sample invoices. Reading your own invoices needs Bursr's AI reader switched on."
+              : "Read by Bursr's AI inside a sealed, verifiable computer that keeps your invoice private."}
           </p>
         </ActionForm>
         {dryRun && (
@@ -128,7 +128,7 @@ export default async function InvoicesPage() {
                 )}
                 {inv.extracted && inv.extracted.lines.length > 0 && (
                   <details className="mt-2 text-sm">
-                    <summary className="cursor-pointer text-muted">What Bursar read from it</summary>
+                    <summary className="cursor-pointer text-muted">What Bursr read from it</summary>
                     <table className="mt-2 w-full max-w-xl text-left text-xs">
                       <thead className="whitespace-nowrap [overflow-wrap:normal] text-muted">
                         <tr>

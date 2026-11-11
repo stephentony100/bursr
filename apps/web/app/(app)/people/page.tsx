@@ -43,7 +43,7 @@ export default async function PayeesPage({ searchParams }: { searchParams: Promi
     <div className="space-y-10">
       {removed !== undefined && (
         <p role="status" className="rounded-xl border border-ledger/40 bg-ledger-soft px-5 py-4 text-sm">
-          <span className="font-semibold">{removed ? `${removed} was removed.` : "Removed."}</span> Bursar can no longer pay them.
+          <span className="font-semibold">{removed ? `${removed} was removed.` : "Removed."}</span> Bursr can no longer pay them.
           {removedPending && (
             <>
               {" "}
@@ -55,7 +55,7 @@ export default async function PayeesPage({ searchParams }: { searchParams: Promi
       <div>
         <h1 className="display text-4xl">People you pay</h1>
         <p className="mt-2 max-w-2xl text-muted">
-          Bursar can only ever pay the people on this list, at exactly these addresses. Only you can add someone or change where they
+          Bursr can only ever pay the people on this list, at exactly these addresses. Only you can add someone or change where they
           get paid. If you change it for someone you&apos;ve paid before, their payments wait 48 hours first. That&apos;s usually long enough for a fake &ldquo;our bank details
           have changed&rdquo; message to come to light.
         </p>

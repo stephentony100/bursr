@@ -31,7 +31,7 @@ describe("home page week data", () => {
   });
 
   it("lists the clean invoices and the staff pay on the networks each payee chose", () => {
-    for (const p of WEEK_PAYMENTS.filter((x) => x.who !== "Bursar fee")) {
+    for (const p of WEEK_PAYMENTS.filter((x) => x.who !== "Bursr fee")) {
       const payee = payees.find((x) => x.name.startsWith(p.who));
       expect(payee, p.who).toBeDefined();
       expect(chainName(payee!.payout.token.chain)).toBe(p.network);
@@ -44,8 +44,8 @@ describe("home page week data", () => {
 
   it("charges the fee at the sample rate and totals $661.29", () => {
     const fee = sampleRules(tokens).fee!;
-    const paid = WEEK_PAYMENTS.filter((p) => p.who !== "Bursar fee").reduce((s, p) => s + p.cents, 0);
-    expect(WEEK_PAYMENTS.find((p) => p.who === "Bursar fee")!.cents).toBe(Math.round((paid * fee.bps) / 10_000));
+    const paid = WEEK_PAYMENTS.filter((p) => p.who !== "Bursr fee").reduce((s, p) => s + p.cents, 0);
+    expect(WEEK_PAYMENTS.find((p) => p.who === "Bursr fee")!.cents).toBe(Math.round((paid * fee.bps) / 10_000));
     expect(chainName(fee.payout.token.chain)).toBe("NEAR");
     expect(usd(WEEK_TOTAL_CENTS)).toBe("$661.29");
   });

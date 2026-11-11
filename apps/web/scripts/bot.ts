@@ -1,7 +1,7 @@
-// npm run bot: Bursar's Telegram bot (P1). Long polling; needs TELEGRAM_BOT_TOKEN.
+// npm run bot: Bursr's Telegram bot (P1). Long polling; needs TELEGRAM_BOT_TOKEN.
 //   /link CODE  connect this chat (code from Rules & account → Connect Telegram)
 //   /plan       this week's plan, with an Approve button
-//   any text    talk to Bursar's agent (same agent and tools as the web chat)
+//   any text    talk to Bursr's agent (same agent and tools as the web chat)
 // Alerts (blocked/held invoices, failed payments, refused attempts, and the
 // agent's news: what it paid, what needs your OK, money it needs) go to the
 // linked chat once each. Approving here is the same owner action as on the web.
@@ -25,7 +25,7 @@ if (!env.TELEGRAM_BOT_TOKEN) throw new Error("Set TELEGRAM_BOT_TOKEN in .env (fr
 const bot = new Bot(env.TELEGRAM_BOT_TOKEN);
 const web = env.NEXT_PUBLIC_APP_URL;
 
-/** The business a chat is linked to, and its owner (one bot serves every business on this Bursar). */
+/** The business a chat is linked to, and its owner (one bot serves every business on this Bursr). */
 async function forChat(chatId: number | undefined) {
   if (chatId === undefined) return null;
   for (const id of await allBusinessIds(db())) {
@@ -38,8 +38,8 @@ async function forChat(chatId: number | undefined) {
 
 bot.command("start", (ctx) =>
   ctx.reply(
-    "Hi, I'm Bursar's agent. I check your supplier invoices for fraud and pay your staff and suppliers on their day, inside the limits you set. I'll message you here when something needs you, and you can just talk to me.\n\n" +
-      "To connect: open Bursar → Spending rules → Connect my Telegram, then send me the /link line it shows you.",
+    "Hi, I'm Bursr's agent. I check your supplier invoices for fraud and pay your staff and suppliers on their day, inside the limits you set. I'll message you here when something needs you, and you can just talk to me.\n\n" +
+      "To connect: open Bursr → Spending rules → Connect my Telegram, then send me the /link line it shows you.",
   ),
 );
 
@@ -49,7 +49,7 @@ bot.command("link", async (ctx) => {
     const bdb = scoped(db(), id);
     if (await hasLinkCode(bdb, ctx.match ?? "")) return ctx.reply(await linkChat(bdb, ctx.chat.id, ctx.match ?? ""));
   }
-  await ctx.reply("That code is wrong or expired. Get a new one in Bursar → Spending rules → Connect my Telegram.");
+  await ctx.reply("That code is wrong or expired. Get a new one in Bursr → Spending rules → Connect my Telegram.");
 });
 
 bot.command("plan", async (ctx) => {
@@ -145,6 +145,6 @@ async function sendAlerts() {
 
 const me = await bot.api.getMe();
 await db().setting.upsert({ where: { key: BOT_NAME }, create: { key: BOT_NAME, value: JSON.stringify(me.username) }, update: { value: JSON.stringify(me.username) } });
-console.log(`Bursar bot @${me.username} running. Ctrl+C to stop.`);
+console.log(`Bursr bot @${me.username} running. Ctrl+C to stop.`);
 setInterval(() => void sendAlerts().catch((e) => console.error("alerts:", e instanceof Error ? e.message : e)), 20_000);
 await bot.start();

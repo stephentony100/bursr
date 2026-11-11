@@ -45,7 +45,7 @@ export interface Prepared {
 
 /**
  * Turns the Reader's fields into integer amounts. Never guesses: a field the
- * Reader was unsure of, a currency Bursar cannot pay in, or an amount that is
+ * Reader was unsure of, a currency Bursr cannot pay in, or an amount that is
  * not a plain number gives a "needs owner" reason. Without trustworthy USD
  * amounts, the amount-based checks are skipped (amountsKnown: false).
  */
@@ -53,11 +53,11 @@ export function prepareForChecks(id: string, extracted: ExtractedInvoice, receiv
   const reasons: string[] = [];
   if (extracted.unsureFields.length > 0) {
     const words: Record<string, string> = { supplierName: "the supplier's name", invoiceNumber: "the invoice number", invoiceDate: "the date", dueDate: "the due date", currency: "the currency", lines: "the items", total: "the total", payout: "the payment details" };
-    reasons.push(`Bursar couldn't read ${extracted.unsureFields.map((f) => words[f] ?? f).join(", ")} clearly. Please check the invoice yourself.`);
+    reasons.push(`Bursr couldn't read ${extracted.unsureFields.map((f) => words[f] ?? f).join(", ")} clearly. Please check the invoice yourself.`);
   }
   const unknownAmounts: InvoiceForChecks = { id, extracted, totalUsd: 0n, lines: [], receivedAt, amountsKnown: false };
   if (extracted.currency.toUpperCase() !== "USD") {
-    reasons.push(`This invoice is in ${extracted.currency}. Bursar pays dollar invoices for now, and never guesses an exchange rate.`);
+    reasons.push(`This invoice is in ${extracted.currency}. Bursr pays dollar invoices for now, and never guesses an exchange rate.`);
     return { invoice: unknownAmounts, needsOwner: reasons.join(" ") };
   }
   try {
@@ -76,7 +76,7 @@ export function prepareForChecks(id: string, extracted: ExtractedInvoice, receiv
     };
     return { invoice, needsOwner: reasons.length ? reasons.join(" ") : null };
   } catch {
-    reasons.push("Bursar couldn't read one of the amounts clearly. Please check the invoice yourself.");
+    reasons.push("Bursr couldn't read one of the amounts clearly. Please check the invoice yourself.");
     return { invoice: unknownAmounts, needsOwner: reasons.join(" ") };
   }
 }

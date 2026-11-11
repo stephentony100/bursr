@@ -39,14 +39,14 @@ export default async function AddMoneyPage() {
       <div>
         <h1 className="display text-4xl">Add money</h1>
         <p className="mt-2 text-muted">
-          Your agent pays people from your Bursar wallet, never from your own wallet. Top it up here; the agent tells you when the money has arrived and uses it for anything
+          Your agent pays people from your Bursr wallet, never from your own wallet. Top it up here; the agent tells you when the money has arrived and uses it for anything
           that was waiting.
         </p>
       </div>
 
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-line bg-card p-5">
-          <p className="text-sm font-medium text-muted">In your Bursar wallet</p>
+          <p className="text-sm font-medium text-muted">In your Bursr wallet</p>
           <p className="num mt-2 text-3xl font-semibold">{balance === null ? "…" : formatUsd(balance)}</p>
         </div>
         <div className={`rounded-xl border p-5 ${short > 0n ? "border-hold/40 bg-hold-soft/60" : "border-line bg-card"}`}>
@@ -80,7 +80,7 @@ export default async function AddMoneyPage() {
       <section className="rounded-xl border border-dashed border-line p-5">
         <h2 className="text-base font-bold">With a card or bank transfer</h2>
         <p className="mt-1 text-sm text-muted">
-          Coming soon: pay by card or bank transfer (including naira) and the dollars land straight in your Bursar wallet. No crypto app needed.
+          Coming soon: pay by card or bank transfer (including naira) and the dollars land straight in your Bursr wallet. No crypto app needed.
         </p>
       </section>
     </div>

@@ -5,7 +5,7 @@ import { formatUsd } from "./money";
 import { DEFAULT_READER_MODEL } from "./reader";
 import { statementLines } from "./statement";
 
-// The monthly summary in plain words. Bursar computes every figure itself from
+// The monthly summary in plain words. Bursr computes every figure itself from
 // its own records; NEAR AI may only phrase them. A summary that contains any
 // number not in those facts is rejected (AGENTS.md rule 5: never invent amounts).
 
@@ -37,7 +37,7 @@ export async function monthFacts(db: PrismaClient, now = new Date()): Promise<Mo
   const category = new Map(payees.map((p) => [p.name, p.category]));
   const sum = (xs: { amountUsd: bigint }[]) => xs.reduce((a, x) => a + x.amountUsd, 0n);
 
-  const isFee = (l: { forWhat: string }) => l.forWhat.startsWith("Bursar fee");
+  const isFee = (l: { forWhat: string }) => l.forWhat.startsWith("Bursr fee");
   const byPayee = new Map<string, bigint>();
   for (const l of paid.filter((x) => !isFee(x))) byPayee.set(l.payee, (byPayee.get(l.payee) ?? 0n) + l.amountUsd);
 
@@ -64,10 +64,10 @@ export async function monthFacts(db: PrismaClient, now = new Date()): Promise<Mo
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-/** The summary Bursar writes itself, with no AI: always available, always exact. */
+/** The summary Bursr writes itself, with no AI: always available, always exact. */
 export function plainSummary(f: MonthFacts): string {
   const parts = [
-    `In ${f.month} Bursar paid ${formatUsd(f.paidUsd)} in ${plural(f.payments, "payment")}: ${formatUsd(f.staffUsd)} to staff and ${formatUsd(f.suppliersUsd)} to suppliers${f.otherUsd > 0n ? `, ${formatUsd(f.otherUsd)} to others` : ""}${f.feesUsd > 0n ? `, and ${formatUsd(f.feesUsd)} in Bursar fees` : ""}.`,
+    `In ${f.month} Bursr paid ${formatUsd(f.paidUsd)} in ${plural(f.payments, "payment")}: ${formatUsd(f.staffUsd)} to staff and ${formatUsd(f.suppliersUsd)} to suppliers${f.otherUsd > 0n ? `, ${formatUsd(f.otherUsd)} to others` : ""}${f.feesUsd > 0n ? `, and ${formatUsd(f.feesUsd)} in Bursr fees` : ""}.`,
   ];
   if (f.topPayees.length) parts.push(`The largest was ${f.topPayees[0].name} at ${formatUsd(f.topPayees[0].usd)}.`);
   parts.push(
@@ -109,7 +109,7 @@ export type AiSummary = { ok: true; text: string; model: string } | { ok: false;
 /** Asks NEAR AI Cloud to phrase the facts warmly; rejected if it adds any figure. */
 export async function aiSummary(f: MonthFacts): Promise<AiSummary> {
   const env = readEnv();
-  if (!env.NEAR_AI_API_KEY) return { ok: false, reason: "Needs NEAR_AI_API_KEY; the summary above is Bursar's own." };
+  if (!env.NEAR_AI_API_KEY) return { ok: false, reason: "Needs NEAR_AI_API_KEY; the summary above is Bursr's own." };
   const model = env.NEAR_AI_MODEL ?? DEFAULT_READER_MODEL;
   const client = new OpenAI({ baseURL: env.NEAR_AI_BASE_URL, apiKey: env.NEAR_AI_API_KEY, timeout: 60_000, maxRetries: 1 });
   try {

@@ -20,8 +20,8 @@ import { friendlyError } from "@/lib/errors";
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const STEPS = [
-  { title: "Send in your invoices", body: "Snap a photo or paste the text. Bursar reads every line for you." },
-  { title: "Bursar checks every one", body: "Fake suppliers, changed bank details, double bills and overcharges are stopped before you pay." },
+  { title: "Send in your invoices", body: "Snap a photo or paste the text. Bursr reads every line for you." },
+  { title: "Bursr checks every one", body: "Fake suppliers, changed bank details, double bills and overcharges are stopped before you pay." },
   { title: "Your agent pays on time", body: "It pays staff and suppliers on their day, in the digital dollars each one prefers, inside the limits you set." },
 ];
 
@@ -40,7 +40,7 @@ export default async function Home() {
         <div>
           <h1 className="display text-5xl leading-[0.98]">Pay your suppliers and staff without the fear of paying the wrong person.</h1>
           <p className="mt-4 text-lg text-muted">
-            Bursar reads your invoices, catches fraud and mistakes, and pays everyone once a week after you say yes. It can never spend more
+            Bursr reads your invoices, catches fraud and mistakes, and pays everyone once a week after you say yes. It can never spend more
             than you allow.
           </p>
         </div>
@@ -77,7 +77,7 @@ export default async function Home() {
   try {
     status = await (await agentAccount((await appDb()))).status();
   } catch (e) {
-    accountError = friendlyError(e, "Bursar couldn't reach your wallet just now.");
+    accountError = friendlyError(e, "Bursr couldn't reach your wallet just now.");
   }
   const [payees, feed, invoices, plan, waitingOnYou, upcoming] = await Promise.all([
     listPayees((await appDb())),
@@ -161,7 +161,7 @@ export default async function Home() {
               {status.weekResetsAt && <>, refills {status.weekResetsAt.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</>}
             </p>
           </Kpi>
-          <Kpi label="Money in your Bursar wallet" value={<span className="num">{formatUsd(rescale(status.balances[treasury.assetId] ?? 0n, treasury.decimals, 6))}</span>}>
+          <Kpi label="Money in your Bursr wallet" value={<span className="num">{formatUsd(rescale(status.balances[treasury.assetId] ?? 0n, treasury.decimals, 6))}</span>}>
             <p className="mt-3 flex items-center justify-between text-xs text-muted">
               {treasury.symbol} held for payouts
               <Link href="/add-money" className="font-semibold text-indigo underline">

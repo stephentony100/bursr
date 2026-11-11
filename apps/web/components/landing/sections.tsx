@@ -51,8 +51,8 @@ export function Privacy() {
             Your invoices are read privately.
           </h2>
           <p className="mt-5 max-w-[56ch] text-lg leading-relaxed text-muted">
-            Bursar reads invoices with NEAR AI, on computers built so that no one, not even the people running them, can see what&apos;s inside. Press <strong className="font-semibold text-ink">Check the proof</strong> and
-            Bursar checks the hardware&apos;s signed report in front of you.
+            Bursr reads invoices with NEAR AI, on computers built so that no one, not even the people running them, can see what&apos;s inside. Press <strong className="font-semibold text-ink">Check the proof</strong> and
+            Bursr checks the hardware&apos;s signed report in front of you.
           </p>
         </div>
         <div className="rounded-xl border border-line bg-card p-6">
@@ -115,7 +115,7 @@ export function Pricing() {
             Half a percent, shown before you approve.
           </h2>
           <p className="mt-5 max-w-[52ch] text-lg leading-relaxed text-muted">
-            Bursar charges 0.5% of what it pays out each week. The fee is a line on your weekly list, and each payment shows its transfer fee, so you see the full cost before you approve. No subscription,
+            Bursr charges 0.5% of what it pays out each week. The fee is a line on your weekly list, and each payment shows its transfer fee, so you see the full cost before you approve. No subscription,
             and nothing to pay in a week with no payments.
           </p>
         </div>
@@ -129,7 +129,7 @@ export function Pricing() {
               </div>
             ))}
             <div className="flex justify-between py-3 font-medium text-ledger">
-              <dt>Bursar fee, 0.5% of $658.00</dt>
+              <dt>Bursr fee, 0.5% of $658.00</dt>
               <dd className="num">$3.29</dd>
             </div>
           </dl>

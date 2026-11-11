@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readEnv } from "./env";
 import type { PrismaClient } from "./generated/prisma/client";
 
-// Many businesses, one Bursar. Every business-owned row carries a
+// Many businesses, one Bursr. Every business-owned row carries a
 // businessId, and code works through a database client that is limited to one
 // business: it adds the business to every read, update and delete, and stamps
 // it on every create. A page or the agent can only ever see its own business.
@@ -114,5 +114,5 @@ export async function scriptDb(raw: PrismaClient): Promise<PrismaClient> {
   if (owner) return dbForOwner(raw, owner);
   const ids = await allBusinessIds(raw);
   if (ids.length <= 1) return scoped(raw, ids[0] ?? "main");
-  throw new Error(`This Bursar has ${ids.length} businesses. Say which one with BURSAR_OWNER=<the owner's NEAR account>, for example: BURSAR_OWNER=you.near npm run fund -- USDC near`);
+  throw new Error(`This Bursr has ${ids.length} businesses. Say which one with BURSAR_OWNER=<the owner's NEAR account>, for example: BURSAR_OWNER=you.near npm run fund -- USDC near`);
 }

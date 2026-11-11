@@ -27,7 +27,7 @@ function api() {
 
 async function agentId(db: PrismaClient): Promise<string> {
   const record = await getAccountRecord(db);
-  if (!record || record.backend !== "agent-api") throw new Error("Set up your Bursar wallet first (Spending rules).");
+  if (!record || record.backend !== "agent-api") throw new Error("Set up your Bursr wallet first (Spending rules).");
   return record.agentId;
 }
 
@@ -47,7 +47,7 @@ export async function oneTapDeposit(db: PrismaClient, ownerAccountId: string): P
   const business = await getBusiness(db);
   if (!business) throw new Error("Set up the business first.");
   const t = business.rules.treasury;
-  if (t.chain !== "near" || !t.assetId.startsWith("nep141:")) throw new Error("One-tap top-up needs the Bursar wallet to hold a NEAR token.");
+  if (t.chain !== "near" || !t.assetId.startsWith("nep141:")) throw new Error("One-tap top-up needs the Bursr wallet to hold a NEAR token.");
   // The same account the balances belong to (seen live: getBalances → near_account_id).
   const { near_account_id } = await api().getBalances(await agentId(db), { source: "public" });
   const held = await tokenBalanceOnNear(t.assetId, ownerAccountId);
@@ -64,13 +64,13 @@ export interface DepositAddress {
   openUntil: string | null;
 }
 
-/** A one-time address on another chain; whatever arrives is converted to the Bursar wallet's currency. */
+/** A one-time address on another chain; whatever arrives is converted to the Bursr wallet's currency. */
 export async function depositAddress(db: PrismaClient, symbol: string, chain: string): Promise<DepositAddress> {
   const business = await getBusiness(db);
   if (!business) throw new Error("Set up the business first.");
   const client = api();
   const tokens = (await client.getTokens()).filter((t) => t.symbol === symbol && t.blockchain === chain);
-  if (tokens.length !== 1) throw new Error(`Bursar can't take ${symbol} on ${CHAIN_NAMES[chain] ?? chain} yet.`);
+  if (tokens.length !== 1) throw new Error(`Bursr can't take ${symbol} on ${CHAIN_NAMES[chain] ?? chain} yet.`);
   const origin = tokens[0];
   const treasury = business.rules.treasury.assetId;
   const d = await client.deposit(

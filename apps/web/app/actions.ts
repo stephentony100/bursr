@@ -275,7 +275,7 @@ export async function testRule(_prev: RuleTestResult, f: FormData): Promise<Rule
       ? { tried, allowed: false, message: out.refusal.message }
       : { tried, allowed: true, message: "This would go through, just as it should." };
   } catch (e) {
-    return { tried, allowed: false, message: friendlyError(e, "Bursar couldn't reach your wallet just now. Please try again.") };
+    return { tried, allowed: false, message: friendlyError(e, "Bursr couldn't reach your wallet just now. Please try again.") };
   }
 }
 
@@ -291,7 +291,7 @@ export async function uploadInvoiceAction(_prev: FormResult, f: FormData): Promi
     let input: { name: string; mediaType: string; bytes: Buffer };
     if (file instanceof File && file.size > 0) {
       if (file.size > MAX_UPLOAD) throw new Error("That file is a bit big (over 4 MB). Please send a smaller photo.");
-      if (!ALLOWED_TYPES.has(file.type)) throw new Error("Bursar reads photos and screenshots (PNG, JPG, WebP) or pasted text. For a PDF, send a screenshot of it.");
+      if (!ALLOWED_TYPES.has(file.type)) throw new Error("Bursr reads photos and screenshots (PNG, JPG, WebP) or pasted text. For a PDF, send a screenshot of it.");
       input = { name: file.name, mediaType: file.type, bytes: Buffer.from(await file.arrayBuffer()) };
     } else if (pasted) {
       input = { name: "pasted text", mediaType: "text/plain", bytes: Buffer.from(pasted.slice(0, 20_000), "utf8") };
@@ -392,7 +392,7 @@ export async function forceOverCapAction(): Promise<RuleTestResult> {
       ? { tried, allowed: false, message: out.refusal.message }
       : { tried, allowed: true, message: "It went through. Please check your spending rules: this should not happen." };
   } catch (e) {
-    return { tried, allowed: false, message: friendlyError(e, "Bursar couldn't reach your wallet just now. Please try again.") };
+    return { tried, allowed: false, message: friendlyError(e, "Bursr couldn't reach your wallet just now. Please try again.") };
   }
 }
 
@@ -411,7 +411,7 @@ export async function telegramLinkAction(): Promise<FormResult> {
   return run(async () => {
     const code = await createLinkCode((await appDb()), await requireOwner());
     const row = await (await appDb()).setting.findUnique({ where: { key: BOT_NAME } });
-    const name = row ? `@${JSON.parse(row.value)}` : "your Bursar bot (start it with npm run bot)";
+    const name = row ? `@${JSON.parse(row.value)}` : "your Bursr bot (start it with npm run bot)";
     return `Open ${name} in Telegram and send:  /link ${code}  (valid for 10 minutes)`;
   });
 }

@@ -1,7 +1,7 @@
 // Money is always an integer in smallest units (bigint in code, decimal string
 // in storage and JSON). Never a float. Decimals come from the token list.
 
-/** USD amounts inside Bursar use 6 decimals (micro-dollars), like the Agent API's spent_usd. */
+/** USD amounts inside Bursr use 6 decimals (micro-dollars), like the Agent API's spent_usd. */
 export const USD_DECIMALS = 6;
 
 const DECIMAL_RE = /^(\d+)(?:\.(\d+))?$/;

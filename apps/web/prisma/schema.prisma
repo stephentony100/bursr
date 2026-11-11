@@ -1,4 +1,4 @@
-// Bursar data model. Money is stored as integer strings in smallest units;
+// Bursr data model. Money is stored as integer strings in smallest units;
 // structured fields are JSON text validated with zod on every read.
 
 generator client {

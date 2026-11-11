@@ -1,6 +1,6 @@
 import { getOwner, appDb } from "@/lib/session";
 
-// The original invoice file, for the owner to look at next to Bursar's reading.
+// The original invoice file, for the owner to look at next to Bursr's reading.
 export async function GET(_req: Request, ctx: RouteContext<"/api/invoices/[id]/file">) {
   if (!(await getOwner())) return new Response("Sign in first.", { status: 401 });
   const { id } = await ctx.params;

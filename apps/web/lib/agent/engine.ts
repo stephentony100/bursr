@@ -15,7 +15,7 @@ import { trustSignedPayees } from "../trust";
 import { applyPlatformFee } from "../platform-fee";
 import { friendlyError } from "../errors";
 
-// Bursar's agent. It wakes every minute (lib/agent/loop.ts) and on events,
+// Bursr's agent. It wakes every minute (lib/agent/loop.ts) and on events,
 // and does the routine work on its own: follows payments on their way, works
 // out what is due today, pays routine payments, retries the ones that are
 // waiting, and hands exceptions to the owner. It never changes payees or
@@ -66,7 +66,7 @@ async function withLease(db: PrismaClient, fn: () => Promise<AgentRunReport>): P
   const key = "agent_lease";
   const now = Date.now();
   const row = await db.setting.findUnique({ where: { key } });
-  if (row && Date.parse(row.value) > now) return { ...EMPTY, note: "Another Bursar process is running the agent." };
+  if (row && Date.parse(row.value) > now) return { ...EMPTY, note: "Another Bursr process is running the agent." };
   await db.setting.upsert({ where: { key }, update: { value: new Date(now + LEASE_MS).toISOString() }, create: { key, value: new Date(now + LEASE_MS).toISOString() } });
   try {
     return await fn();
@@ -114,7 +114,7 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
           await say(db, "agent_run", `${payee.name} has been paid, so I took them off your list as you asked.`);
         }
       } else if (i.payStatus === "refunded" || i.payStatus === "failed") {
-        await say(db, "payment_failed", `The payment to ${i.payeeName} (${i.forWhat}) didn't arrive and the money came back to your Bursar wallet. This one needs you.`, { itemId: i.id });
+        await say(db, "payment_failed", `The payment to ${i.payeeName} (${i.forWhat}) didn't arrive and the money came back to your Bursr wallet. This one needs you.`, { itemId: i.id });
       }
     }
   }
@@ -129,7 +129,7 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
   const held = rescale((await account.status()).balances[treasury.assetId] ?? 0n, treasury.decimals, USD_DECIMALS);
   const last = await db.setting.findUnique({ where: { key: "agent_last_balance" } });
   if (last && held > BigInt(last.value)) {
-    await say(db, "money_in", `Your Bursar wallet received ${formatUsd(held - BigInt(last.value))}. It now holds ${formatUsd(held)}.`);
+    await say(db, "money_in", `Your Bursr wallet received ${formatUsd(held - BigInt(last.value))}. It now holds ${formatUsd(held)}.`);
     // Payments waiting for money get their try in this same run, not on the next check.
     const woke = await db.planItem.updateMany({ where: { payStatus: "waiting", payCode: "funds" }, data: { retryAt: now } });
     if (woke.count) await say(db, "agent_run", `Trying the ${woke.count} payment${woke.count === 1 ? "" : "s"} that ${woke.count === 1 ? "was" : "were"} waiting for money now.`);
@@ -142,7 +142,7 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
       `short:${need.payday}`,
       20 * HOUR,
       "needs_money",
-      `Payday (${dayWords(need.payday)}) needs ${formatUsd(need.due)} and your Bursar wallet holds ${formatUsd(held)}. Please add ${formatUsd(need.short)} so nobody waits.`,
+      `Payday (${dayWords(need.payday)}) needs ${formatUsd(need.due)} and your Bursr wallet holds ${formatUsd(held)}. Please add ${formatUsd(need.short)} so nobody waits.`,
     );
   }
 

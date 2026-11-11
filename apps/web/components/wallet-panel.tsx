@@ -6,18 +6,18 @@ import { prepareIntent, signAndSubmitIntent, signInWithWallet, signOut as wallet
 import { friendlyError } from "@/lib/errors";
 
 // Live mode only. The owner's wallet (HOT, via @hot-labs/near-connect) signs
-// everything; Bursar's server never sees the owner's key. Before any signature
+// everything; Bursr's server never sees the owner's key. Before any signature
 // the owner sees exactly what the Agent API prepared.
 
 type Kind = OwnerIntentKind;
 type Prepared = PreparedIntent;
 
 const LABELS: Record<Kind, string> = {
-  agent_create: "Set up my Bursar wallet with these limits",
+  agent_create: "Set up my Bursr wallet with these limits",
   policy_update: "Confirm my changes",
   agent_freeze: "Pause all payments",
   agent_unfreeze: "Turn payments back on",
-  grant_issue: "Let Bursar make payments inside my limits",
+  grant_issue: "Let Bursr make payments inside my limits",
 };
 
 export function WalletPanel(props: {
@@ -74,7 +74,7 @@ export function WalletPanel(props: {
       if (!prepared) return;
       await signAndSubmitIntent(prepared);
       setPrepared(null);
-      setNotice(prepared.kind === "grant_issue" ? "Done. Bursar can now make payments inside your limits." : "Done. Your wallet now enforces this.");
+      setNotice(prepared.kind === "grant_issue" ? "Done. Bursr can now make payments inside your limits." : "Done. Your wallet now enforces this.");
       router.refresh();
     });
 
@@ -88,7 +88,7 @@ export function WalletPanel(props: {
 
   return (
     <section className={props.onboarding ? "" : "rounded-xl border-2 border-indigo/30 bg-card p-6"}>
-      {!props.onboarding && <h2 className="text-xl font-bold">Your Bursar wallet</h2>}
+      {!props.onboarding && <h2 className="text-xl font-bold">Your Bursr wallet</h2>}
 
       {!props.ownerAccountId ? (
         <div className="mt-3">
@@ -126,17 +126,17 @@ export function WalletPanel(props: {
           {props.businessExists && (
             <>
               <p className="text-muted">
-                {props.agentId ? (props.hasGrant ? "Your wallet is set up and Bursar can pay inside your limits." : "Your wallet is set up. One more step lets Bursar make payments.") : "Next: set up your Bursar wallet. It's free; your wallet app just confirms it."}
+                {props.agentId ? (props.hasGrant ? "Your wallet is set up and Bursr can pay inside your limits." : "Your wallet is set up. One more step lets Bursr make payments.") : "Next: set up your Bursr wallet. It's free; your wallet app just confirms it."}
               </p>
               {props.grantRenewBy && (
                 <p className="text-hold">
-                  Bursar&apos;s permission to pay ends on {new Date(props.grantRenewBy).toLocaleDateString([], { day: "numeric", month: "short" })}. Renew it so payday isn&apos;t missed.
+                  Bursr&apos;s permission to pay ends on {new Date(props.grantRenewBy).toLocaleDateString([], { day: "numeric", month: "short" })}. Renew it so payday isn&apos;t missed.
                 </p>
               )}
               <div className="flex flex-wrap gap-2">
                 {next && (
                   <button onClick={() => prepare(next)} disabled={busy} className="rounded-md bg-ledger px-4 py-2 font-medium text-card disabled:opacity-60">
-                    {next === "grant_issue" && props.hasGrant ? "Renew Bursar's permission to pay" : LABELS[next]}…
+                    {next === "grant_issue" && props.hasGrant ? "Renew Bursr's permission to pay" : LABELS[next]}…
                   </button>
                 )}
                 {props.agentId && !props.onboarding && (

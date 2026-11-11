@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { catches } from "./catches";
 import { gsap, prefersReducedMotion, useGSAP } from "./gsap";
 
-// "What Bursar checks" as a pinned accordion, the way New Engen builds its
+// "What Bursr checks" as a pinned accordion, the way New Engen builds its
 // services list: a tall section with a sticky full-screen panel; as you scroll,
 // one full-width row opens (text, tags, an example on a dark card) and the row
 // before it closes and dims. GSAP timeline scrubbed by ScrollTrigger.
@@ -49,10 +49,10 @@ export function ChecksAccordion({ usualAddress, newAddress }: { usualAddress: st
   );
 
   return (
-    <section ref={root} id="checks" aria-label="What Bursar checks" className="relative h-[400vh] bg-night text-card">
+    <section ref={root} id="checks" aria-label="What Bursr checks" className="relative h-[400vh] bg-night text-card">
       <div className="sticky top-0 flex h-[100dvh] flex-col overflow-hidden">
         <div className="mx-auto w-full max-w-7xl px-5 pb-6 pt-16 sm:pt-20">
-          <h2 className="display max-w-3xl text-4xl leading-[0.98] sm:text-5xl">Four ways bills eat your profit. Bursar checks for all of them.</h2>
+          <h2 className="display max-w-3xl text-4xl leading-[0.98] sm:text-5xl">Four ways bills eat your profit. Bursr checks for all of them.</h2>
         </div>
         <ul className="border-t border-card/15">
           {list.map((c, i) => (

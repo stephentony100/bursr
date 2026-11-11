@@ -18,7 +18,7 @@ export function SiteNav() {
   return (
     <header className="border-b border-line bg-card/80 backdrop-blur-[2px]">
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-6 px-5">
-        <Link href="/" aria-label="Bursar home">
+        <Link href="/" aria-label="Bursr home">
           <Logo />
         </Link>
         <nav aria-label="Home page" className="flex items-center gap-7 text-sm">
@@ -74,7 +74,7 @@ export function Hero() {
             Never the wrong person.
           </Reveal>
           <p className="mt-6 max-w-[38ch] text-lg leading-relaxed text-muted">
-            Bursar checks every supplier invoice, then pays your suppliers and staff after one OK. Never past your limits.
+            Bursr checks every supplier invoice, then pays your suppliers and staff after one OK. Never past your limits.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <TryButton />

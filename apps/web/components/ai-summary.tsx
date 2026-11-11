@@ -17,7 +17,7 @@ export function AiSummaryButton({ action }: { action: () => Promise<AiSummary> }
           <blockquote className="mt-3 rounded-md border border-line bg-paper px-4 py-3 text-sm">
             {result.text}
             <footer className="mt-1 text-xs text-muted">
-              Written privately by Bursar&apos;s AI. Every number was checked against your records before showing it to you.
+              Written privately by Bursr&apos;s AI. Every number was checked against your records before showing it to you.
             </footer>
           </blockquote>
         ) : (

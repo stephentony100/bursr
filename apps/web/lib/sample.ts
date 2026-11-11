@@ -27,7 +27,7 @@ export function sampleRules(tokens: PayoutToken[]): Rules {
     autopilot: true,
     // The sample restaurant pays checked invoices at once, so the demo week is the same on any date.
     invoiceTiming: "asap",
-    // Practice mode: Bursar's fee goes to a made-up account (hash-derived; nobody holds its key).
+    // Practice mode: Bursr's fee goes to a made-up account (hash-derived; nobody holds its key).
     fee: readEnv().BURSAR_FEE_BPS > 0 ? { bps: readEnv().BURSAR_FEE_BPS, payout: { token: t("USDC", "near"), address: demoNearImplicit("bursar-fees"), memo: null } } : null,
   };
 }

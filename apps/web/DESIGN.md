@@ -1,4 +1,4 @@
-# Bursar design system
+# Bursr design system
 
 Built on 9 Nov 2026 following the frontend-ui-engineering skill (addyosmani/agent-skills). References: Stax.ai's enterprise B2B pages and the business-banking style of products like Mercury and Ramp (calm neutral surfaces, one strong accent, product screens as proof, dense tables in the app). Rebuilt in our own components; no branding or layout copied.
 

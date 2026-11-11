@@ -96,7 +96,7 @@ function OneTap({ suggestedUsd }: { suggestedUsd: string | null }) {
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted">
-        Your wallet app asks you to confirm one transfer of USDC to your Bursar wallet. Nothing to copy. You need a little NEAR (about 0.01) in your wallet for the network fee.
+        Your wallet app asks you to confirm one transfer of USDC to your Bursr wallet. Nothing to copy. You need a little NEAR (about 0.01) in your wallet for the network fee.
       </p>
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-sm font-medium">
@@ -136,7 +136,7 @@ function OtherChain() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted">
-        Pick the network your money is on. Bursar gives you an address just for this deposit; whatever you send there is changed into your Bursar wallet&apos;s dollars,
+        Pick the network your money is on. Bursr gives you an address just for this deposit; whatever you send there is changed into your Bursr wallet&apos;s dollars,
         and your agent tells you when it arrives.
       </p>
       <div className="flex flex-wrap items-end gap-3">

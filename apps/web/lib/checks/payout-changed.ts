@@ -10,7 +10,7 @@ import { pass, type Check } from "./types";
  *
  * An address that is not even valid for the payee's network as read (wrong
  * length, failed checksum) is a misreading, not a new address: the AI read
- * a long string slightly wrong. That is only a warning. Bursar never pays an
+ * a long string slightly wrong. That is only a warning. Bursr never pays an
  * address taken from an invoice; it pays the address on record.
  */
 export const payoutChanged: Check = (invoice, { payees }) => {
@@ -22,7 +22,7 @@ export const payoutChanged: Check = (invoice, { payees }) => {
     return {
       check: "payout-changed",
       status: "flag",
-      reason: `Bursar couldn't read the payment address on this invoice clearly. No problem: Bursar only ever pays ${payee.name} at the address you saved.`,
+      reason: `Bursr couldn't read the payment address on this invoice clearly. No problem: Bursr only ever pays ${payee.name} at the address you saved.`,
     };
   }
   return {

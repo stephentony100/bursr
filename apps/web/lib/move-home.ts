@@ -8,7 +8,7 @@ import { NotOwnerError } from "./owner-actions";
 import { settle } from "./pay";
 import { getBusiness } from "./store";
 
-// "Move money back to my wallet": the owner takes money out of the Bursar
+// "Move money back to my wallet": the owner takes money out of the Bursr
 // wallet. The Agent API has no owner withdrawal: money leaves only through the
 // agent's own withdraw, inside the owner's signed rules ("Have the owner
 // withdraw all funds first, for example by asking the agent to do it":
@@ -18,7 +18,7 @@ import { getBusiness } from "./store";
 
 export interface HomeView {
   accountId: string;
-  /** Treasury money in the Bursar wallet, USD (6 decimals). */
+  /** Treasury money in the Bursr wallet, USD (6 decimals). */
   balanceUsd: bigint;
   /** What can go back right now. */
   canMoveUsd: bigint;
@@ -57,8 +57,8 @@ export async function moveMoneyHome(
   if (!business || business.ownerAccountId !== owner.accountId) throw new NotOwnerError();
   const view = (await homeView(db, account))!;
   const want = amountUsd === "all" ? view.canMoveUsd : amountUsd;
-  if (want <= 0n) throw new Error(view.limitedBy ?? "There's no money in your Bursar wallet to move.");
-  if (want > view.balanceUsd) throw new Error(`Your Bursar wallet has ${formatUsd(view.balanceUsd)}.`);
+  if (want <= 0n) throw new Error(view.limitedBy ?? "There's no money in your Bursr wallet to move.");
+  if (want > view.balanceUsd) throw new Error(`Your Bursr wallet has ${formatUsd(view.balanceUsd)}.`);
   if (want > view.canMoveUsd) throw new Error(`You can move up to ${formatUsd(view.canMoveUsd)} now. ${view.limitedBy ?? ""}`.trim());
 
   const t = business.rules.treasury;
@@ -102,7 +102,7 @@ export async function moveMoneyHome(
           break;
         }
         if (o.state !== "done") {
-          await say("home_failed", `Moving ${formatUsd(part)} back to your wallet didn't go through${o.reason ? ` (${o.reason})` : ""}. The money is still in your Bursar wallet.`);
+          await say("home_failed", `Moving ${formatUsd(part)} back to your wallet didn't go through${o.reason ? ` (${o.reason})` : ""}. The money is still in your Bursr wallet.`);
           break;
         }
         moved += part;

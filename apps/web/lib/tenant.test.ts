@@ -9,7 +9,7 @@ import { allBusinessIds, businessIdFor, dbForOwner, scoped } from "./tenant";
 import { createTestDb } from "./test-db";
 import { rules, USDT_TRON } from "./test-fixtures";
 
-// Many businesses on one Bursar: each wallet sees and changes only its own.
+// Many businesses on one Bursr: each wallet sees and changes only its own.
 
 const t = createTestDb();
 afterAll(() => t.close());
@@ -29,7 +29,7 @@ async function twoBusinesses() {
   return { a, b };
 }
 
-describe("one Bursar, many businesses", () => {
+describe("one Bursr, many businesses", () => {
   it("each wallet gets its own business, and a new wallet starts empty", async () => {
     const { a, b } = await twoBusinesses();
     expect((await getBusiness(a))!.name).toBe("Ada's Bakery");

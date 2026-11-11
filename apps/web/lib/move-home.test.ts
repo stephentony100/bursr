@@ -39,7 +39,7 @@ describe("moving money back to the owner's wallet", () => {
     const view = (await homeView(t.db, account))!;
     const weekly = BigInt((await getBusiness(t.db))!.rules.weeklyCapUsd);
     expect(view.canMoveUsd).toBeLessThanOrEqual(weekly);
-    await expect(moveMoneyHome(t.db, owner, account, view.canMoveUsd + M)).rejects.toThrow(/You can move up to|Your Bursar wallet has/);
+    await expect(moveMoneyHome(t.db, owner, account, view.canMoveUsd + M)).rejects.toThrow(/You can move up to|Your Bursr wallet has/);
   });
 
   it("only the owner can move money", async () => {

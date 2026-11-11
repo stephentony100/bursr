@@ -32,8 +32,8 @@ export function VerifiedPanel({ action, model }: { action: () => Promise<Attesta
             )}
           </h2>
           <p className="mt-1 text-sm text-muted">
-            Your bills show who you buy from and what you pay. Bursar&apos;s AI reads them inside a sealed computer, built so that even the
-            people running it can&apos;t look inside. You don&apos;t have to take our word for it: press the button and Bursar checks the computer&apos;s signed
+            Your bills show who you buy from and what you pay. Bursr&apos;s AI reads them inside a sealed computer, built so that even the
+            people running it can&apos;t look inside. You don&apos;t have to take our word for it: press the button and Bursr checks the computer&apos;s signed
             proof, live.
           </p>
         </div>
@@ -45,7 +45,7 @@ export function VerifiedPanel({ action, model }: { action: () => Promise<Attesta
       </div>
       {result && (
         <div className="mt-4 space-y-3 text-sm">
-          {result.error && <p className="text-refuse">Bursar couldn&apos;t reach the proof just now. Please try again in a minute.</p>}
+          {result.error && <p className="text-refuse">Bursr couldn&apos;t reach the proof just now. Please try again in a minute.</p>}
           {checks.length > 0 && (
             <ul className="space-y-1">
               {PROMISES.map((p) => {

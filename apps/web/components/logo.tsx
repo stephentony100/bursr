@@ -1,4 +1,4 @@
-/** Bursar's mark: a ledger page with a tick. Drawn here; no external artwork. */
+/** Bursr's mark: a ledger page with a tick. Drawn here; no external artwork. */
 export function Logo({ className = "", tone = "ink" }: { className?: string; tone?: "ink" | "light" }) {
   const fg = tone === "light" ? "#ffffff" : "#101828";
   return (
@@ -9,7 +9,7 @@ export function Logo({ className = "", tone = "ink" }: { className?: string; ton
         <path d="M11 18.5l3 3 7.5-8" fill="none" stroke={tone === "light" ? "#6ee7b7" : "#0b7a57"} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <span className="text-xl font-semibold tracking-[-0.03em]" style={{ color: fg }}>
-        Bursar
+        Bursr
       </span>
     </span>
   );
