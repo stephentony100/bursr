@@ -10,7 +10,7 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
-import { approveItemAction, runPaydayNowAction } from "@/app/actions";
+import { approveItemAction, cancelPaymentAction, retryPaymentAction, runPaydayNowAction } from "@/app/actions";
 import { ActionForm } from "@/components/forms";
 import type { FeedEntry, NeedsYou, Upcoming } from "@/lib/agent/view";
 import { formatUsd } from "@/lib/money";
@@ -105,6 +105,31 @@ export function NeedsYouList({ items }: { items: NeedsYou[] }) {
               <ActionForm action={approveItemAction} submit="OK, pay it">
                 <input type="hidden" name="itemId" value={n.itemId} />
               </ActionForm>
+            )}
+            {n.kind === "failed" && (
+              <div className="flex w-full flex-wrap items-end gap-2 sm:w-auto">
+                <ActionForm action={retryPaymentAction} submit="Try again">
+                  <input type="hidden" name="itemId" value={n.itemId} />
+                </ActionForm>
+                <ActionForm action={retryPaymentAction} submit="Try this amount" tone="quiet">
+                  <input type="hidden" name="itemId" value={n.itemId} />
+                  <label className="text-xs text-muted">
+                    New amount
+                    <span className="mt-0.5 flex items-center rounded-md border border-line bg-card">
+                      <span className="pl-2 text-muted">$</span>
+                      <input name="amount" required inputMode="decimal" className="num w-20 bg-transparent px-1.5 py-1.5 text-sm text-ink outline-none" />
+                    </span>
+                  </label>
+                </ActionForm>
+                {n.payeeId && (
+                  <Link href={`/people/${n.payeeId}#where`} className="rounded-md border border-line px-3 py-2 text-sm font-semibold hover:border-ink/40">
+                    Change where they get paid
+                  </Link>
+                )}
+                <ActionForm action={cancelPaymentAction} submit="Cancel it" tone="quiet">
+                  <input type="hidden" name="itemId" value={n.itemId} />
+                </ActionForm>
+              </div>
             )}
             {n.kind === "invite" && (
               <Link href="/people" className="rounded-md bg-ledger px-3 py-2 text-sm font-semibold text-card hover:bg-indigo">

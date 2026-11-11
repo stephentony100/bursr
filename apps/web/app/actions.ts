@@ -21,7 +21,9 @@ import {
   addPayee,
   approvePlan,
   approvePlanItem,
+  cancelPayment,
   payOnce,
+  retryPayment,
   setupBusiness,
   changePayout,
   removePayee,
@@ -180,8 +182,11 @@ export async function changePayoutAction(_prev: FormResult, f: FormData): Promis
     const id = text(f, "id");
     const payee = await getPayee((await appDb()), id);
     if (!payee) throw new Error("Payee not found.");
-    await changePayout((await appDb()), await requireOwner(), id, await payoutFrom(f));
-    return `Saved. For your safety, payments to ${payee.name} are on hold for 48 hours.`;
+    const { hold } = await changePayout((await appDb()), await requireOwner(), id, await payoutFrom(f));
+    const live = readEnv().BURSAR_MODE === "live";
+    return hold
+      ? `Saved. For your safety, payments to ${payee.name} are on hold for 48 hours.`
+      : `Saved. ${payee.name} will be paid at the new address${live ? " once you confirm it with your wallet (bar at the top)" : ""}. To send a payment that didn't go through, use Try again.`;
   });
 }
 
@@ -653,4 +658,21 @@ export async function payOnceAction(f: FormData): Promise<PayOnceResult> {
     console.error("[bursar]", e);
     return { ok: false, message: friendlyError(e) };
   }
+}
+
+/** "Try again" (optionally with a new amount) on a payment that didn't go through. */
+export async function retryPaymentAction(_prev: FormResult, f: FormData): Promise<FormResult> {
+  return run(async () => {
+    const amount = text(f, "amount");
+    await retryPayment(await appDb(), await requireOwner(), text(f, "itemId"), amount ? BigInt(dollars(f, "amount", "Amount")) : undefined);
+    kickAgent();
+    return "The agent is trying it again now. Watch the feed.";
+  });
+}
+
+export async function cancelPaymentAction(_prev: FormResult, f: FormData): Promise<FormResult> {
+  return run(async () => {
+    await cancelPayment(await appDb(), await requireOwner(), text(f, "itemId"));
+    return "Cancelled. Nothing was paid.";
+  });
 }

@@ -5,7 +5,7 @@ import { demoTronAddress } from "./demo-addresses";
 import { loadSampleBusiness } from "./demo-loader";
 import { approveInvite, createInvite, submitInvite } from "./invites";
 import { demoOwner } from "./owner";
-import { payOnce } from "./owner-actions";
+import { cancelPayment, changePayout, payOnce, retryPayment } from "./owner-actions";
 import type { quotePayout } from "./quotes";
 import { amountOutFor } from "./quotes";
 import { getBusiness, listPayees } from "./store";
@@ -59,5 +59,42 @@ describe("pay someone once", () => {
     const waiting = (await needsYou(t.db)).find((n) => n.payeeName === "Bola");
     expect(waiting).toMatchObject({ kind: "wallet" });
     expect(waiting!.reason).toMatch(/Waiting for your wallet to confirm Bola/);
+  });
+
+  it("a failed payment: change their address (no hold if never paid), try again with a new amount, or cancel", async () => {
+    const tokens = (await getBusiness(t.db))!.rules.payoutTokens;
+    const tron = tokens.find((x) => x.chain === "tron")!;
+    const near = tokens.find((x) => x.chain === "near")!;
+    const deonId = await payOnce(t.db, owner, { name: "Deon", amountUsd: 100_000n, note: "Fixing the AC", payout: { token: tron, address: demoTronAddress("deon"), memo: null }, removeAfterPaid: true });
+    const item = (await t.db.planItem.findFirst({ where: { payeeId: deonId } }))!;
+    await t.db.planItem.update({ where: { id: item.id }, data: { payStatus: "failed", payReason: "Network fee is more than the payment." } });
+
+    // Never paid: the new address applies at once (no 48-hour hold) and the failed payment follows it.
+    const { hold } = await changePayout(t.db, owner, deonId, { token: near, address: "deon.near", memo: null });
+    expect(hold).toBe(false);
+    expect((await t.db.payee.findUnique({ where: { id: deonId } }))!.payoutChangedAt).toBeNull();
+
+    await retryPayment(t.db, owner, item.id, 5_000_000n);
+    const retried = (await t.db.planItem.findUnique({ where: { id: item.id } }))!;
+    expect(retried).toMatchObject({ payStatus: "planned", amountUsd: "5000000", payReason: null });
+    expect(JSON.parse(retried.payout).address).toBe("deon.near");
+    const r = await runAgent(t.db, { quote: fakeQuote });
+    expect(r.sent).toBeGreaterThanOrEqual(1);
+  });
+
+  it("cancelling a one-time payment takes the person off the list", async () => {
+    const tron = (await getBusiness(t.db))!.rules.payoutTokens.find((x) => x.chain === "tron")!;
+    const id = await payOnce(t.db, owner, { name: "Femi", amountUsd: 100_000n, note: "Errand", payout: { token: tron, address: demoTronAddress("femi"), memo: null }, removeAfterPaid: true });
+    const item = (await t.db.planItem.findFirst({ where: { payeeId: id } }))!;
+    await t.db.planItem.update({ where: { id: item.id }, data: { payStatus: "failed" } });
+    await cancelPayment(t.db, owner, item.id);
+    expect((await listPayees(t.db)).some((p) => p.name === "Femi")).toBe(false);
+  });
+
+  it("someone you've paid before keeps the 48-hour hold when their address changes", async () => {
+    const bisi = (await listPayees(t.db)).find((p) => p.name.startsWith("Bisi"))!;
+    await t.db.planItem.create({ data: { plan: { create: { capLeftUsd: "0", status: "done" } }, kind: "wages", payeeId: bisi.id, payeeName: bisi.name, forWhat: "Weekly pay", amountUsd: "1", payout: "{}", placement: "in", payStatus: "delivered" } });
+    const { hold } = await changePayout(t.db, owner, bisi.id, { ...bisi.payout, address: "0x" + "ab".repeat(20) });
+    expect(hold).toBe(true);
   });
 });

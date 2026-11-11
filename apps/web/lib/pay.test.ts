@@ -124,6 +124,10 @@ describe("weekly plan → approval → payment (practice mode)", () => {
     const plan = await prepareWeeklyPlan(t.db, new Date(), fakeQuote);
     await approvePlan(t.db, owner, plan.id);
     const tunde = plan.items.find((i) => i.payeeName.startsWith("Tunde"))!;
+    // Paid before, so a change of address puts him on the safety hold.
+    await t.db.planItem.create({
+      data: { plan: { create: { capLeftUsd: "0", status: "done" } }, kind: "wages", payeeId: tunde.payeeId, payeeName: "Tunde", forWhat: "Weekly pay", amountUsd: "1", payout: "{}", placement: "in", payStatus: "delivered" },
+    });
     await changePayout(t.db, owner, tunde.payeeId, { ...tunde.payout!, address: demoTronAddress("tunde-new") });
     await payApprovedPlan(t.db, await agentAccount(t.db), plan.id, fakeQuote);
     const after = (await getPlan(t.db, plan.id))!.items.find((i) => i.id === tunde.id)!;

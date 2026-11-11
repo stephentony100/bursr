@@ -18,6 +18,8 @@ export interface FeedEntry {
 
 export interface NeedsYou {
   itemId: string;
+  /** The person the payment is for ("" for an invite or Bursar's fee). */
+  payeeId: string;
   kind: "approve" | "failed" | "funds" | "payee" | "invite" | "wallet";
   payeeName: string;
   forWhat: string;
@@ -82,6 +84,7 @@ export async function needsYou(db: PrismaClient): Promise<NeedsYou[]> {
   const invites = await db.payeeInvite.findMany({ where: { status: "submitted" }, orderBy: { submittedAt: "asc" } });
   const fromInvites: NeedsYou[] = invites.map((i) => ({
     itemId: i.id,
+    payeeId: "",
     kind: "invite",
     payeeName: i.name,
     forWhat: "New person",
@@ -103,6 +106,7 @@ export async function needsYou(db: PrismaClient): Promise<NeedsYou[]> {
       const waitsForWallet = r.payStatus === "planned" && unconfirmed.has(r.payeeId);
       return {
         itemId: r.id,
+        payeeId: r.payeeId,
         kind: waitsForWallet ? "wallet" : r.payStatus === "failed" ? "failed" : r.payStatus === "waiting" ? (r.payCode as "funds" | "payee") : "approve",
         payeeName: r.payeeName,
         forWhat: r.forWhat,

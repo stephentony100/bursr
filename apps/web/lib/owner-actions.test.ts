@@ -32,6 +32,14 @@ async function setup() {
   });
 }
 
+/** A delivered payment in their history (the hold protects people you've paid before). */
+async function paidBefore(payeeId: string) {
+  await t.db.payee.update({ where: { id: payeeId }, data: { trustedAt: new Date("2026-10-01T00:00:00Z") } });
+  await t.db.planItem.create({
+    data: { plan: { create: { capLeftUsd: "0", status: "done" } }, kind: "wages", payeeId, payeeName: "x", forWhat: "Weekly pay", amountUsd: "1", payout: "{}", placement: "in", payStatus: "delivered" },
+  });
+}
+
 const pay = (recipient: string, dollars = 10n) =>
   ({ kind: "withdraw", asset: USDT_TRON.assetId, amount: dollars * M, chain: "tron", recipient }) as const;
 
@@ -70,8 +78,9 @@ describe("owner-only actions", () => {
     expect(sessionFromCookie(cookie, Date.now() + 13 * 60 * 60 * 1000)).toBeNull(); // expired
   });
 
-  it("changing a payout address starts a 48-hour hold and is logged with before/after", async () => {
+  it("changing the payout address of someone paid before starts a 48-hour hold and is logged with before/after", async () => {
     const id = await setup();
+    await paidBefore(id);
     const now = new Date("2026-11-06T10:00:00Z");
     const newAddr = demoTronAddress("tomato-farm-new");
     await changePayout(t.db, owner, id, { token: USDT_TRON, address: newAddr, memo: null }, now);

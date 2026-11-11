@@ -196,13 +196,72 @@ export async function changePayout(db: PrismaClient, owner: OwnerSession, id: st
   const business = await assertOwner(db, owner);
   const clean = cleanPayout(business.rules, payout);
   const before = await db.payee.findUniqueOrThrow({ where: { id } });
-  await db.payee.update({ where: { id }, data: { payout: JSON.stringify(clean), payoutChangedAt: now } });
-  await audit(db, owner, "payout_changed", `You changed where ${before.name} gets paid. Payments to them are on a 48-hour safety hold.`, {
-    id,
-    before: JSON.parse(before.payout),
-    after: clean,
-  });
+  // The 48-hour hold guards against a fake "our details changed" message about someone you've paid before.
+  // For someone who has never been paid there is nothing to divert, so their change applies at once.
+  const paidBefore = Boolean(before.trustedAt) && (await db.planItem.count({ where: { payeeId: id, payStatus: "delivered" } })) > 0;
+  await db.payee.update({ where: { id }, data: { payout: JSON.stringify(clean), payoutChangedAt: paidBefore ? now : null } });
+  if (!paidBefore) {
+    // Their payments not sent yet go to the new address (a failed one does too, when the owner tries it again).
+    await db.planItem.updateMany({
+      where: { payeeId: id, placement: "in", payStatus: { in: ["planned", "waiting", "failed"] } },
+      data: { payout: JSON.stringify(clean), quote: null, quoteError: null },
+    });
+  }
+  await audit(
+    db,
+    owner,
+    "payout_changed",
+    paidBefore
+      ? `You changed where ${before.name} gets paid. Payments to them are on a 48-hour safety hold.`
+      : `You changed where ${before.name} gets paid (${clean.token.symbol} on ${clean.token.chain}).`,
+    { id, before: JSON.parse(before.payout), after: clean },
+  );
   await applyToSimulatedAccount(db);
+  return { hold: paidBefore };
+}
+
+/** Try a payment that didn't go through again, optionally with a new amount, to the person's current details. */
+export async function retryPayment(db: PrismaClient, owner: OwnerSession, itemId: string, amountUsd?: bigint) {
+  await assertOwner(db, owner);
+  const item = await db.planItem.findUnique({ where: { id: itemId }, include: { plan: true } });
+  if (!item || item.placement !== "in" || !["failed", "refunded", "waiting"].includes(item.payStatus)) throw new Error("This payment can't be tried again.");
+  if (amountUsd !== undefined && amountUsd <= 0n) throw new Error("The amount must be more than zero.");
+  const payee = item.payeeId ? await getPayee(db, item.payeeId) : null;
+  if (item.kind !== "fee" && !payee) throw new Error("This person isn't on your list any more. Add them again to pay them.");
+  await db.planItem.update({
+    where: { id: itemId },
+    data: {
+      payStatus: "planned",
+      payReason: null,
+      payCode: null,
+      retryAt: null,
+      // A new try sends new requests (new idempotency keys): nothing went out under the old ones.
+      attempts: { increment: 1 },
+      ...(amountUsd !== undefined ? { amountUsd: amountUsd.toString() } : {}),
+      ...(payee ? { payout: JSON.stringify(payee.payout), payeeName: payee.name } : {}),
+      quote: null,
+      quoteError: null,
+    },
+  });
+  if (item.plan.status === "done") await db.plan.update({ where: { id: item.planId }, data: { status: "approved" } });
+  await audit(db, owner, "plan_item_approved", `You asked the agent to try paying ${item.payeeName} again${amountUsd !== undefined ? ` (${formatUsd(amountUsd)})` : ""}`, { itemId });
+}
+
+/** Drop a payment that didn't go through. A one-time person with nothing else owed comes off the list too. */
+export async function cancelPayment(db: PrismaClient, owner: OwnerSession, itemId: string) {
+  await assertOwner(db, owner);
+  const item = await db.planItem.findUnique({ where: { id: itemId } });
+  if (!item || item.placement !== "in" || ["sent", "delivered", "paying"].includes(item.payStatus)) throw new Error("This payment can't be cancelled.");
+  await db.planItem.update({ where: { id: itemId }, data: { placement: "removed", reason: "You cancelled it." } });
+  await audit(db, owner, "plan_item_removed", `You cancelled the payment to ${item.payeeName} (${item.forWhat})`, { itemId });
+  const payee = item.payeeId ? await db.payee.findFirst({ where: { id: item.payeeId, removedAt: null, removeAfterPaid: true } }) : null;
+  if (payee) {
+    const owed = await db.planItem.count({ where: { payeeId: payee.id, placement: "in", payStatus: { in: ["planned", "waiting", "paying", "sent"] } } });
+    if (owed === 0) {
+      await db.payee.update({ where: { id: payee.id }, data: { removedAt: new Date() } });
+      await audit(db, owner, "payee_removed", `${payee.name} came off your list (a one-time payment you cancelled)`, { id: payee.id });
+    }
+  }
 }
 
 export async function removePayee(db: PrismaClient, owner: OwnerSession, id: string) {

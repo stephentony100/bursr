@@ -39,11 +39,11 @@ export default async function PayeePage({ params }: PageProps<"/people/[id]">) {
         </ActionForm>
       </section>
 
-      <section className="rounded-xl border border-hold/40 bg-card p-6">
+      <section id="where" className="rounded-xl border border-hold/40 bg-card p-6">
         <h2 className="text-xl font-bold">Where they get paid</h2>
         <p className="mt-1 max-w-2xl text-sm text-muted">
           Only change this after you&apos;ve checked with {payee.name} by phone or in person, never just because an invoice or message
-          asked you to. That&apos;s exactly how most payment fraud works. Saving puts them on a 48-hour safety hold.
+          asked you to. That&apos;s exactly how most payment fraud works. If you&apos;ve paid them before, saving puts them on a 48-hour safety hold; for someone not paid yet the change applies at once.
         </p>
         <ActionForm action={changePayoutAction} submit="Change where they get paid" tone="quiet" className="mt-4">
           <input type="hidden" name="id" value={payee.id} />
