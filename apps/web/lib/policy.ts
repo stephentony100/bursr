@@ -16,7 +16,12 @@ export function destinationFor(p: Payee): Policy["destinations"]["list"][number]
   };
 }
 
-export function buildPolicy(rules: Rules, payees: Payee[]): Policy {
+/** The owner's own NEAR account, where "Move money back to my wallet" sends the treasury token. */
+export function homeDestination(rules: Rules, ownerAccountId: string) {
+  return { action: "withdraw" as const, chain: rules.treasury.chain, address: normaliseAddress(ownerAccountId), memo: null };
+}
+
+export function buildPolicy(rules: Rules, payees: Payee[], ownerAccountId?: string): Policy {
   const tokens = [rules.treasury, ...payees.map((p) => p.payout.token), ...(rules.fee ? [rules.fee.payout.token] : [])];
   const byAsset = new Map(tokens.map((t) => [t.assetId, t]));
 
@@ -31,7 +36,9 @@ export function buildPolicy(rules: Rules, payees: Payee[]): Policy {
   const feeDestination = rules.fee
     ? [{ action: "withdraw" as const, chain: rules.fee.payout.token.chain, address: normaliseAddress(rules.fee.payout.address), memo: rules.fee.payout.memo }]
     : [];
-  const list = [...payees.map(destinationFor), ...feeDestination]
+  // The owner can always move money back to their own account: it's on the list they sign.
+  const home = ownerAccountId ? [homeDestination(rules, ownerAccountId)] : [];
+  const list = [...payees.map(destinationFor), ...feeDestination, ...home]
     .filter((d) => {
       const key = JSON.stringify(d);
       return seen.has(key) ? false : (seen.add(key), true);

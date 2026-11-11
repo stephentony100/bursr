@@ -45,6 +45,7 @@ import { getBusiness, getPayee, listPayees } from "@/lib/store";
 import { payoutTokens } from "@/lib/tokens";
 import { friendlyError } from "@/lib/errors";
 import { pendingChanges } from "@/lib/pending-changes";
+import { moveMoneyHome } from "@/lib/move-home";
 import { trustSignedPayees } from "@/lib/trust";
 
 // Every action is an untrusted entry point: each one resolves the owner from
@@ -642,6 +643,26 @@ export async function approveAllInvitesAction(): Promise<FormResult> {
         : `Added ${approved} ${approved === 1 ? "person" : "people"}.${confirm ? " Confirm them with your wallet from the bar at the top, and then they can be paid." : ""}`;
     return problems.length ? `${head} Not added: ${problems.join(" · ")}` : head;
   });
+}
+
+// --- Moving money back to the owner's wallet ---------------------------------------
+
+export async function moveMoneyHomeAction(f: FormData): Promise<{ ok: boolean; message: string }> {
+  try {
+    const owner = await requireOwner();
+    const sdb = await appDb();
+    const all = f.get("all") === "on";
+    const amount = all ? ("all" as const) : BigInt(dollars(f, "amount", "Amount"));
+    const r = await moveMoneyHome(sdb, owner, await agentAccount(sdb), amount);
+    r.done.catch((e) => console.error("[bursar] move home", e));
+    revalidatePath("/", "layout");
+    return {
+      ok: true,
+      message: `Moving ${formatUsd(r.amountUsd)} back to your wallet${r.parts > 1 ? ` in ${r.parts} parts` : ""}. The feed on This week shows when it's done.`,
+    };
+  } catch (e) {
+    return { ok: false, message: friendlyError(e) };
+  }
 }
 
 // --- Adding many people from a spreadsheet ---------------------------------------

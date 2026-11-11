@@ -21,7 +21,7 @@ const SETTLE_TIMEOUT_MS = 5 * 60_000;
 const POLL_MS = 5_000;
 
 /** Waits for an accepted action to reach a final state (live swaps take seconds to a minute). */
-async function settle(account: AgentAccount, correlationId: string, timeoutMs = SETTLE_TIMEOUT_MS) {
+export async function settle(account: AgentAccount, correlationId: string, timeoutMs = SETTLE_TIMEOUT_MS) {
   const until = Date.now() + timeoutMs;
   for (;;) {
     const o = await account.outcome(correlationId);

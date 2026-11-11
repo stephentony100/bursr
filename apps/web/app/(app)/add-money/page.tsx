@@ -1,6 +1,8 @@
 import { connection } from "next/server";
 import { practiceMoneyAction } from "@/app/actions";
 import { AddMoney } from "@/components/add-money";
+import { MoveHome } from "@/components/move-home";
+import { homeView, type HomeView } from "@/lib/move-home";
 import { ActionForm } from "@/components/forms";
 import { agentAccount } from "@/lib/agent-account";
 import { nextPayday, paydayNeed } from "@/lib/agent/view";
@@ -17,9 +19,12 @@ export default async function AddMoneyPage() {
   const dryRun = readEnv().BURSAR_MODE === "dry-run";
   const t = business.rules.treasury;
   let balance: bigint | null = null;
+  let home: HomeView | null = null;
   try {
-    const s = await (await agentAccount((await appDb()))).status();
+    const account = await agentAccount(await appDb());
+    const s = await account.status();
     balance = rescale(s.balances[t.assetId] ?? 0n, t.decimals, USD_DECIMALS);
+    home = await homeView(await appDb(), account);
   } catch {
     balance = null;
   }
@@ -61,6 +66,15 @@ export default async function AddMoneyPage() {
         </section>
       ) : (
         <AddMoney suggestedUsd={short > 0n ? formatUnits(short, USD_DECIMALS).replace(/\.?0+$/, "") : null} />
+      )}
+
+      {home && (
+        <section className="rounded-xl border border-line bg-card p-5">
+          <h2 className="text-base font-bold">Move money back to my wallet</h2>
+          <div className="mt-2">
+            <MoveHome accountId={home.accountId} balance={formatUsd(home.balanceUsd)} canMove={formatUsd(home.canMoveUsd)} limitedBy={home.limitedBy} />
+          </div>
+        </section>
       )}
 
       <section className="rounded-xl border border-dashed border-line p-5">

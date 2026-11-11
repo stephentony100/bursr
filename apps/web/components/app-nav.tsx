@@ -12,7 +12,7 @@ const NAV: { href: string; label: string; icon: Icon; hint: string }[] = [
   { href: "/records", label: "Records", icon: Books, hint: "For your accountant" },
   { href: "/people", label: "People", icon: UsersThree, hint: "Who you pay" },
   { href: "/spending-rules", label: "Spending rules", icon: ShieldCheck, hint: "Limits and stop" },
-  { href: "/add-money", label: "Add money", icon: Wallet, hint: "Top up your agent" },
+  { href: "/add-money", label: "Add money", icon: Wallet, hint: "Top up or take back" },
 ];
 
 const isActive = (path: string, href: string) => path === href || path.startsWith(`${href}/`);

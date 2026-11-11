@@ -16,7 +16,7 @@ const owner = sessionFromCookie(issueSessionCookie("owner.near", "ed25519:x")) a
 async function signedBusiness() {
   await setupBusiness(t.db, owner, { name: "Shop", rules: rules() });
   const id = await addPayee(t.db, owner, { name: "Kemi", category: "staff", payout: { token: USDT_TRON, address: demoTronAddress("kemi"), memo: null }, prices: [], recurring: null });
-  const policy = buildPolicy((await getBusiness(t.db))!.rules, await listPayees(t.db));
+  const policy = buildPolicy((await getBusiness(t.db))!.rules, await listPayees(t.db), owner.accountId);
   await t.db.agentAccount.create({ data: { backend: "agent-api", agentId: "agent-1", policy: JSON.stringify(policy), policyRevision: 1 } });
   return id;
 }
@@ -33,6 +33,13 @@ describe("changes waiting for the owner's wallet", () => {
     const kemi = await signedBusiness();
     await removePayee(t.db, owner, kemi);
     expect(await pendingChanges(t.db)).toEqual({ lines: ["Remove Kemi"], onlyTighter: true });
+  });
+
+  it("a wallet signed before money could move back lists the owner's own wallet in plain words", async () => {
+    await setupBusiness(t.db, owner, { name: "Shop", rules: rules() });
+    const policy = buildPolicy((await getBusiness(t.db))!.rules, await listPayees(t.db));
+    await t.db.agentAccount.create({ data: { backend: "agent-api", agentId: "agent-1", policy: JSON.stringify(policy), policyRevision: 1 } });
+    expect((await pendingChanges(t.db))!.lines).toEqual(["Let you move money back to your own wallet"]);
   });
 
   it("a new person and a higher limit wait for the wallet", async () => {
