@@ -4,6 +4,7 @@ import { Logo } from "@/components/logo";
 import { readEnv } from "@/lib/env";
 import { Badge } from "@/components/ui/badge";
 import { TryButton } from "./hero";
+import { CountUp } from "./count-up";
 
 // The quieter sections of the home page: privacy, the problem in numbers,
 // pricing and the closing call. Plain layouts in the shared product style.
@@ -55,7 +56,7 @@ export function Privacy() {
             Bursr checks the hardware&apos;s signed report in front of you.
           </p>
         </div>
-        <div className="rounded-xl border border-line bg-card p-6">
+        <div className="rounded-2xl border border-line bg-card p-6">
           <div className="flex items-center justify-between gap-4">
             <p className="flex items-center gap-2 font-semibold">
               <LockSimple size={18} weight="bold" className="text-ledger" aria-hidden /> Your invoices stay private
@@ -83,10 +84,12 @@ export function Figures() {
         <h2 id="figures-title" className="display max-w-3xl text-4xl leading-[1.05] sm:text-5xl">
           One wrong payment can cost more than a month&apos;s profit.
         </h2>
-        <dl className="mt-14 grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
           {FIGURES.map((f) => (
             <div key={f.source} className="flex flex-col bg-card p-6">
-              <dt className="num text-4xl font-semibold tracking-tight">{f.figure}</dt>
+              <dt className="num font-[family-name:var(--font-display)] text-5xl font-extrabold tracking-tight">
+                <CountUp value={f.figure} />
+              </dt>
               <dd className="mt-3 flex-1 text-sm leading-relaxed text-muted">{f.label}</dd>
               <dd className="mt-5">
                 <a href={f.href} target="_blank" rel="noreferrer" className="text-xs text-muted underline decoration-line hover:text-ink">
@@ -115,11 +118,10 @@ export function Pricing() {
             Half a percent, shown before you approve.
           </h2>
           <p className="mt-5 max-w-[52ch] text-lg leading-relaxed text-muted">
-            Bursr charges 0.5% of what it pays out each week. The fee is a line on your weekly list, and each payment shows its transfer fee, so you see the full cost before you approve. No subscription,
-            and nothing to pay in a week with no payments.
+            0.5% of each payment run, as its own line on the list. You also cover each network fee, so everyone gets their full pay. No subscription, and nothing to pay in a quiet week.
           </p>
         </div>
-        <div className="w-full max-w-md justify-self-center rounded-xl border border-line bg-card">
+        <div className="w-full max-w-md justify-self-center rounded-2xl border border-line bg-card">
           <p className="border-b border-line px-6 py-4 text-sm font-semibold">This week&apos;s list · Bukka Corner Restaurant</p>
           <dl className="divide-y divide-line px-6 text-sm">
             {PRICE_ROWS.map(([k, v]) => (
@@ -151,8 +153,13 @@ export function Closing() {
         <h2 id="close-title" className="display max-w-4xl text-4xl leading-[1.05] sm:text-6xl">
           Spend Friday on your business, not your bills.
         </h2>
-        <p className="mt-6 max-w-xl text-lg text-white/70">Walk through a real week with a sample restaurant: six invoices, four problems, one OK. It takes two minutes and uses practice money.</p>
+        <p className="mt-6 max-w-xl text-lg text-white/70">Watch an agent run a real week for a sample restaurant: six invoices, four problems caught. Two minutes, practice money.</p>
         <TryButton className="mt-10" />
+      </div>
+      <div aria-hidden className="pointer-events-none select-none overflow-hidden">
+        <p className="mx-auto -mb-[0.18em] max-w-7xl bg-gradient-to-b from-white/[0.14] to-white/0 bg-clip-text px-5 font-[family-name:var(--font-display)] text-[clamp(7rem,26vw,22rem)] font-extrabold leading-none tracking-[-0.06em] text-transparent">
+          Bursr
+        </p>
       </div>
       <footer className="border-t border-white/10">
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-5 px-5 py-7 text-sm text-white/65">

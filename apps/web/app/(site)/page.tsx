@@ -2,6 +2,10 @@ import { ChecksAccordion } from "@/components/landing/checks-accordion";
 import { Hero } from "@/components/landing/hero";
 import { HowSplit } from "@/components/landing/how-split";
 import { LimitsTabs } from "@/components/landing/limits-tabs";
+import { NetworkStrip } from "@/components/landing/network-strip";
+import { PeopleBand } from "@/components/landing/people-band";
+import { SmoothScroll } from "@/components/landing/smooth-scroll";
+import { Statement } from "@/components/landing/statement";
 import { Reveal } from "@/components/landing/reveal";
 import { Closing, Figures, Pricing, Privacy } from "@/components/landing/sections";
 import { demoTronAddress } from "@/lib/demo-addresses";
@@ -25,8 +29,12 @@ export default function Landing() {
         Skip to content
       </a>
       <div aria-hidden className="scroll-progress fixed inset-x-0 top-0 z-[60] h-0.5 bg-ledger" />
+      <SmoothScroll />
       <Hero />
       <main id="main">
+        <NetworkStrip />
+        <Statement />
+        <PeopleBand />
         <HowSplit />
         <ChecksAccordion usualAddress={demoTronAddress("eko-fresh-foods")} newAddress={demoTronAddress("eko-new-account")} />
 
