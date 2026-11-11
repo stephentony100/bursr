@@ -41,6 +41,8 @@ model Payee {
   payoutChangedAt DateTime?
   /// When the owner first approved a payment to them; until then each payment needs the owner.
   trustedAt       DateTime?
+  /// A one-time payee: taken off the list automatically once their payment arrives.
+  removeAfterPaid Boolean   @default(false)
   removedAt       DateTime?
 
   @@index([businessId])
@@ -230,6 +232,8 @@ model PayeeInvite {
   submittedAt DateTime?
   /// open | submitted | approved | declined
   status      String    @default("open")
+  /// "Pay someone once": the payment to make when the owner approves their details (JSON { amountUsd, note }).
+  oneOff      String?
   payeeId     String?
 
   @@index([businessId])

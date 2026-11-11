@@ -21,6 +21,7 @@ import {
   addPayee,
   approvePlan,
   approvePlanItem,
+  payOnce,
   setupBusiness,
   changePayout,
   removePayee,
@@ -611,4 +612,45 @@ export async function submitInviteAction(_prev: FormResult, f: FormData): Promis
     await submitInvite(rawDb(), text(f, "token"), { assetId: text(f, "token_asset"), address: text(f, "address"), memo: text(f, "memo") });
     return "Thanks! Sent. You'll be paid once the business confirms your details.";
   });
+}
+
+// --- Pay someone once ---------------------------------------------------------
+
+export type PayOnceResult = { ok: true; message: string; link?: string; name: string } | { ok: false; message: string };
+
+/** One payment to someone new: by their address, or by a link they fill in. Live, the payment waits for the wallet. */
+export async function payOnceAction(f: FormData): Promise<PayOnceResult> {
+  try {
+    const owner = await requireOwner();
+    const sdb = await appDb();
+    const name = text(f, "name");
+    if (!name) throw new Error("Add their name.");
+    const amountUsd = BigInt(dollars(f, "amount", "Amount"));
+    const note = text(f, "note") || "One-time job";
+    const removeAfterPaid = f.get("removeAfterPaid") === "on";
+    const live = readEnv().BURSAR_MODE === "live";
+    if (text(f, "method") === "link") {
+      const invite = await createInvite(sdb, owner, { name, category: "supplier", recurring: null, oneOff: { amountUsd: amountUsd.toString(), note, removeAfterPaid } });
+      revalidatePath("/", "layout");
+      return {
+        ok: true,
+        name: invite.name,
+        link: `${readEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/join/${invite.token}`,
+        message: `When ${invite.name} sends their details, approve them on People${live ? " and confirm with your wallet" : ""}; the agent then pays them ${formatUsd(amountUsd)} straight away.`,
+      };
+    }
+    await payOnce(sdb, owner, { name, amountUsd, note, payout: await payoutFrom(f), removeAfterPaid });
+    if (!live) kickAgent();
+    revalidatePath("/", "layout");
+    return {
+      ok: true,
+      name,
+      message: live
+        ? `${name} is added. Confirm with your wallet from the bar at the top, and the agent pays them ${formatUsd(amountUsd)} straight away.`
+        : `The agent is paying ${name} ${formatUsd(amountUsd)} now. Watch it in the feed on This week.`,
+    };
+  } catch (e) {
+    console.error("[bursar]", e);
+    return { ok: false, message: friendlyError(e) };
+  }
 }

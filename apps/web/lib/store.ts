@@ -34,6 +34,7 @@ export function payeeFromRow(row: PayeeRow): Payee {
     addedAt: row.addedAt.toISOString(),
     payoutChangedAt: row.payoutChangedAt?.toISOString() ?? null,
     trustedAt: row.trustedAt?.toISOString() ?? null,
+    removeAfterPaid: row.removeAfterPaid,
   };
 }
 

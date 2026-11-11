@@ -51,6 +51,7 @@ export function payee(over: Partial<Payee> & { id: string }): Payee {
     addedAt: "2026-10-01T00:00:00.000Z",
     payoutChangedAt: null,
     trustedAt: over.trustedAt !== undefined ? over.trustedAt : (over.addedAt ?? "2026-10-01T00:00:00.000Z"),
+    removeAfterPaid: false,
     ...over,
   };
 }

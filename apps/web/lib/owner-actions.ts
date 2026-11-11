@@ -324,7 +324,25 @@ export async function requestOneOffPayment(db: PrismaClient, owner: OwnerSession
       },
     },
   });
-  await trust(db, [payee.id]);
+  // Practice mode: the owner's request is the approval. Live: the owner's wallet must have signed them in first
+  // (the agent waits for that, and confirming in the wallet trusts them: lib/trust.ts).
+  if ((await getAccountRecord(db))?.backend !== "agent-api") await trust(db, [payee.id]);
   await audit(db, owner, "plan_item_approved", `You asked the agent to pay ${payee.name} ${formatUsd(input.amountUsd)} (${forWhat})`, { planId: plan.id });
   return plan.id;
+}
+
+/**
+ * "Pay someone once": adds them (marked to come off the list once paid, if the owner wants)
+ * and asks the agent to pay them. Live, the payment waits until the owner's wallet confirms them.
+ */
+export async function payOnce(
+  db: PrismaClient,
+  owner: OwnerSession,
+  input: { name: string; amountUsd: bigint; note: string; payout: Payout; removeAfterPaid: boolean },
+): Promise<string> {
+  if (input.amountUsd <= 0n) throw new Error("The amount must be more than zero.");
+  const payeeId = await addPayee(db, owner, { name: input.name, category: "supplier", payout: input.payout, prices: [], recurring: null });
+  if (input.removeAfterPaid) await db.payee.update({ where: { id: payeeId }, data: { removeAfterPaid: true } });
+  await requestOneOffPayment(db, owner, { payeeId, amountUsd: input.amountUsd, note: input.note });
+  return payeeId;
 }

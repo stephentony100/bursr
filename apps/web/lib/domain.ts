@@ -81,6 +81,8 @@ export const PayeeSchema = z.object({
   payoutChangedAt: z.string().nullable(), // ISO; starts the 48h hold
   /** ISO; set when the owner first approves a payment to them. Until then every payment to them needs the owner. */
   trustedAt: z.string().nullable().default(null),
+  /** A one-time payee: taken off the list once their payment arrives. */
+  removeAfterPaid: z.boolean().default(false),
 });
 export type Payee = z.infer<typeof PayeeSchema>;
 

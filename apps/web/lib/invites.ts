@@ -3,7 +3,7 @@ import { z } from "zod";
 import { addressProblem } from "./address";
 import { normaliseAddress, PayeeCategory, PayeeSchema, type Payout, type PayoutToken } from "./domain";
 import type { PrismaClient } from "./generated/prisma/client";
-import { addPayee, NotOwnerError } from "./owner-actions";
+import { addPayee, NotOwnerError, requestOneOffPayment } from "./owner-actions";
 import type { OwnerSession } from "./owner";
 import { getBusiness } from "./store";
 import { scoped } from "./tenant";
@@ -27,6 +27,14 @@ export interface InviteView {
   expiresAt: Date;
   payout: Payout | null;
   submittedAt: Date | null;
+  /** "Pay someone once": what to pay them when their details are approved. */
+  oneOff: OneOff | null;
+}
+
+export interface OneOff {
+  amountUsd: string;
+  note: string;
+  removeAfterPaid: boolean;
 }
 
 type Row = NonNullable<Awaited<ReturnType<PrismaClient["payeeInvite"]["findUnique"]>>>;
@@ -42,6 +50,7 @@ function view(r: Row): InviteView {
     expiresAt: r.expiresAt,
     payout: r.payout ? (JSON.parse(r.payout) as Payout) : null,
     submittedAt: r.submittedAt,
+    oneOff: r.oneOff ? (JSON.parse(r.oneOff) as OneOff) : null,
   };
 }
 
@@ -54,7 +63,7 @@ async function assertOwner(db: PrismaClient, owner: OwnerSession) {
 export async function createInvite(
   db: PrismaClient,
   owner: OwnerSession,
-  input: { name: string; category: z.infer<typeof PayeeCategory>; recurring: z.infer<typeof Recurring> },
+  input: { name: string; category: z.infer<typeof PayeeCategory>; recurring: z.infer<typeof Recurring>; oneOff?: OneOff },
   now = new Date(),
 ): Promise<InviteView> {
   await assertOwner(db, owner);
@@ -67,6 +76,7 @@ export async function createInvite(
       category: PayeeCategory.parse(input.category),
       recurring: JSON.stringify(Recurring.parse(input.recurring)),
       expiresAt: new Date(now.getTime() + INVITE_DAYS * 24 * 60 * 60_000),
+      oneOff: input.oneOff ? JSON.stringify(input.oneOff) : null,
     },
   });
   await db.auditEvent.create({ data: { kind: "invite_created", actor: owner.accountId, message: `You invited ${name} to share how they want to be paid` } });
@@ -124,6 +134,11 @@ export async function approveInvite(db: PrismaClient, owner: OwnerSession, id: s
   const v = view(row);
   const payeeId = await addPayee(db, owner, { name: v.name, category: v.category, payout: v.payout!, prices: [], recurring: v.recurring });
   await db.payeeInvite.update({ where: { id }, data: { status: "approved", payeeId } });
+  if (v.oneOff) {
+    // "Pay someone once": the payment the owner asked for when inviting them.
+    if (v.oneOff.removeAfterPaid) await db.payee.update({ where: { id: payeeId }, data: { removeAfterPaid: true } });
+    await requestOneOffPayment(db, owner, { payeeId, amountUsd: BigInt(v.oneOff.amountUsd), note: v.oneOff.note });
+  }
   return payeeId;
 }
 

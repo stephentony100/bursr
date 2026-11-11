@@ -2,7 +2,7 @@ import type { Payout } from "../domain";
 import type { PrismaClient } from "../generated/prisma/client";
 import { listInvoices } from "../invoices";
 import { addDays, invoiceDueOn, lastDueOn, localDay, nextDueOn, paydayOnOrAfter } from "../schedule";
-import { getBusiness, listPayees } from "../store";
+import { getAccountRecord, getBusiness, listPayees } from "../store";
 
 // What the owner sees of the agent: what it's doing, what it needs from them,
 // and what it will pay next. Read-only.
@@ -18,7 +18,7 @@ export interface FeedEntry {
 
 export interface NeedsYou {
   itemId: string;
-  kind: "approve" | "failed" | "funds" | "payee" | "invite";
+  kind: "approve" | "failed" | "funds" | "payee" | "invite" | "wallet";
   payeeName: string;
   forWhat: string;
   amountUsd: bigint;
@@ -88,14 +88,29 @@ export async function needsYou(db: PrismaClient): Promise<NeedsYou[]> {
     amountUsd: 0n,
     reason: "Sent how they want to be paid. Check it with them, then approve on People.",
   }));
-  return fromInvites.concat(rows.map((r) => ({
-    itemId: r.id,
-    kind: r.payStatus === "failed" ? "failed" : r.payStatus === "waiting" ? (r.payCode as "funds" | "payee") : "approve",
-    payeeName: r.payeeName,
-    forWhat: r.forWhat,
-    amountUsd: BigInt(r.amountUsd),
-    reason: r.payStatus === "planned" ? (r.ownTapReason ?? "Needs your OK.") : (r.payReason ?? ""),
-  })));
+  // Live: payments to people the owner's wallet hasn't confirmed yet wait for that confirmation (which also approves them).
+  const live = (await getAccountRecord(db))?.backend === "agent-api";
+  const unconfirmed = live ? new Set((await db.payee.findMany({ where: { trustedAt: null, removedAt: null }, select: { id: true } })).map((p) => p.id)) : new Set<string>();
+  const forWallet = live
+    ? await db.planItem.findMany({
+        where: { placement: "in", payStatus: "planned", needsOwnTap: false, payeeId: { in: [...unconfirmed] }, plan: { status: "approved", createdAt: { gte: since } } },
+        orderBy: { id: "asc" },
+      })
+    : [];
+  const walletWords = (name: string) => `Waiting for your wallet to confirm ${name}. Use "Confirm with my wallet" at the top of the page, and the agent pays straight after.`;
+  return fromInvites.concat(
+    [...rows, ...forWallet].map((r) => {
+      const waitsForWallet = r.payStatus === "planned" && unconfirmed.has(r.payeeId);
+      return {
+        itemId: r.id,
+        kind: waitsForWallet ? "wallet" : r.payStatus === "failed" ? "failed" : r.payStatus === "waiting" ? (r.payCode as "funds" | "payee") : "approve",
+        payeeName: r.payeeName,
+        forWhat: r.forWhat,
+        amountUsd: BigInt(r.amountUsd),
+        reason: waitsForWallet ? walletWords(r.payeeName) : r.payStatus === "planned" ? (r.ownTapReason ?? "Needs your OK.") : (r.payReason ?? ""),
+      };
+    }),
+  );
 }
 
 /** The next payments the agent will make by itself, over the coming two weeks. */

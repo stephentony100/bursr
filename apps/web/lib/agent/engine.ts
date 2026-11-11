@@ -102,6 +102,16 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
       if (i.payStatus === "delivered") {
         report.delivered++;
         await say(db, "payment_delivered", `${i.payeeName} received ${formatUsd(BigInt(i.amountUsd))} (${i.forWhat}) in ${where}.`, { itemId: i.id });
+        // A one-time payee comes off the list once paid, as the owner asked when setting the payment up.
+        // (Taking someone off only narrows who can be paid; adding or changing payees stays the owner's alone.)
+        const payee = i.payeeId ? await db.payee.findFirst({ where: { id: i.payeeId, removedAt: null, removeAfterPaid: true } }) : null;
+        const stillOwed = payee
+          ? await db.planItem.count({ where: { payeeId: payee.id, placement: "in", payStatus: { in: ["planned", "waiting", "paying", "sent"] } } })
+          : 0;
+        if (payee && stillOwed === 0) {
+          await db.payee.update({ where: { id: payee.id }, data: { removedAt: now } });
+          await say(db, "agent_run", `${payee.name} has been paid, so I took them off your list as you asked.`);
+        }
       } else if (i.payStatus === "refunded" || i.payStatus === "failed") {
         await say(db, "payment_failed", `The payment to ${i.payeeName} (${i.forWhat}) didn't arrive and the money came back to your Bursar wallet. This one needs you.`, { itemId: i.id });
       }
@@ -194,6 +204,14 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
     if (row.needsOwnTap && !row.ownTapAt) {
       report.needsOwner++;
       continue;
+    }
+    // Live: someone the owner's wallet hasn't confirmed yet can't be paid; wait for that rather than be refused.
+    if (account.backend === "agent-api" && row.payeeId) {
+      const payee = await db.payee.findFirst({ where: { id: row.payeeId }, select: { trustedAt: true } });
+      if (payee && !payee.trustedAt) {
+        report.needsOwner++;
+        continue;
+      }
     }
     // Waiting for money: try again only once the wallet holds enough, so the log isn't filled with refusals.
     if (row.payCode === "funds") {

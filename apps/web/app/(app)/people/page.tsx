@@ -4,6 +4,7 @@ import { addPayeeAction } from "@/app/actions";
 import { ActionForm } from "@/components/forms";
 import { InvitesList } from "@/components/invites-list";
 import { InviteForm } from "@/components/onboarding";
+import { PayOnce } from "@/components/pay-once";
 import { DetailFields, PayoutFields } from "@/components/payee-fields";
 import { guardPage, appDb } from "@/lib/session";
 import { isOnPayoutHold, payoutHoldEndsAt } from "@/lib/domain";
@@ -90,6 +91,14 @@ export default async function PayeesPage({ searchParams }: { searchParams: Promi
           </li>
         ))}
       </ul>
+
+      <section id="pay-once" className="space-y-4 rounded-xl border border-line bg-card p-6">
+        <div>
+          <h2 className="text-xl font-bold">Pay someone once</h2>
+          <p className="mt-1 text-sm text-muted">A quick job, a delivery, a repair. Your agent pays them as soon as they&apos;re approved, inside your limits.</p>
+        </div>
+        <PayOnce tokens={business.rules.payoutTokens} live={live} />
+      </section>
 
       <section className="space-y-4 rounded-xl border border-line bg-card p-6">
         <div>

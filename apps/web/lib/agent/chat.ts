@@ -7,6 +7,7 @@ import { readEnv } from "../env";
 import { listInvoices } from "../invoices";
 import { formatUsd, parseUnits, rescale, USD_DECIMALS } from "../money";
 import { openPayload, sealPayload, type OwnerSession } from "../owner";
+import { createInvite } from "../invites";
 import { requestOneOffPayment, setFrozen } from "../owner-actions";
 import type { quotePayout } from "../quotes";
 import { scheduleWords } from "../schedule";
@@ -28,7 +29,12 @@ export interface ChatTurn {
   content: string;
 }
 
-export type CardAction = { kind: "pay"; payeeId: string; payeeName: string; amountUsd: string; note: string } | { kind: "run_payday" } | { kind: "pause"; pause: boolean };
+export type CardAction =
+  | { kind: "pay"; payeeId: string; payeeName: string; amountUsd: string; note: string }
+  /** Someone not on the list yet: a link for them to fill in; the agent pays once the owner approves them. */
+  | { kind: "pay_new"; name: string; amountUsd: string; note: string }
+  | { kind: "run_payday" }
+  | { kind: "pause"; pause: boolean };
 
 export interface ActionCard {
   token: string;
@@ -51,6 +57,14 @@ function card(action: CardAction, owner: OwnerSession): ActionCard {
   const token = sealPayload({ action, owner: owner.accountId }, CARD_TTL_MS);
   if (action.kind === "pay") {
     return { token, title: `Pay ${action.payeeName} ${formatUsd(BigInt(action.amountUsd))}`, detail: action.note || "One-off payment", confirm: "Yes, pay it" };
+  }
+  if (action.kind === "pay_new") {
+    return {
+      token,
+      title: `Pay ${action.name} ${formatUsd(BigInt(action.amountUsd))} once`,
+      detail: `${action.note || "One-time job"}. ${action.name} isn't on your list yet: this makes a link for them to say where to be paid. You approve their details, then I pay them and take them off the list.`,
+      confirm: "Make their link",
+    };
   }
   if (action.kind === "run_payday") return { token, title: "Run payday now", detail: "Pay everything due by the coming payday (routine payments go out at once).", confirm: "Run it" };
   return { token, title: action.pause ? "Pause all payments" : "Turn payments back on", detail: action.pause ? "Nothing goes out until you turn payments back on." : "The agent picks up anything that was waiting.", confirm: action.pause ? "Pause" : "Turn on" };
@@ -168,10 +182,15 @@ async function runTool(name: string, rawArgs: string, ctx: ToolContext): Promise
       const wanted = String(args.payee_name ?? "").toLowerCase().trim();
       const people = await listPayees(db);
       const matches = people.filter((p) => p.name.toLowerCase().includes(wanted) || wanted.includes(p.name.toLowerCase().split(" ")[0]));
-      if (matches.length !== 1) {
-        return { error: matches.length ? `Several people match: ${matches.map((m) => m.name).join(", ")}. Ask which one.` : `Nobody called "${args.payee_name}" is on the list. Only the owner can add someone, on the People page.` };
-      }
       const amountUsd = parseUnits(amountText, USD_DECIMALS);
+      if (matches.length > 1) return { error: `Several people match: ${matches.map((m) => m.name).join(", ")}. Ask which one.` };
+      if (matches.length === 0) {
+        // Someone new: offer a one-time payment by link (the owner still approves them before anything is paid).
+        const name = String(args.payee_name ?? "").trim().slice(0, 80);
+        if (!name) return { error: "Ask the owner who to pay." };
+        ctx.cards.push(card({ kind: "pay_new", name, amountUsd: amountUsd.toString(), note: String(args.note ?? "").slice(0, 80) }, ctx.owner));
+        return { card: "shown to the owner", note: `${name} isn't on the list yet. The card makes a link for them to fill in; the owner approves their details, then the payment goes out and they come off the list.` };
+      }
       ctx.cards.push(card({ kind: "pay", payeeId: matches[0].id, payeeName: matches[0].name, amountUsd: amountUsd.toString(), note: String(args.note ?? "").slice(0, 80) }, ctx.owner));
       return { card: "shown to the owner", payee: matches[0].name, amount: formatUsd(amountUsd), note: "Tell the owner to confirm the card. Nothing is paid until they do." };
     }
@@ -280,6 +299,11 @@ export async function confirmCard(db: PrismaClient, owner: OwnerSession, token: 
     await requestOneOffPayment(db, owner, { payeeId: action.payeeId, amountUsd: BigInt(action.amountUsd), note: action.note || "One-off payment" });
     const r = await runAgent(db, { quote });
     return r.sent ? `Paying ${action.payeeName} now. You'll see it arrive in the feed.` : `Asked the agent to pay ${action.payeeName}. Watch the feed for how it goes.`;
+  }
+  if (action.kind === "pay_new") {
+    const invite = await createInvite(db, owner, { name: action.name, category: "supplier", recurring: null, oneOff: { amountUsd: action.amountUsd, note: action.note || "One-time job", removeAfterPaid: true } });
+    const link = `${readEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/join/${invite.token}`;
+    return `Send ${invite.name} this link: ${link} When they've sent their details, approve them on People${readEnv().BURSAR_MODE === "live" ? " and confirm with your wallet" : ""}, and I'll pay them ${formatUsd(BigInt(action.amountUsd))} straight away.`;
   }
   if (action.kind === "run_payday") {
     const r = await runAgent(db, { dueBy: "payday", quote });
