@@ -158,7 +158,7 @@ export async function payItem(
     // The owner's current limits apply at once, even before their wallet confirms a lower limit.
     // The wallet counts everything that leaves it, fee included.
     if (grossUsd > BigInt(rules.perPaymentCapUsd)) {
-      return stop({ kind: "final", message: `This is more than your largest single payment (${formatUsd(BigInt(rules.perPaymentCapUsd))}).${feeWords} Raise the limit on Spending rules, or pay it in parts.` });
+      return stop({ kind: "final", message: `This is more than your largest single payment (${formatUsd(BigInt(rules.perPaymentCapUsd))}).${feeWords} Raise the limit on the Limits page, or pay it in parts.` });
     }
     const usage = await account.status();
     if (usage.spentThisWeekUsd + grossUsd > BigInt(rules.weeklyCapUsd)) {

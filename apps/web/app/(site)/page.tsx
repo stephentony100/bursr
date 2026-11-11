@@ -6,9 +6,21 @@ import { Reveal } from "@/components/landing/reveal";
 import { Closing, Figures, Pricing, Privacy } from "@/components/landing/sections";
 import { demoTronAddress } from "@/lib/demo-addresses";
 
+/** Tells search engines what Bursr is (schema.org SoftwareApplication). */
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Bursr",
+  applicationCategory: "FinanceApplication",
+  operatingSystem: "Web",
+  description: "An AI agent that pays a small business's staff and suppliers in stablecoins on any network, checks invoices for fraud, and pays inside limits enforced by its account.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD", description: "0.5% of each payment run" },
+};
+
 export default function Landing() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <a href="#main" className="skip-link">
         Skip to content
       </a>

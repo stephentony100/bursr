@@ -39,7 +39,7 @@ async function forChat(chatId: number | undefined) {
 bot.command("start", (ctx) =>
   ctx.reply(
     "Hi, I'm Bursr's agent. I check your supplier invoices for fraud and pay your staff and suppliers on their day, inside the limits you set. I'll message you here when something needs you, and you can just talk to me.\n\n" +
-      "To connect: open Bursr → Spending rules → Connect my Telegram, then send me the /link line it shows you.",
+      "To connect: open Bursr → Limits → Connect my Telegram, then send me the /link line it shows you.",
   ),
 );
 
@@ -49,7 +49,7 @@ bot.command("link", async (ctx) => {
     const bdb = scoped(db(), id);
     if (await hasLinkCode(bdb, ctx.match ?? "")) return ctx.reply(await linkChat(bdb, ctx.chat.id, ctx.match ?? ""));
   }
-  await ctx.reply("That code is wrong or expired. Get a new one in Bursr → Spending rules → Connect my Telegram.");
+  await ctx.reply("That code is wrong or expired. Get a new one in Bursr → Limits → Connect my Telegram.");
 });
 
 bot.command("plan", async (ctx) => {

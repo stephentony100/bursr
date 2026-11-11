@@ -12,14 +12,14 @@ export function InvitesList({ invites }: { invites: InviteView[] }) {
   return (
     <div className="space-y-3">
       {submitted > 1 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ledger/40 bg-ledger-soft/60 px-4 py-3 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ledger/40 bg-ledger-soft/60 px-4 py-3 text-sm">
           <span>
             <span className="font-semibold">{submitted} people sent their details.</span> Check the addresses with them, then add everyone at once.
           </span>
           <ActionForm action={approveAllInvitesAction} submit={`Approve all ${submitted}`} />
         </div>
       )}
-      <ul className="divide-y divide-line rounded-lg border border-line bg-card">
+      <ul className="divide-y divide-line rounded-xl border border-line bg-card">
         {invites.map((i) => (
           <li key={i.id} className="space-y-2 px-4 py-3 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -41,7 +41,7 @@ export function InvitesList({ invites }: { invites: InviteView[] }) {
               </p>
             )}
             {i.status === "submitted" && i.payout && (
-              <div className="rounded-lg bg-paper p-3">
+              <div className="rounded-xl bg-paper p-3">
                 <p>
                   Wants {i.payout.token.symbol} on {chainName(i.payout.token.chain)} at <span className="num break-all">{i.payout.address}</span>
                   {i.payout.memo && ` (memo ${i.payout.memo})`}

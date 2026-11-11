@@ -1,33 +1,32 @@
 # Bursr design system
 
-Built on 9 Nov 2026 following the frontend-ui-engineering skill (addyosmani/agent-skills). References: Stax.ai's enterprise B2B pages and the business-banking style of products like Mercury and Ramp (calm neutral surfaces, one strong accent, product screens as proof, dense tables in the app). Rebuilt in our own components; no branding or layout copied.
+Rebuilt on 11 Nov 2026 as a fintech product, from a study of Nigerian fintech apps (Moniepoint, Kuda, Paystack, PiggyVest, Cowrywise, Grey, Brass, OPay): balance first with a hide/show eye, actions beside it, transaction rows (avatar, name, one short line, amount right, status), bottom tabs on phones, one helper line per section, explanations behind "Details". Built in our own components; no branding, scripts or layouts copied.
 
 ## Tokens (`app/globals.css`, `@theme`)
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `paper` | `#f5f6f8` | App and page background |
-| `paper-2` | `#eceef2` | Table heads, tiles, subtle fills |
-| `card` | `#ffffff` | Cards, tables, inputs |
-| `ink` | `#101828` | Primary text |
-| `muted` | `#535d6e` | Secondary text (4.5:1 or better on white and paper) |
-| `line` | `#e2e5ea` | Borders and dividers |
-| `ledger` | `#0b7a57` | The one accent: primary actions, active state, paid |
-| `ledger-soft` | `#e3f4ec` | Accent tint for badges and banners |
-| `indigo` | `#086347` | Accent hover, links, focus ring |
-| `hold` / `hold-soft` | `#9a5a07` / `#fdf1dd` | Held, needs a look |
-| `refuse` / `refuse-soft` | `#c4271c` / `#fde8e6` | Blocked, refused, errors |
-| `night` / `night-2` | `#0f1623` / `#1b2433` | Sidebar, checks section, closing band |
+| `paper` | `#f5f6f8` | App background |
+| `paper-2` | `#eef0f4` | Tiles, table heads |
+| `card` | `#ffffff` | Cards, inputs |
+| `ink` | `#0b1220` | Text |
+| `muted` | `#5b6475` | Secondary text |
+| `line` | `#e4e7ec` | Borders |
+| `ledger` / `ledger-soft` / `indigo` | `#2f4bdb` / `#eef1fd` / `#2339b5` | Brand blue: actions, links, active nav (hover `indigo`) |
+| `ok` / `ok-soft` | `#12a150` / `#e7f6ec` | Done, paid, success |
+| `hold` / `hold-soft` | `#b54708` / `#fef0c7` | Waiting, needs a look |
+| `refuse` / `refuse-soft` | `#d92d20` / `#fee4e2` | Blocked, failed |
+| `night` | `#0b1220` | Balance card |
 
-One grey family (cool). One accent. No gradients, glows or textures.
+Three status colours, always with a word.
 
 ## Type
 
-Geist for everything; Geist Mono (`.num`) only for amounts and account numbers. Headings use `.display` (semibold, -0.03em tracking). One `h1` per page; headings don't skip levels.
+Plus Jakarta Sans (headings, balance, `.display`, weight 700–800) and Inter (everything else; `.num` = tabular figures). Wallet addresses use `.addr` (monospace, so look-alike characters stand apart). Copy rules: page title 1–2 words, one helper line of 12 words or fewer, buttons a verb plus one word.
 
 ## Shape and depth
 
-Cards and tables 12px (`rounded-xl`), buttons and inputs 8px (`rounded-lg`), badges and pills fully round. Borders separate surfaces; shadows only on the hero product preview and floating cards.
+Cards 16–20px (`rounded-2xl`), buttons and inputs 12px (`rounded-xl`), badges, tabs and avatars fully round. Borders separate surfaces; shadows only on sheets and menus (`--shadow-pop`).
 
 ## Components
 

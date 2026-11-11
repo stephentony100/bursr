@@ -23,15 +23,15 @@ export default async function PayeePage({ params }: PageProps<"/people/[id]">) {
         <Link href="/people" className="inline-flex items-center gap-1.5 text-sm text-indigo underline">
           <ArrowLeft size={14} weight="bold" aria-hidden /> Everyone you pay
         </Link>
-        <h1 className="mt-2 display text-4xl">{payee.name}</h1>
+        <h1 className="mt-2 display text-2xl sm:text-3xl">{payee.name}</h1>
         {held && (
-          <p className="mt-2 rounded-md bg-hold-soft px-4 py-2 text-sm text-hold">
+          <p className="mt-2 rounded-lg bg-hold-soft px-4 py-2 text-sm text-hold">
             Their payment details changed recently. For your safety, payments are on hold until {payoutHoldEndsAt(payee)!.toLocaleString("en-GB")}.
           </p>
         )}
       </div>
 
-      <section className="rounded-xl border border-line bg-card p-6">
+      <section className="rounded-2xl border border-line bg-card p-6">
         <h2 className="text-xl font-bold">Their details</h2>
         <ActionForm action={updatePayeeAction} submit="Save" className="mt-4">
           <input type="hidden" name="id" value={payee.id} />
@@ -39,7 +39,7 @@ export default async function PayeePage({ params }: PageProps<"/people/[id]">) {
         </ActionForm>
       </section>
 
-      <section id="where" className="rounded-xl border border-hold/40 bg-card p-6">
+      <section id="where" className="rounded-2xl border border-hold/40 bg-card p-6">
         <h2 className="text-xl font-bold">Where they get paid</h2>
         <p className="mt-1 max-w-2xl text-sm text-muted">
           Only change this after you&apos;ve checked with {payee.name} by phone or in person, never just because an invoice or message
@@ -51,7 +51,7 @@ export default async function PayeePage({ params }: PageProps<"/people/[id]">) {
         </ActionForm>
       </section>
 
-      <section className="rounded-xl border border-line bg-card p-6">
+      <section className="rounded-2xl border border-line bg-card p-6">
         <h2 className="text-xl font-bold">Stop paying them</h2>
         <p className="mt-1 text-sm text-muted">Bursr won&apos;t be able to pay them any more. You can add them again later.</p>
         <ActionForm action={removePayeeAction} submit={`Remove ${payee.name}`} tone="danger">

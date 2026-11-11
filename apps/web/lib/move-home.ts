@@ -40,7 +40,7 @@ export async function homeView(db: PrismaClient, account: AgentAccount): Promise
     canMoveUsd = 0n;
     limitedBy = "Payments are paused. Turn them back on to move money.";
   } else if (left < balanceUsd) {
-    limitedBy = `Your weekly limit has ${formatUsd(left)} left${s.weekResetsAt ? ` until ${s.weekResetsAt.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" })}` : ""}. Raise it on Spending rules to move more now.`;
+    limitedBy = `Your weekly limit has ${formatUsd(left)} left${s.weekResetsAt ? ` until ${s.weekResetsAt.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" })}` : ""}. Raise it on the Limits page to move more.`;
   }
   return { accountId: business.ownerAccountId, balanceUsd, canMoveUsd, limitedBy };
 }

@@ -68,7 +68,7 @@ export function PendingChangesBar({ lines, onlyTighter }: { lines: string[]; onl
               })
             }
             disabled={busy}
-            className="rounded-lg bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60"
+            className="rounded-xl bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60"
           >
             {busy ? "Check your wallet app…" : "Open my wallet to confirm"}
           </button>
@@ -76,7 +76,7 @@ export function PendingChangesBar({ lines, onlyTighter }: { lines: string[]; onl
           <button
             onClick={() => act(async () => setPrepared(await prepareIntent("policy_update")))}
             disabled={busy}
-            className="rounded-lg bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60"
+            className="rounded-xl bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60"
           >
             {busy ? "Preparing…" : "Confirm with my wallet"}
           </button>

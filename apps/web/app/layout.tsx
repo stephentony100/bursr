@@ -1,18 +1,32 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { readEnv } from "@/lib/env";
 import "./globals.css";
 
-const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const jakarta = Plus_Jakarta_Sans({ variable: "--font-jakarta", subsets: ["latin"], weight: ["500", "600", "700", "800"] });
+
+const site = readEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+const description =
+  "Bursr is an AI agent that pays your staff and suppliers in stablecoins on any network. It checks invoices for fraud and pays inside limits it can't change.";
 
 export const metadata: Metadata = {
-  title: "Bursar: pay everyone, never the wrong person",
-  description: "Bursar checks your supplier invoices for fraud and pays everyone once you approve. Safely, inside the limits you set.",
+  metadataBase: new URL(site),
+  title: { default: "Bursr: pay everyone, never the wrong person", template: "%s · Bursr" },
+  description,
+  applicationName: "Bursr",
+  keywords: ["payroll", "supplier payments", "stablecoin payments", "USDC", "AI agent", "invoice fraud", "small business", "Nigeria", "NEAR Intents"],
+  alternates: { canonical: "/" },
+  openGraph: { type: "website", siteName: "Bursr", url: "/", title: "Bursr: pay everyone, never the wrong person", description, locale: "en_NG" },
+  twitter: { card: "summary_large_image", title: "Bursr: pay everyone, never the wrong person", description },
+  robots: { index: true, follow: true },
 };
+
+export const viewport: Viewport = { themeColor: "#0b1220", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geist.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} ${jakarta.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

@@ -15,7 +15,7 @@ export default async function SignIn() {
   if (await getOwner()) redirect("/this-week");
   return (
     <div className="grid min-h-[100dvh] place-items-center bg-paper px-5">
-      <main id="main" className="w-full max-w-md rounded-xl border border-line bg-card p-8">
+      <main id="main" className="w-full max-w-md rounded-2xl border border-line bg-card p-8">
         <Logo />
         <h1 className="display mt-6 text-3xl">Continue with your wallet</h1>
         <p className="mt-2 text-muted">

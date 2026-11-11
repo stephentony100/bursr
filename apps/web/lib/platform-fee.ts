@@ -24,7 +24,7 @@ export async function applyPlatformFee(db: PrismaClient): Promise<boolean> {
     data: {
       kind: "fee_terms",
       actor: "agent",
-      message: `Bursr's fee is ${pct}% of each payment run. It shows as its own line on Payments, and you can see it on Spending rules.`,
+      message: `Bursr's fee is ${pct}% of each payment run. It shows as its own line on Payments, and you can see it on the Limits page.`,
       data: JSON.stringify({ bps: fee.bps }),
     },
   });

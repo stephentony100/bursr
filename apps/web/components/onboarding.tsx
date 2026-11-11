@@ -14,7 +14,7 @@ import { friendlyError } from "@/lib/errors";
 // The interactive parts of /welcome. Each form posts to a server action that
 // saves and returns to /welcome, which then shows the next step.
 
-const input = "mt-1 block w-full rounded-lg border border-line bg-card px-3 py-2";
+const input = "mt-1 block w-full rounded-xl border border-line bg-card px-3 py-2";
 
 export function ConnectWallet() {
   const router = useRouter();
@@ -36,7 +36,7 @@ export function ConnectWallet() {
           }
         }}
         disabled={busy}
-        className="rounded-lg bg-ledger px-5 py-3 font-semibold text-white hover:bg-indigo disabled:opacity-60"
+        className="rounded-xl bg-ledger px-5 py-3 font-semibold text-white hover:bg-indigo disabled:opacity-60"
       >
         {busy ? "Check your wallet app…" : "Connect my wallet"}
       </button>
@@ -91,7 +91,7 @@ export function LimitsForm({ rules, tokens }: { rules: Rules; tokens: PayoutToke
               key={p.id}
               type="button"
               onClick={() => setV({ weekly: p.weekly, single: p.single, ask: p.ask })}
-              className={`rounded-lg border px-3 py-2 text-left text-sm ${v.weekly === p.weekly && v.single === p.single ? "border-ledger bg-ledger-soft" : "border-line hover:border-ink/40"}`}
+              className={`rounded-xl border px-3 py-2 text-left text-sm ${v.weekly === p.weekly && v.single === p.single ? "border-ledger bg-ledger-soft" : "border-line hover:border-ink/40"}`}
             >
               <span className="block font-semibold">{p.label}</span>
               <span className="text-muted">
@@ -111,7 +111,7 @@ export function LimitsForm({ rules, tokens }: { rules: Rules; tokens: PayoutToke
         ).map(([name, key, label, hint]) => (
           <label key={name} className="block text-sm font-medium">
             {label}
-            <span className="mt-1 flex items-center rounded-lg border border-line bg-card">
+            <span className="mt-1 flex items-center rounded-xl border border-line bg-card">
               <span className="pl-3 text-muted">$</span>
               <input name={name} value={v[key]} onChange={(e) => setV({ ...v, [key]: e.target.value })} inputMode="decimal" className="num w-full bg-transparent px-2 py-2 outline-none" />
             </span>
@@ -119,7 +119,7 @@ export function LimitsForm({ rules, tokens }: { rules: Rules; tokens: PayoutToke
           </label>
         ))}
       </div>
-      <label className="flex items-start gap-3 rounded-lg border border-line bg-paper p-4 text-sm">
+      <label className="flex items-start gap-3 rounded-xl border border-line bg-paper p-4 text-sm">
         <input type="checkbox" name="autopilot" defaultChecked={rules.autopilot} className="mt-1" />
         <span>
           <span className="font-medium">Autopilot: my agent pays routine payments without asking me.</span>{" "}
@@ -196,7 +196,7 @@ export function InviteForm() {
                 [true, "A whole group (one link for everyone)"],
               ] as const
             ).map(([value, label]) => (
-              <label key={label} className={`cursor-pointer rounded-lg border px-3 py-2 text-sm ${group === value ? "border-ledger bg-ledger-soft" : "border-line"}`}>
+              <label key={label} className={`cursor-pointer rounded-xl border px-3 py-2 text-sm ${group === value ? "border-ledger bg-ledger-soft" : "border-line"}`}>
                 <input type="radio" name="groupChoice" checked={group === value} onChange={() => setGroup(value)} className="sr-only" />
                 {label}
               </label>
@@ -218,7 +218,7 @@ export function InviteForm() {
         </label>
         <label className="block text-sm font-medium">
           Regular pay <span className="font-normal text-muted">{group ? "(optional, same for everyone)" : "(optional)"}</span>
-          <span className="mt-1 flex items-center rounded-lg border border-line bg-card">
+          <span className="mt-1 flex items-center rounded-xl border border-line bg-card">
             <span className="pl-3 text-muted">$</span>
             <input name="recurringAmount" inputMode="decimal" className="num w-full bg-transparent px-2 py-2 outline-none" />
           </span>
@@ -232,7 +232,7 @@ export function InviteForm() {
           </select>
         </label>
         <div className="sm:col-span-2">
-          <button disabled={busy} className="rounded-lg bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60">
+          <button disabled={busy} className="rounded-xl bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60">
             {busy ? "Making the link…" : group ? "Make the group link" : "Make their invite link"}
           </button>
         </div>
@@ -243,7 +243,7 @@ export function InviteForm() {
         </p>
       )}
       {result?.ok && (
-        <div className="rounded-lg border border-ledger/40 bg-ledger-soft/60 p-4 text-sm">
+        <div className="rounded-xl border border-ledger/40 bg-ledger-soft/60 p-4 text-sm">
           <p className="font-medium">
             {result.group
               ? `Share this link in your ${result.name} group chat. Each person types their name and how they want to be paid; you approve them all at once on People. It works for 14 days.`
@@ -256,7 +256,7 @@ export function InviteForm() {
                 void navigator.clipboard.writeText(result.link);
                 setCopied(true);
               }}
-              className="inline-flex items-center gap-1.5 rounded-md border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"
             >
               <Copy size={16} aria-hidden /> {copied ? "Copied" : "Copy link"}
             </button>
@@ -264,7 +264,7 @@ export function InviteForm() {
               href={`https://wa.me/?text=${encodeURIComponent(result.group ? `Hi all, please tell me how you'd like to be paid: ${result.link}` : `Hi ${result.name}, please tell me how you'd like to be paid: ${result.link}`)}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"
             >
               <WhatsappLogo size={16} aria-hidden /> Send on WhatsApp
             </a>

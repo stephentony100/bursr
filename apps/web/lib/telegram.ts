@@ -45,7 +45,7 @@ export async function hasLinkCode(db: PrismaClient, code: string, now = Date.now
 /** Bot: `/link CODE` from a chat. Returns a reply for the chat. */
 export async function linkChat(db: PrismaClient, chatId: number, code: string, now = Date.now()): Promise<string> {
   const pending = await getSetting<{ code: string; accountId: string; expires: number; wrong: number }>(db, PENDING);
-  const again = "Get a new one in Bursr → Spending rules → Connect my Telegram.";
+  const again = "Get a new one in Bursr → Limits → Connect my Telegram.";
   if (!pending || pending.expires < now) return `That code is wrong or expired. ${again}`;
   if (pending.code !== code.trim().toUpperCase()) {
     if ((pending.wrong ?? 0) + 1 >= MAX_LINK_ATTEMPTS) {

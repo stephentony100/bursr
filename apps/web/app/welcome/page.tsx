@@ -22,7 +22,7 @@ import { getOwner, appDb } from "@/lib/session";
 import { getAccountRecord, getBusiness, listPayees } from "@/lib/store";
 import { chainName, payoutTokens } from "@/lib/tokens";
 
-export const metadata = { title: "Set up Bursr" };
+export const metadata = { title: "Set up Bursr", robots: { index: false } };
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -71,11 +71,11 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
               return (
                 <li key={s}>
                   {reachable && !here ? (
-                    <Link href={`/welcome?step=${s}`} className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm hover:bg-card">
+                    <Link href={`/welcome?step=${s}`} className="flex items-center gap-3 rounded-xl px-2 py-2 text-sm hover:bg-card">
                       {body}
                     </Link>
                   ) : (
-                    <span aria-current={here ? "step" : undefined} className={`flex items-center gap-3 rounded-lg px-2 py-2 text-sm ${here ? "bg-card font-semibold" : "text-muted"}`}>
+                    <span aria-current={here ? "step" : undefined} className={`flex items-center gap-3 rounded-xl px-2 py-2 text-sm ${here ? "bg-card font-semibold" : "text-muted"}`}>
                       {body}
                     </span>
                   )}
@@ -85,7 +85,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
           </ol>
         </nav>
 
-        <section className="rounded-xl border border-line bg-card p-6 sm:p-8">
+        <section className="rounded-2xl border border-line bg-card p-6 sm:p-8">
           {onSample ? (
             <div className="space-y-4">
               <h1 className="display text-3xl">Set up your own business</h1>
@@ -131,12 +131,12 @@ async function StepBody({ step, live, businessName }: { step: Step; live: boolea
         <ActionForm action={onboardBusinessAction} submit="Save and continue" className="max-w-lg space-y-5">
           <label className="block text-sm font-medium">
             Business name
-            <input name="name" defaultValue={businessName ?? ""} required minLength={2} placeholder="e.g. Mama's Kitchen" className="mt-1 block w-full rounded-lg border border-line bg-card px-3 py-2" />
+            <input name="name" defaultValue={businessName ?? ""} required minLength={2} placeholder="e.g. Mama's Kitchen" className="mt-1 block w-full rounded-xl border border-line bg-card px-3 py-2" />
           </label>
           <TimeZoneField current={business?.rules.timeZone ?? null} />
           <label className="block text-sm font-medium">
             Payday <span className="font-normal text-muted">(when weekly pay goes out)</span>
-            <select name="payday" defaultValue={business?.rules.paydayWeekday ?? 5} className="mt-1 block w-full rounded-lg border border-line bg-card px-3 py-2">
+            <select name="payday" defaultValue={business?.rules.paydayWeekday ?? 5} className="mt-1 block w-full rounded-xl border border-line bg-card px-3 py-2">
               {DAYS.map((d, i) => (
                 <option key={d} value={i}>
                   Every {d}
@@ -165,7 +165,7 @@ async function StepBody({ step, live, businessName }: { step: Step; live: boolea
           <p className="text-muted">Add the staff and suppliers your agent will pay. Don&apos;t know their wallet address? Send them a link and they fill it in; you approve it.</p>
 
           {payees.length > 0 && (
-            <ul className="divide-y divide-line rounded-lg border border-line">
+            <ul className="divide-y divide-line rounded-xl border border-line">
               {payees.map((p) => (
                 <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
                   <span className="font-medium">{p.name}</span>
@@ -179,14 +179,14 @@ async function StepBody({ step, live, businessName }: { step: Step; live: boolea
           )}
           <InvitesList invites={invites} />
 
-          <div className="rounded-lg border border-line p-5">
+          <div className="rounded-xl border border-line p-5">
             <h2 className="font-semibold">Send someone an invite link</h2>
             <div className="mt-4">
               <InviteForm />
             </div>
           </div>
 
-          <details className="rounded-lg border border-line p-5">
+          <details className="rounded-xl border border-line p-5">
             <summary className="cursor-pointer font-semibold">I have their wallet address</summary>
             <ActionForm action={addPayeeAction} submit="Add them" className="mt-4 space-y-5">
               <DetailFields />
@@ -262,7 +262,7 @@ async function StepBody({ step, live, businessName }: { step: Step; live: boolea
         <div className="space-y-5">
           <p className="text-lg">Your agent is on. From now on it pays your people on their day and tells you what it did.</p>
           {next.length > 0 ? (
-            <div className="rounded-lg border border-line p-4">
+            <div className="rounded-xl border border-line p-4">
               <p className="font-medium">First up</p>
               <ul className="mt-2 space-y-1 text-sm">
                 {next.map((u, i) => (
@@ -279,7 +279,7 @@ async function StepBody({ step, live, businessName }: { step: Step; live: boolea
             <p className="text-muted">Nothing is scheduled yet. Add regular pay to someone, or send in an invoice, and your agent takes it from there.</p>
           )}
           <p className="text-sm text-muted">
-            Want messages on your phone? Connect Telegram later from <Link href="/spending-rules" className="text-indigo underline">Spending rules</Link>.
+            Want messages on your phone? Connect Telegram later from <Link href="/spending-rules" className="text-indigo underline">Limits</Link>.
           </p>
           <ActionForm action={onboardNextAction} submit="Go to my dashboard">
             <input type="hidden" name="step" value="finished" />

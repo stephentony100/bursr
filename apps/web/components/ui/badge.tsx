@@ -3,7 +3,7 @@ import { CheckCircle, PauseCircle, Prohibit } from "@phosphor-icons/react/dist/s
 export type Tone = "ready" | "hold" | "block" | "neutral";
 
 const STYLE: Record<Tone, string> = {
-  ready: "bg-ledger-soft text-ledger",
+  ready: "bg-ok-soft text-ok",
   hold: "bg-hold-soft text-hold",
   block: "bg-refuse-soft text-refuse",
   neutral: "bg-paper-2 text-muted",

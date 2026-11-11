@@ -27,7 +27,7 @@ function api() {
 
 async function agentId(db: PrismaClient): Promise<string> {
   const record = await getAccountRecord(db);
-  if (!record || record.backend !== "agent-api") throw new Error("Set up your Bursr wallet first (Spending rules).");
+  if (!record || record.backend !== "agent-api") throw new Error("Set up your Bursr wallet first (Limits page).");
   return record.agentId;
 }
 

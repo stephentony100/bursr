@@ -35,12 +35,12 @@ export function MoveHome({ accountId, balance, canMove, limitedBy }: { accountId
       >
         <label className="block text-sm font-medium">
           Amount
-          <span className="mt-1 flex items-center rounded-lg border border-line bg-card">
+          <span className="mt-1 flex items-center rounded-xl border border-line bg-card">
             <span className="pl-3 text-muted">$</span>
             <input name="amount" required inputMode="decimal" disabled={nothing} className="num w-32 bg-transparent px-2 py-2 outline-none" />
           </span>
         </label>
-        <button disabled={busy || nothing} className="rounded-lg bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60">
+        <button disabled={busy || nothing} className="rounded-xl bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60">
           {busy ? "Starting…" : "Move it back"}
         </button>
         <button
@@ -51,13 +51,13 @@ export function MoveHome({ accountId, balance, canMove, limitedBy }: { accountId
             f.set("all", "on");
             await send(f);
           }}
-          className="rounded-lg border border-line bg-card px-4 py-2 text-sm font-semibold hover:border-ink/40 disabled:opacity-60"
+          className="rounded-xl border border-line bg-card px-4 py-2 text-sm font-semibold hover:border-ink/40 disabled:opacity-60"
         >
           Move all I can ({canMove})
         </button>
       </form>
       {result && (
-        <p role={result.ok ? "status" : "alert"} className={`text-sm ${result.ok ? "text-ledger" : "text-refuse"}`}>
+        <p role={result.ok ? "status" : "alert"} className={`text-sm ${result.ok ? "text-ok" : "text-refuse"}`}>
           {result.message}
         </p>
       )}

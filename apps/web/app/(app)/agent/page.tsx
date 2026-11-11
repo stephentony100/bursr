@@ -20,11 +20,8 @@ export default async function AgentPage() {
     <div className="space-y-6">
       <AutoRefresh active everyMs={5000} />
       <div>
-        <h1 className="display text-4xl">Your agent</h1>
-        <p className="mt-2 max-w-2xl text-muted">
-          It pays your people on their day, fixes what it can by itself, and asks you about anything unusual. Talk to it here; every payment you ask for shows a card
-          you confirm, and your limits still apply.
-        </p>
+        <h1 className="display text-2xl sm:text-3xl">Your agent</h1>
+        <p className="mt-1 text-muted">Ask it anything. Payments always need your confirm.</p>
       </div>
       <AgentStatus autopilot={r.autopilot} frozen={r.frozen} nextPayday={nextPayday(new Date(), r.timeZone, r.paydayWeekday)} />
       <NeedsYouList items={waiting} />

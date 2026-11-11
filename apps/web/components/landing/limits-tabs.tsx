@@ -58,7 +58,7 @@ const RULES: Rule[] = [
     label: "Emergency stop",
     value: "One button",
     body: "Pause all payments. Nothing goes out until you turn them back on.",
-    visual: <Refusal title="Blocked by your spending rules." line="Payments are paused. Turn them back on from Spending rules when you're ready." />,
+    visual: <Refusal title="Blocked by your spending rules." line="Payments are paused. Turn them back on from Limits when you're ready." />,
   },
 ];
 

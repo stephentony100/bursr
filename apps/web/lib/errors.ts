@@ -24,12 +24,12 @@ function parts(e: unknown): { text: string; code: string; status: number | null 
 // What the agent account's codes mean for the owner.
 const CODES: Record<string, string> = {
   insufficient_balance: "There isn't enough money in your Bursr wallet for this. Add money and try again.",
-  spend_budget_exceeded: "This would go over your weekly limit. It can go out when the limit refills, or you can raise the limit on Spending rules.",
-  policy_transaction_limit_exceeded: "This is more than your largest single payment allowed. Pay it in parts, or raise the limit on Spending rules.",
+  spend_budget_exceeded: "This would go over your weekly limit. It can go out when the limit refills, or you can raise it on the Limits page.",
+  policy_transaction_limit_exceeded: "This is more than your largest single payment allowed. Pay it in parts, or raise it on the Limits page.",
   policy_destination_denied: "This wallet isn't on your list of people you pay. Only you can add someone, on the People page.",
-  wallet_frozen: "Payments are paused. Turn them back on in Spending rules.",
+  wallet_frozen: "Payments are paused. Turn them back on on the Limits page.",
   invalid_address: "That wallet address can't receive this payment. Check the address and the network with the person.",
-  policy_asset_denied: "Your spending rules don't allow paying in this currency. You can change that on Spending rules.",
+  policy_asset_denied: "Your spending rules don't allow paying in this currency. You can change that on the Limits page.",
   rate_limited: "Too many tries in a short time. Wait a minute and try again.",
   idempotency_conflict: "This payment was already started with different details. Bursr stopped it so nothing is paid twice.",
   validation_failed: "The payment service couldn't process this request. Nothing was sent. Bursr will try again shortly.",

@@ -45,7 +45,7 @@ export function AgentChat({ businessName, quickQuestions, privateModel }: { busi
   }
 
   return (
-    <section aria-label="Chat with your agent" className="flex h-[36rem] flex-col overflow-hidden rounded-xl border border-line bg-card">
+    <section aria-label="Chat with your agent" className="flex h-[36rem] flex-col overflow-hidden rounded-2xl border border-line bg-card">
       <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
         <p className="flex items-center gap-2 font-semibold">
           <Robot size={18} weight="bold" aria-hidden className="text-ledger" /> Ask your agent
@@ -59,17 +59,17 @@ export function AgentChat({ businessName, quickQuestions, privateModel }: { busi
       <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4" aria-live="polite">
         {lines.map((l, i) => (
           <div key={i} className={l.role === "user" ? "flex justify-end" : ""}>
-            <div className={`max-w-[85%] whitespace-pre-line rounded-xl px-3.5 py-2.5 text-sm ${l.role === "user" ? "bg-ledger text-white" : "bg-paper-2"}`}>{l.content}</div>
+            <div className={`max-w-[85%] whitespace-pre-line rounded-2xl px-3.5 py-2.5 text-sm ${l.role === "user" ? "bg-ledger text-white" : "bg-paper-2"}`}>{l.content}</div>
             {l.cards?.map((c) => (
-              <div key={c.token} className="mt-2 max-w-[85%] rounded-xl border border-ledger/40 bg-ledger-soft/60 p-3.5 text-sm">
+              <div key={c.token} className="mt-2 max-w-[85%] rounded-2xl border border-ledger/40 bg-ledger-soft/60 p-3.5 text-sm">
                 <p className="font-semibold">{c.title}</p>
                 <p className="text-muted">{c.detail}</p>
                 {done[c.token] ? (
-                  <p role="status" className="mt-2 font-medium text-ledger">
+                  <p role="status" className="mt-2 font-medium text-ok">
                     {done[c.token]}
                   </p>
                 ) : (
-                  <button onClick={() => confirm(c.token)} className="mt-2 rounded-lg bg-ledger px-3 py-1.5 font-semibold text-white hover:bg-indigo">
+                  <button onClick={() => confirm(c.token)} className="mt-2 rounded-xl bg-ledger px-3 py-1.5 font-semibold text-white hover:bg-indigo">
                     {c.confirm}
                   </button>
                 )}
@@ -103,9 +103,9 @@ export function AgentChat({ businessName, quickQuestions, privateModel }: { busi
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="e.g. Pay Bisi a $20 bonus"
-            className="min-w-0 flex-1 rounded-lg border border-line bg-card px-3 py-2 text-sm"
+            className="min-w-0 flex-1 rounded-xl border border-line bg-card px-3 py-2 text-sm"
           />
-          <button type="submit" disabled={busy || !text.trim()} aria-label="Send" className="rounded-lg bg-ledger px-3 text-white hover:bg-indigo disabled:opacity-50">
+          <button type="submit" disabled={busy || !text.trim()} aria-label="Send" className="rounded-xl bg-ledger px-3 text-white hover:bg-indigo disabled:opacity-50">
             <PaperPlaneRight size={18} weight="bold" aria-hidden />
           </button>
         </form>

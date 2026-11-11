@@ -3,7 +3,7 @@
 // It asks the live account for payments the rules forbid and records what the
 // account answers. Use an UNFUNDED agent: even if a rule were missing, there is
 // nothing to move. Needs AGENT_API_KEY and BURSAR_DATA_KEY in .env, and the
-// agent and its payment pass (set up on Spending rules in live mode).
+// agent and its payment pass (set up on the Limits page in live mode).
 import "./load-env";
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

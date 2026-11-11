@@ -8,6 +8,8 @@ import { PeopleImport } from "@/components/people-import";
 import { importTemplate } from "@/lib/people-import";
 import { MAX_ADDRESSES } from "@/lib/owner-actions";
 import { PayOnce } from "@/components/pay-once";
+import { Tabs } from "@/components/tabs";
+import { Avatar } from "@/components/agent-panel";
 import { DetailFields, PayoutFields } from "@/components/payee-fields";
 import { guardPage, appDb } from "@/lib/session";
 import { isOnPayoutHold, payoutHoldEndsAt } from "@/lib/domain";
@@ -42,7 +44,7 @@ export default async function PayeesPage({ searchParams }: { searchParams: Promi
   return (
     <div className="space-y-10">
       {removed !== undefined && (
-        <p role="status" className="rounded-xl border border-ledger/40 bg-ledger-soft px-5 py-4 text-sm">
+        <p role="status" className="rounded-2xl border border-ledger/40 bg-ledger-soft px-5 py-4 text-sm">
           <span className="font-semibold">{removed ? `${removed} was removed.` : "Removed."}</span> Bursr can no longer pay them.
           {removedPending && (
             <>
@@ -53,85 +55,94 @@ export default async function PayeesPage({ searchParams }: { searchParams: Promi
         </p>
       )}
       <div>
-        <h1 className="display text-4xl">People you pay</h1>
-        <p className="mt-2 max-w-2xl text-muted">
-          Bursr can only ever pay the people on this list, at exactly these addresses. Only you can add someone or change where they
-          get paid. If you change it for someone you&apos;ve paid before, their payments wait 48 hours first. That&apos;s usually long enough for a fake &ldquo;our bank details
-          have changed&rdquo; message to come to light.
-        </p>
+        <h1 className="display text-2xl sm:text-3xl">People</h1>
+        <p className="mt-1 text-muted">Your agent can only pay these people, at these addresses.</p>
       </div>
 
-      <ul className="divide-y divide-line rounded-xl border border-line bg-card">
-        {payees.length === 0 && <li className="px-5 py-4 text-sm text-muted">Nobody here yet. Add your first supplier or staff member below.</li>}
+      <ul className="divide-y divide-line rounded-2xl border border-line bg-card">
+        {payees.length === 0 && <li className="px-5 py-4 text-sm text-muted">Nobody yet. Add someone below.</li>}
         {payees.map((p) => (
-          <li key={p.id} className="flex flex-wrap items-center gap-x-6 gap-y-1 px-5 py-4">
-            <div className="min-w-56 flex-1">
-              <Link href={`/people/${p.id}`} className="font-medium hover:underline">
-                {p.name}
-              </Link>
-              <p className="text-sm text-muted">
-                {{ supplier: "Supplier", staff: "Staff", software: "Subscription or service" }[p.category]}
-                {p.recurring && (
-                  <span className="normal-case">
-                    {" "}
-                    · {formatUsd(BigInt(p.recurring.amountUsd))} {scheduleWords(p.recurring, business.rules.paydayWeekday)}
-                  </span>
-                )}
-                {!p.recurring && " · Paid when they send an invoice"}
-              </p>
-            </div>
-            <div className="text-sm">
-              {p.payout.token.symbol} on {chainName(p.payout.token.chain)}
-              <p className="num max-w-64 truncate text-xs text-muted" title={p.payout.address}>
-                {p.payout.address}
-              </p>
-            </div>
-            <div className="w-44 text-right text-sm">
+          <li key={p.id}>
+            <Link href={`/people/${p.id}`} className="flex items-center gap-3 px-5 py-3.5 hover:bg-paper">
+              <Avatar name={p.name} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold">{p.name}</p>
+                <p className="truncate text-xs text-muted">
+                  {{ supplier: "Supplier", staff: "Staff", software: "Subscription" }[p.category]}
+                  {p.recurring ? ` · ${formatUsd(BigInt(p.recurring.amountUsd))} ${scheduleWords(p.recurring, business.rules.paydayWeekday)}` : " · Paid by invoice"}
+                </p>
+              </div>
+              <div className="hidden min-w-0 text-right sm:block">
+                <p className="text-sm font-medium">
+                  {p.payout.token.symbol} · {chainName(p.payout.token.chain)}
+                </p>
+                <p className="addr max-w-56 truncate text-muted" title={p.payout.address}>
+                  {p.payout.address}
+                </p>
+              </div>
               {isOnPayoutHold(p, now) ? (
-                <span className="inline-flex w-fit items-center gap-1 rounded-full bg-hold-soft px-2 py-0.5 text-xs font-medium text-hold">
-                  Safety hold until {payoutHoldEndsAt(p)!.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                <span className="shrink-0 rounded-full bg-hold-soft px-2.5 py-1 text-xs font-semibold text-hold">
+                  On hold to {payoutHoldEndsAt(p)!.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                 </span>
               ) : !p.trustedAt ? (
-                <span className="inline-flex w-fit items-center rounded-full bg-paper-2 px-2 py-0.5 text-xs font-medium text-muted">{live ? "Waiting for your wallet to confirm" : "First payment needs your OK"}</span>
+                <span className="shrink-0 rounded-full bg-paper-2 px-2.5 py-1 text-xs font-semibold text-muted">{live ? "Confirm with wallet" : "First pay needs OK"}</span>
               ) : null}
-            </div>
+            </Link>
           </li>
         ))}
       </ul>
 
-      <section id="pay-once" className="space-y-4 rounded-xl border border-line bg-card p-6">
-        <div>
-          <h2 className="text-xl font-bold">Pay someone once</h2>
-          <p className="mt-1 text-sm text-muted">A quick job, a delivery, a repair. Your agent pays them as soon as they&apos;re approved, inside your limits.</p>
-        </div>
-        <PayOnce tokens={business.rules.payoutTokens} live={live} />
-      </section>
+      <InvitesList invites={invites} />
 
-      <section className="space-y-4 rounded-xl border border-line bg-card p-6">
-        <div>
-          <h2 className="text-xl font-bold">Invite someone</h2>
-          <p className="mt-1 text-sm text-muted">Don&apos;t know their wallet address? Send them a link; they choose how they want to be paid, and you approve it before they can be paid.</p>
-        </div>
-        <InvitesList invites={invites} />
-        <InviteForm />
-      </section>
-
-      <section className="space-y-4 rounded-xl border border-line bg-card p-6">
-        <div>
-          <h2 className="text-xl font-bold">Add many people at once</h2>
-          <p className="mt-1 text-sm text-muted">
-            From a spreadsheet, or with a group link above. Your agent&apos;s wallet can hold up to {MAX_ADDRESSES} different payout addresses.
-          </p>
-        </div>
-        <PeopleImport template={importTemplate(business.rules.payoutTokens)} live={live} />
-      </section>
-
-      <section className="rounded-xl border border-line bg-card p-6">
-        <h2 className="text-xl font-bold">Add someone you pay</h2>
-        <ActionForm action={addPayeeAction} submit="Add them" className="mt-4 space-y-5">
-          <DetailFields />
-          <PayoutFields tokens={business.rules.payoutTokens} />
-        </ActionForm>
+      <section aria-labelledby="add-people" className="space-y-3">
+        <h2 id="add-people" className="text-lg font-bold">
+          Add people
+        </h2>
+        <Tabs
+          label="Ways to add people"
+          tabs={[
+            {
+              id: "add",
+              label: "Add someone",
+              panel: (
+                <ActionForm action={addPayeeAction} submit="Add them" className="space-y-5">
+                  <DetailFields />
+                  <PayoutFields tokens={business.rules.payoutTokens} />
+                </ActionForm>
+              ),
+            },
+            {
+              id: "invite",
+              label: "Send a link",
+              panel: (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted">They fill in their wallet. You approve it.</p>
+                  <InviteForm />
+                </div>
+              ),
+            },
+            {
+              id: "pay-once",
+              label: "Pay once",
+              panel: (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted">A quick job, a delivery, a repair.</p>
+                  <PayOnce tokens={business.rules.payoutTokens} live={live} />
+                </div>
+              ),
+            },
+            {
+              id: "many",
+              label: "Add many",
+              panel: (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted">From a spreadsheet. Up to {MAX_ADDRESSES} addresses.</p>
+                  <PeopleImport template={importTemplate(business.rules.payoutTokens)} live={live} />
+                </div>
+              ),
+            },
+          ]}
+        />
       </section>
     </div>
   );

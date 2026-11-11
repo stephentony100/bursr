@@ -11,7 +11,7 @@ import type { PayoutToken } from "@/lib/domain";
 // link they fill in; the agent pays as soon as they're approved, and (if the
 // owner wants) takes them off the list afterwards.
 
-const input = "mt-1 block w-full rounded-lg border border-line bg-card px-3 py-2";
+const input = "mt-1 block w-full rounded-xl border border-line bg-card px-3 py-2";
 
 export function PayOnce({ tokens, live }: { tokens: PayoutToken[]; live: boolean }) {
   const router = useRouter();
@@ -44,7 +44,7 @@ export function PayOnce({ tokens, live }: { tokens: PayoutToken[]; live: boolean
         </label>
         <label className="block text-sm font-medium">
           Amount
-          <span className="mt-1 flex items-center rounded-lg border border-line bg-card">
+          <span className="mt-1 flex items-center rounded-xl border border-line bg-card">
             <span className="pl-3 text-muted">$</span>
             <input name="amount" required inputMode="decimal" className="num w-full bg-transparent px-2 py-2 outline-none" />
           </span>
@@ -63,7 +63,7 @@ export function PayOnce({ tokens, live }: { tokens: PayoutToken[]; live: boolean
                 ["address", "I have their wallet address"],
               ] as const
             ).map(([id, label]) => (
-              <label key={id} className={`cursor-pointer rounded-lg border px-3 py-2 text-sm ${method === id ? "border-ledger bg-ledger-soft" : "border-line"}`}>
+              <label key={id} className={`cursor-pointer rounded-xl border px-3 py-2 text-sm ${method === id ? "border-ledger bg-ledger-soft" : "border-line"}`}>
                 <input type="radio" name="method" value={id} checked={method === id} onChange={() => setMethod(id)} className="sr-only" />
                 {label}
               </label>
@@ -96,7 +96,7 @@ export function PayOnce({ tokens, live }: { tokens: PayoutToken[]; live: boolean
         </label>
 
         <div className="sm:col-span-2">
-          <button disabled={busy} className="rounded-lg bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60">
+          <button disabled={busy} className="rounded-xl bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60">
             {busy ? "Setting it up…" : method === "link" ? "Make their link" : live ? "Add them and pay" : "Pay them now"}
           </button>
         </div>
@@ -108,7 +108,7 @@ export function PayOnce({ tokens, live }: { tokens: PayoutToken[]; live: boolean
         </p>
       )}
       {result?.ok && (
-        <div role="status" className="rounded-lg border border-ledger/40 bg-ledger-soft/60 p-4 text-sm">
+        <div role="status" className="rounded-xl border border-ledger/40 bg-ledger-soft/60 p-4 text-sm">
           {result.link ? (
             <>
               <p className="font-medium">Send this link to {result.name}:</p>
@@ -119,7 +119,7 @@ export function PayOnce({ tokens, live }: { tokens: PayoutToken[]; live: boolean
                     void navigator.clipboard.writeText(result.link!);
                     setCopied(true);
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"
                 >
                   <Copy size={16} aria-hidden /> {copied ? "Copied" : "Copy link"}
                 </button>
@@ -127,7 +127,7 @@ export function PayOnce({ tokens, live }: { tokens: PayoutToken[]; live: boolean
                   href={`https://wa.me/?text=${encodeURIComponent(`Hi ${result.name}, please tell me where to send your payment: ${result.link}`)}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-md border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"
                 >
                   <WhatsappLogo size={16} aria-hidden /> Send on WhatsApp
                 </a>

@@ -20,12 +20,12 @@ const OTHER_CHAINS = [
   { symbol: "USDC", chain: "near", label: "USDC on NEAR (from an exchange)" },
 ];
 
-const button = "rounded-lg bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60";
+const button = "rounded-xl bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60";
 
 export function AddMoney({ suggestedUsd }: { suggestedUsd: string | null }) {
   const [tab, setTab] = useState<"near" | "other">("near");
   return (
-    <div className="rounded-xl border border-line bg-card">
+    <div className="rounded-2xl border border-line bg-card">
       <div role="tablist" aria-label="How to add money" className="flex border-b border-line text-sm">
         {(
           [
@@ -101,7 +101,7 @@ function OneTap({ suggestedUsd }: { suggestedUsd: string | null }) {
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-sm font-medium">
           Amount
-          <span className="mt-1 flex items-center rounded-md border border-line bg-card">
+          <span className="mt-1 flex items-center rounded-lg border border-line bg-card">
             <span className="pl-3 text-muted">$</span>
             <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" className="num w-32 bg-transparent px-2 py-2 outline-none" />
           </span>
@@ -111,7 +111,7 @@ function OneTap({ suggestedUsd }: { suggestedUsd: string | null }) {
         </button>
       </div>
       {msg && (
-        <p role="status" className={`text-sm ${msg.ok ? "text-ledger" : "text-refuse"}`}>
+        <p role="status" className={`text-sm ${msg.ok ? "text-ok" : "text-refuse"}`}>
           {msg.text}
         </p>
       )}
@@ -145,7 +145,7 @@ function OtherChain() {
           <select
             value={`${choice.symbol}@${choice.chain}`}
             onChange={(e) => setChoice(OTHER_CHAINS.find((c) => `${c.symbol}@${c.chain}` === e.target.value)!)}
-            className="mt-1 block rounded-md border border-line bg-card px-3 py-2"
+            className="mt-1 block rounded-lg border border-line bg-card px-3 py-2"
           >
             {OTHER_CHAINS.map((c) => (
               <option key={`${c.symbol}@${c.chain}`} value={`${c.symbol}@${c.chain}`}>
@@ -164,7 +164,7 @@ function OtherChain() {
         </p>
       )}
       {result?.ok && (
-        <div className="flex flex-wrap gap-5 rounded-lg border border-line bg-paper p-4">
+        <div className="flex flex-wrap gap-5 rounded-xl border border-line bg-paper p-4">
           <div className="h-48 w-48 shrink-0 rounded bg-white p-1" aria-label={`QR code of the deposit address`} dangerouslySetInnerHTML={{ __html: result.qrSvg }} />
           <div className="min-w-0 flex-1 space-y-2 text-sm">
             <p className="font-medium">
@@ -176,7 +176,7 @@ function OtherChain() {
                 void navigator.clipboard.writeText(result.address.address);
                 setCopied(true);
               }}
-              className="rounded-md border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"
+              className="rounded-lg border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"
             >
               {copied ? "Copied" : "Copy address"}
             </button>

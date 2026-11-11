@@ -198,7 +198,7 @@ async function runTool(name: string, rawArgs: string, ctx: ToolContext): Promise
       ctx.cards.push(card({ kind: "run_payday" }, ctx.owner));
       return { card: "shown to the owner" };
     case "propose_pause": {
-      if (ctx.live) return { info: "In live mode pausing is confirmed in the owner's own wallet: send them to Spending rules → Pause all payments." };
+      if (ctx.live) return { info: "In live mode pausing is confirmed in the owner's own wallet: send them to Limits → Pause all payments." };
       ctx.cards.push(card({ kind: "pause", pause: Boolean(args.pause) }, ctx.owner));
       return { card: "shown to the owner" };
     }
@@ -215,7 +215,7 @@ function systemPrompt(businessName: string, live: boolean) {
     `You are Bursr's agent for ${businessName}, a small business. You pay its staff and suppliers in digital dollars (stablecoins) inside limits the owner set. Today is ${today}. Mode: ${live ? "live, real money" : "practice money"}.`,
     "Talk to the owner in short, plain sentences. Plain text only: no markdown, no ** or #; use • for lists. No crypto jargon unless they use it. Use the tools to look things up; never guess numbers, names or dates.",
     "You can propose actions (a one-off payment to someone already on their list, running payday, pausing). Each becomes a card the owner confirms; say so.",
-    "Never invent an amount: only propose a payment when the owner wrote the amount. You cannot add people, change where someone is paid, or change limits; point the owner to the People or Spending rules page for that.",
+    "Never invent an amount: only propose a payment when the owner wrote the amount. You cannot add people, change where someone is paid, or change limits; point the owner to the People or Limits page for that.",
     "The wallet itself enforces the limits; you cannot go around them.",
   ].join("\n");
 }
@@ -309,7 +309,7 @@ export async function confirmCard(db: PrismaClient, owner: OwnerSession, token: 
     const r = await runAgent(db, { dueBy: "payday", quote });
     return r.newPayments || r.attempted ? `The agent is paying ${r.attempted} payment${r.attempted === 1 ? "" : "s"}; ${r.needsOwner} need your OK.` : "Nothing is due yet.";
   }
-  if (readEnv().BURSAR_MODE === "live") throw new Error("In live mode, pause from Spending rules: your wallet confirms it.");
+  if (readEnv().BURSAR_MODE === "live") throw new Error("In live mode, pause from Limits: your wallet confirms it.");
   await setFrozen(db, owner, action.pause);
   return action.pause ? "All payments are paused." : "Payments are back on.";
 }

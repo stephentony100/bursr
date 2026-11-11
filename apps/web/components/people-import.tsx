@@ -51,7 +51,7 @@ export function PeopleImport({ template, live }: { template: string; live: boole
           }}
           className="max-w-full text-sm"
         />
-        <button disabled={!file || busy} className="rounded-lg border border-line bg-card px-4 py-2 text-sm font-semibold hover:border-ink/40 disabled:opacity-60">
+        <button disabled={!file || busy} className="rounded-xl border border-line bg-card px-4 py-2 text-sm font-semibold hover:border-ink/40 disabled:opacity-60">
           {busy && !preview ? "Checking…" : "Check the file"}
         </button>
       </form>
@@ -63,9 +63,9 @@ export function PeopleImport({ template, live }: { template: string; live: boole
       )}
 
       {preview?.ok && !done?.ok && (
-        <div className="rounded-lg border border-line">
+        <div className="rounded-xl border border-line">
           <p className="border-b border-line bg-paper px-4 py-2 text-sm">
-            <span className="font-semibold text-ledger">{good.length} ready to add</span>
+            <span className="font-semibold text-ok">{good.length} ready to add</span>
             {bad.length > 0 && <span className="text-refuse"> · {bad.length} need fixing (they won&apos;t be added)</span>}
           </p>
           <ul className="max-h-80 divide-y divide-line overflow-y-auto text-sm">
@@ -90,7 +90,7 @@ export function PeopleImport({ template, live }: { template: string; live: boole
                   setBusy(false);
                   if (r.ok) router.refresh();
                 }}
-                className="rounded-lg bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60"
+                className="rounded-xl bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60"
               >
                 {busy ? "Adding…" : `Add ${good.length} ${good.length === 1 ? "person" : "people"}`}
               </button>
@@ -103,7 +103,7 @@ export function PeopleImport({ template, live }: { template: string; live: boole
       )}
 
       {done && (
-        <p role={done.ok ? "status" : "alert"} className={`text-sm ${done.ok ? "text-ledger" : "text-refuse"}`}>
+        <p role={done.ok ? "status" : "alert"} className={`text-sm ${done.ok ? "text-ok" : "text-refuse"}`}>
           {done.message}
         </p>
       )}

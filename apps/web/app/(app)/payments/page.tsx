@@ -72,11 +72,8 @@ export default async function PlanPage() {
       <AutoRefresh active={moving} />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="display text-4xl">This week&apos;s payments</h1>
-          <p className="mt-2 max-w-2xl text-muted">
-            Every invoice that passed its checks, plus your staff&apos;s pay, in one list. Look it over, tap approve once, and everyone gets
-            paid in the digital dollars they prefer. Anything outside your spending rules simply can&apos;t go out.
-          </p>
+          <h1 className="display text-2xl sm:text-3xl">Payments</h1>
+          <p className="mt-1 text-muted">This week&apos;s pay and checked invoices, in one list.</p>
         </div>
         {(!plan || plan.status !== "draft") && <ActionForm action={preparePlanAction} submit={!plan ? "Get this week's payments ready" : !moving && inPlan.some((i) => i.payStatus === "failed" || i.payStatus === "refunded") ? "Try the unpaid payments again" : "Get next week's payments ready"} />}
       </div>
@@ -84,7 +81,7 @@ export default async function PlanPage() {
       {!plan && <p className="text-muted">No plan yet.</p>}
 
       {plan && (
-        <section className="rounded-xl border border-line bg-card p-6">
+        <section className="rounded-2xl border border-line bg-card p-6">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-sm text-muted">
@@ -92,7 +89,7 @@ export default async function PlanPage() {
               </p>
               <p className="num whitespace-nowrap text-4xl font-semibold">{formatUsd(total)}</p>
               {plan.status !== "draft" && moving && (
-                <p role="status" className="font-semibold text-ledger">
+                <p role="status" className="font-semibold text-ok">
                   Done. {going} payment{going === 1 ? "" : "s"} on the way.
                 </p>
               )}
@@ -175,7 +172,7 @@ export default async function PlanPage() {
       {out.length > 0 && (
         <section>
           <h2 className="text-xl font-bold">Not paid this week, and why</h2>
-          <div className="mt-3 overflow-x-auto rounded-xl border border-line bg-card" tabIndex={0} role="region" aria-label="Not paid this week">
+          <div className="mt-3 overflow-x-auto rounded-2xl border border-line bg-card" tabIndex={0} role="region" aria-label="Not paid this week">
             <table className="w-full min-w-[36rem] text-sm">
               <thead className="whitespace-nowrap [overflow-wrap:normal] bg-paper text-left text-xs text-muted">
                 <tr>
@@ -216,7 +213,7 @@ export default async function PlanPage() {
         </p>
       )}
 
-      <section className="rounded-xl border border-line bg-card p-6">
+      <section className="rounded-2xl border border-line bg-card p-6">
         <h2 className="text-xl font-bold">Can anyone get around your limits?</h2>
         <p className="mt-1 max-w-2xl text-sm text-muted">
           Try it yourself: Bursr sends one payment bigger than your limit straight to your wallet, skipping this list and your approval.

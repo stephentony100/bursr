@@ -37,19 +37,16 @@ export default async function AddMoneyPage() {
   return (
     <div className="max-w-3xl space-y-8">
       <div>
-        <h1 className="display text-4xl">Add money</h1>
-        <p className="mt-2 text-muted">
-          Your agent pays people from your Bursr wallet, never from your own wallet. Top it up here; the agent tells you when the money has arrived and uses it for anything
-          that was waiting.
-        </p>
+        <h1 className="display text-2xl sm:text-3xl">Wallet</h1>
+        <p className="mt-1 text-muted">Your agent pays from here. Top up or take money back.</p>
       </div>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-line bg-card p-5">
+        <div className="rounded-2xl border border-line bg-card p-5">
           <p className="text-sm font-medium text-muted">In your Bursr wallet</p>
           <p className="num mt-2 text-3xl font-semibold">{balance === null ? "…" : formatUsd(balance)}</p>
         </div>
-        <div className={`rounded-xl border p-5 ${short > 0n ? "border-hold/40 bg-hold-soft/60" : "border-line bg-card"}`}>
+        <div className={`rounded-2xl border p-5 ${short > 0n ? "border-hold/40 bg-hold-soft/60" : "border-line bg-card"}`}>
           <p className="text-sm font-medium text-muted">Due by {paydayWords}, including payments waiting</p>
           <p className="num mt-2 text-3xl font-semibold">{formatUsd(due)}</p>
           <p className="mt-1 text-sm">{short > 0n ? `Add at least ${formatUsd(short)} so nobody waits.` : "You have enough for it."}</p>
@@ -57,7 +54,7 @@ export default async function AddMoneyPage() {
       </section>
 
       {dryRun ? (
-        <section className="rounded-xl border border-line bg-card p-5">
+        <section className="rounded-2xl border border-line bg-card p-5">
           <h2 className="text-base font-bold">Practice money</h2>
           <p className="mt-1 text-sm text-muted">In practice mode, add pretend dollars with one tap. In live mode this page tops up from your own wallet.</p>
           <ActionForm action={practiceMoneyAction} submit="Add practice money">
@@ -69,7 +66,7 @@ export default async function AddMoneyPage() {
       )}
 
       {home && (
-        <section className="rounded-xl border border-line bg-card p-5">
+        <section className="rounded-2xl border border-line bg-card p-5">
           <h2 className="text-base font-bold">Move money back to my wallet</h2>
           <div className="mt-2">
             <MoveHome accountId={home.accountId} balance={formatUsd(home.balanceUsd)} canMove={formatUsd(home.canMoveUsd)} limitedBy={home.limitedBy} />
@@ -77,7 +74,7 @@ export default async function AddMoneyPage() {
         </section>
       )}
 
-      <section className="rounded-xl border border-dashed border-line p-5">
+      <section className="rounded-2xl border border-dashed border-line p-5">
         <h2 className="text-base font-bold">With a card or bank transfer</h2>
         <p className="mt-1 text-sm text-muted">
           Coming soon: pay by card or bank transfer (including naira) and the dollars land straight in your Bursr wallet. No crypto app needed.

@@ -27,11 +27,14 @@ export function HeaderWallet({ accountId, tone = "light" }: { accountId: string 
 
   if (accountId) {
     return (
-      <span className="flex items-center gap-2 text-sm">
-        <span className={`num ${dark ? "text-muted" : "text-cream/70"}`} title="You're signed in as the owner">
+      <span className="flex min-w-0 items-center gap-2 text-sm">
+        <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ledger-soft font-bold uppercase text-ledger">
+          {accountId.slice(0, 1)}
+        </span>
+        <span className={`hidden max-w-40 truncate font-medium sm:inline ${dark ? "text-ink" : "text-cream/80"}`} title="You're signed in as the owner">
           {accountId}
         </span>
-        <button onClick={() => run(signOut)} disabled={busy} className={`underline disabled:opacity-60 ${dark ? "text-indigo" : "text-card decoration-card/40 hover:decoration-card"}`}>
+        <button onClick={() => run(signOut)} disabled={busy} className={`shrink-0 font-semibold disabled:opacity-60 ${dark ? "text-muted hover:text-ink" : "text-card/80 hover:text-card"}`}>
           Sign out
         </button>
       </span>
@@ -42,7 +45,7 @@ export function HeaderWallet({ accountId, tone = "light" }: { accountId: string 
       <button
         onClick={() => run(signInWithWallet)}
         disabled={busy}
-        className={`rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-60 ${dark ? "bg-ledger text-white hover:bg-indigo" : "bg-card text-ink hover:bg-paper"}`}
+        className={`rounded-lg px-3 py-1.5 text-sm font-semibold disabled:opacity-60 ${dark ? "bg-ledger text-white hover:bg-indigo" : "bg-card text-ink hover:bg-paper"}`}
       >
         {busy ? "Check your wallet…" : "Sign in"}
       </button>

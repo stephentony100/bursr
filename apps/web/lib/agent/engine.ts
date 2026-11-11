@@ -160,7 +160,7 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
 
   // 3. Paused by the owner: do nothing else.
   if (rules.frozen) {
-    await sayOnce(db, "paused", 12 * HOUR, "agent_paused", "Payments are paused, so I'm not paying anyone. Turn them back on in Spending rules when you're ready.");
+    await sayOnce(db, "paused", 12 * HOUR, "agent_paused", "Payments are paused, so I'm not paying anyone. Turn them back on on the Limits page when you're ready.");
     return report;
   }
 
