@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Bursr launch film</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=block" rel="stylesheet" />
+<style>
+  /* Static layout only. Every moving value is computed from t in seek(t). */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #0e1222; }
+  body { font-family: Inter, sans-serif; -webkit-font-smoothing: antialiased; }
+  .layer { position: absolute; inset: 0; overflow: hidden; }
+  .center { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .mask { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.12em; }
+  .mask > span { display: inline-block; }
+  .tight { letter-spacing: -0.055em; line-height: 1.02; }
+  img.clip { position: absolute; object-fit: cover; display: block; }
+</style>
+</head>
+<body>
+<!-- 1–2: hook on white, morphing into the chat UI -->
+<div id="s1" class="layer" style="background:#fff">
+  <div id="hook" class="layer center" style="color:#0e1222;font-weight:700;font-size:150px">
+    <div class="tight"><span class="mask"><span id="w0">Pay</span></span> <span class="mask"><span id="w1" style="color:#3047e0">everyone</span></span></div>
+    <div class="tight"><span class="mask"><span id="w2">never the</span></span> <span class="mask"><span id="w3">wrong person</span></span></div>
+  </div>
+  <div id="box" style="position:absolute;border:2px solid #e4e7ec;background:#fff;border-radius:28px"></div>
+  <div id="typed" style="position:absolute;left:560px;top:466px;font-size:56px;font-weight:500;color:#0e1222;letter-spacing:-0.03em;white-space:pre"></div>
+  <div id="caret" style="position:absolute;top:470px;width:4px;height:62px;background:#3047e0"></div>
+  <div id="btn" style="position:absolute;left:760px;top:640px;width:400px;height:104px;border-radius:999px;background:#3047e0;color:#fff;font-size:40px;font-weight:600;letter-spacing:-0.02em;display:flex;align-items:center;justify-content:center">Yes, pay it</div>
+  <svg id="cursor" width="46" height="46" viewBox="0 0 24 24" style="position:absolute;left:0;top:0"><path d="M4 2l15 9.5-6.6 1.4 3.9 7.4-3 1.6-3.9-7.5L4 19z" fill="#0e1222" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>
+</div>
+
+<!-- 3–4: dark scene opened by the circle: the wall, then the key output -->
+<div id="dark" class="layer" style="background:#0e1222">
+  <div id="wall" class="layer"></div>
+  <div id="scan" style="position:absolute;top:30px;bottom:30px;width:3px;background:#3047e0"></div>
+  <div id="output" class="layer center" style="color:#fff;font-weight:700">
+    <div class="tight" style="font-size:190px"><span class="mask"><span id="o1">Everyone paid</span></span></div>
+    <div class="tight" style="font-size:150px;color:#3047e0;margin-top:10px"><span class="mask"><span id="o2">$661.29</span></span></div>
+  </div>
+</div>
+
+<!-- 5: the carousel -->
+<div id="s5" class="layer" style="background:#0e1222">
+  <div id="carouselFade" class="layer">
+    <div id="stage" class="layer" style="perspective:1900px;perspective-origin:50% 36%">
+      <div id="ring" style="position:absolute;left:960px;top:420px;transform-style:preserve-3d"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 6: hero in a phone next to a flipping panel -->
+<div id="s6" class="layer" style="background:#0e1222">
+  <div id="phone" style="position:absolute;width:440px;height:900px;border-radius:64px;background:#000;padding:14px;box-shadow:0 0 0 2px #2a3350">
+    <div style="position:relative;width:100%;height:100%;border-radius:52px;overflow:hidden">
+      <img id="heroImg" class="clip" style="inset:0;width:100%;height:100%" />
+    </div>
+  </div>
+  <div id="panelWrap" style="position:absolute;left:1000px;top:330px;width:620px;height:420px;perspective:1600px">
+    <div id="panel" style="position:absolute;inset:0;transform-style:preserve-3d">
+      <div style="position:absolute;inset:0;backface-visibility:hidden;background:#fff;border-radius:36px;padding:48px;color:#0e1222">
+        <div style="font-size:26px;color:#5b6475;font-weight:500">Paying now</div>
+        <div class="tight" style="font-size:64px;font-weight:700;margin-top:14px">Amaka Eze</div>
+        <div class="tight" style="font-size:96px;font-weight:800;margin-top:6px">$120.00</div>
+        <div style="font-size:28px;color:#5b6475;margin-top:10px">USDC on Solana</div>
+      </div>
+      <div style="position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);background:#3047e0;border-radius:36px;padding:48px;color:#fff">
+        <div style="font-size:26px;font-weight:500;opacity:.8">Received</div>
+        <div class="tight" style="font-size:110px;font-weight:800;margin-top:14px">$120.00</div>
+        <div style="font-size:30px;margin-top:22px;font-weight:500">Network fee paid by you</div>
+        <div style="font-size:30px;margin-top:6px;opacity:.8">Arrived in 12 seconds</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 7: stats on push cuts -->
+<div id="s7" class="layer center" style="background:#0e1222;color:#fff">
+  <div id="statBig" class="tight" style="font-size:300px;font-weight:800"></div>
+  <div id="statSmall" style="font-size:52px;font-weight:500;color:#aab3c5;letter-spacing:-0.02em;margin-top:6px"></div>
+</div>
+
+<!-- 8: three-word ticker -->
+<div id="s8" class="layer center" style="background:#0e1222">
+  <div class="tight" style="font-size:190px;font-weight:700;color:#fff;display:flex;gap:70px">
+    <span class="mask"><span id="t0">Check</span></span>
+    <span class="mask"><span id="t1">Pay</span></span>
+    <span class="mask"><span id="t2">Protect</span></span>
+  </div>
+</div>
+
+<!-- 9–10: logo, then black -->
+<div id="s9" class="layer center" style="background:#0e1222">
+  <div style="display:flex;align-items:center;gap:44px">
+    <svg id="mark" width="250" height="250" viewBox="3 3 42 42">
+      <rect id="tile" x="3" y="3" width="42" height="42" rx="12" fill="#fff" />
+      <g fill="none" stroke="#0e1222" stroke-width="3.2" stroke-linecap="round">
+        <path id="br0" d="M16 24C22 24 24 15 30 15" pathLength="1" stroke-dasharray="1 1" />
+        <path id="br1" d="M16 24L31 24" pathLength="1" stroke-dasharray="1 1" />
+        <path id="br2" d="M16 24C22 24 24 33 30 33" pathLength="1" stroke-dasharray="1 1" />
+      </g>
+      <circle id="node" cx="15" cy="24" r="5" fill="#0e1222" />
+      <circle id="d0" cx="33.5" cy="15" r="3.6" fill="#3047e0" />
+      <circle id="d1" cx="34.5" cy="24" r="3.6" fill="#3047e0" />
+      <circle id="d2" cx="33.5" cy="33" r="3.6" fill="#3047e0" />
+    </svg>
+    <div class="tight" style="font-size:210px;font-weight:800;color:#fff"><span class="mask"><span id="word">Bursr</span></span></div>
+  </div>
+  <div style="margin-top:44px;font-size:44px;font-weight:500;color:#aab3c5;letter-spacing:-0.02em"><span class="mask"><span id="url">bursr.xyz</span></span></div>
+</div>
+<div id="black" class="layer" style="background:#000"></div>
+
+<script>
+const FPS = 30;
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const outCubic = (x) => 1 - Math.pow(1 - x, 3);
+const outExpo = (x) => (x >= 1 ? 1 : 1 - Math.pow(2, -10 * x));
+const inOut = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const lerp = (a, b, k) => a + (b - a) * k;
+const show = (el, on) => (el.style.display = on ? "" : "none");
+
+// Clip frames: each img shows the frame for its clip at the right local time.
+const COUNT = { "01": 180, "02": 180, "03": 180, "04": 180, "05": 164, "06": 173, "07": 180, "08": 180, "09": 180, "10": 180, "11": 180, "14": 180, "15": 180, "16": 180 };
+const pending = [];
+function frameSrc(clip, local) {
+  const n = COUNT[clip];
+  const i = Math.floor(Math.max(0, local) * FPS) % n;
+  return `frames/c${clip}/${String(i + 1).padStart(3, "0")}.jpg`;
+}
+function setFrame(img, clip, local) {
+  const src = frameSrc(clip, local);
+  if (img.getAttribute("src") !== src) {
+    img.setAttribute("src", src);
+    pending.push(img.decode().catch(() => {}));
+  }
+}
+
+// --- Build the wall (6 × 2) ----------------------------------------------------
+const WALL = ["03", "07", "14", "05", "09", "08", "01", "16", "04", "02", "06", "15"];
+const WINNERS = { 1: ["Paid $220", 4.5], 9: ["Paid $118", 5.0], 5: ["Paid $45", 5.5] };
+const TW = 270, TH = 480, GAP = 20, WX = (1920 - (6 * TW + 5 * GAP)) / 2, WY = (1080 - (2 * TH + GAP)) / 2;
+const tiles = WALL.map((clip, i) => {
+  const col = i % 6, row = Math.floor(i / 6);
+  const box = document.createElement("div");
+  box.style.cssText = `position:absolute;left:${WX + col * (TW + GAP)}px;top:${WY + row * (TH + GAP)}px;width:${TW}px;height:${TH}px;border-radius:22px;overflow:hidden;outline-offset:0`;
+  const img = document.createElement("img");
+  img.className = "clip";
+  img.style.cssText = "inset:0;width:100%;height:100%";
+  box.appendChild(img);
+  let chip = null;
+  if (WINNERS[i]) {
+    chip = document.createElement("div");
+    chip.style.cssText = "position:absolute;left:16px;bottom:16px;background:#fff;color:#0e1222;border-radius:999px;padding:10px 18px;font-size:24px;font-weight:600;letter-spacing:-0.02em;display:flex;gap:8px;align-items:center";
+    chip.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#3047e0"/><path d="m7 12.5 3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>${WINNERS[i][0]}`;
+    box.appendChild(chip);
+  }
+  $("wall").appendChild(box);
+  return { clip, box, img, chip, win: WINNERS[i] ? WINNERS[i][1] : null };
+});
+
+// --- Build the carousel ---------------------------------------------------------
+const RING = ["02", "04", "07", "08", "10", "11", "15"];
+const HERO_INDEX = 5; // c11, the woman smiling at her phone
+const CW = 420, CH = 746, RADIUS = 820;
+const cards = RING.map((clip, i) => {
+  const card = document.createElement("div");
+  card.style.cssText = `position:absolute;left:${-CW / 2}px;top:${-CH / 2}px;width:${CW}px;height:${CH}px;transform-style:preserve-3d;transform:rotateY(${(i * 360) / RING.length}deg) translateZ(${RADIUS}px)`;
+  const face = document.createElement("div");
+  face.style.cssText = "position:absolute;inset:0;border-radius:28px;overflow:hidden";
+  const img = document.createElement("img");
+  img.className = "clip";
+  img.style.cssText = "inset:0;width:100%;height:100%";
+  face.appendChild(img);
+  // Floor reflection: the same frame, flipped, fading out.
+  const refl = document.createElement("div");
+  refl.style.cssText = `position:absolute;left:0;top:${CH + 16}px;width:${CW}px;height:${CH * 0.55}px;border-radius:28px;overflow:hidden;opacity:0.32;-webkit-mask-image:linear-gradient(to bottom,rgba(0,0,0,1),transparent 75%)`;
+  const rimg = document.createElement("img");
+  rimg.className = "clip";
+  rimg.style.cssText = `left:0;top:0;width:100%;height:${CH}px;transform:scaleY(-1);transform-origin:50% 50%`;
+  refl.appendChild(rimg);
+  card.appendChild(face);
+  card.appendChild(refl);
+  $("ring").appendChild(card);
+  return { clip, img, rimg, face };
+});
+
+// --- The film --------------------------------------------------------------------
+let wordRect = null;
+window.seek = async function (t) {
+  pending.length = 0;
+
+  // Scene visibility (cuts on downbeats; the circle opens the dark scene at the drop).
+  show($("s1"), t < 4.1);
+  show($("dark"), t >= 3.5 && t < 8);
+  show($("s5"), t >= 8 && t < 10.5);
+  show($("s6"), t >= 10 && t < 12);
+  show($("s7"), t >= 12 && t < 14);
+  show($("s8"), t >= 14 && t < 16);
+  show($("s9"), t >= 16);
+  show($("black"), t >= 18);
+
+  // Bar 1: the hook, one word per beat (masked reveals).
+  ["w0", "w1", "w2", "w3"].forEach((id, i) => {
+    const k = outExpo(seg(t, i * 0.5, i * 0.5 + 0.38));
+    $(id).style.transform = `translateY(${(1 - k) * 105}%)`;
+  });
+
+  // Bar 2: "everyone" becomes the chat box (match cut measured from the word's real position).
+  if (!wordRect) {
+    const r = $("w1").getBoundingClientRect();
+    wordRect = { x: r.left - 24, y: r.top - 8, w: r.width + 48, h: r.height + 16 };
+  }
+  const box = { x: 480, y: 440, w: 960, h: 124 };
+  const m = inOut(seg(t, 2.0, 2.32));
+  const others = 1 - seg(t, 2.0, 2.18);
+  ["w0", "w2", "w3"].forEach((id) => ($(id).parentElement.style.opacity = others));
+  $("w1").style.opacity = 1 - seg(t, 2.0, 2.14);
+  const bx = lerp(wordRect.x, box.x, m), by = lerp(wordRect.y, box.y, m), bw = lerp(wordRect.w, box.w, m), bh = lerp(wordRect.h, box.h, m);
+  Object.assign($("box").style, { left: bx + "px", top: by + "px", width: bw + "px", height: bh + "px", opacity: seg(t, 2.0, 2.12), borderRadius: lerp(20, 30, m) + "px" });
+  const text = "Pay my team";
+  const typedN = t < 2.25 ? 0 : Math.min(text.length, Math.floor(seg(t, 2.25, 3.0) * text.length + 0.0001) + (t >= 3.0 ? 0 : 0));
+  $("typed").textContent = text.slice(0, t >= 3.0 ? text.length : typedN);
+  $("typed").style.opacity = seg(t, 2.2, 2.3);
+  const caretX = 560 + $("typed").getBoundingClientRect().width + 6;
+  Object.assign($("caret").style, { left: caretX + "px", opacity: t > 2.25 && t < 3.2 && (Math.floor(t * 4) % 2 === 0 || t < 3.0) ? 1 : 0 });
+  const bk = outCubic(seg(t, 2.85, 3.15));
+  const press = t >= 3.5 && t < 3.62 ? 1 - 0.04 * Math.sin(seg(t, 3.5, 3.62) * Math.PI) : 1;
+  Object.assign($("btn").style, { opacity: bk, transform: `translateY(${(1 - bk) * 30}px) scale(${press})` });
+  const ck = inOut(seg(t, 2.95, 3.42));
+  Object.assign($("cursor").style, { left: lerp(1500, 990, ck) + "px", top: lerp(900, 690, ck) + "px", opacity: seg(t, 2.9, 3.0), transform: `scale(${t >= 3.5 && t < 3.6 ? 0.88 : 1})` });
+
+  // The drop: a circle opens out of the button into the dark scene (peaks on 4.0).
+  const ok = inOut(seg(t, 3.52, 4.0));
+  const radius = ok * 2300;
+  $("dark").style.clipPath = t < 4.0 ? `circle(${radius}px at 960px 692px)` : "none";
+
+  // Bar 3: the wall with a scan line and three winners; one slow push-in.
+  const wallOn = t < 6.0;
+  show($("wall"), wallOn);
+  show($("scan"), wallOn);
+  const push = 1 + 0.06 * inOut(seg(t, 3.6, 6.0));
+  $("wall").style.transform = `scale(${push})`;
+  const scanX = lerp(WX - 10, 1920 - WX + 10, inOut(seg(t, 4.0, 5.75)));
+  Object.assign($("scan").style, { left: scanX * push - (push - 1) * 960 + "px", opacity: seg(t, 4.0, 4.1) * (1 - seg(t, 5.75, 5.95)) });
+  tiles.forEach((tile, i) => {
+    setFrame(tile.img, tile.clip, t - 3.5 + i * 0.37);
+    const won = tile.win !== null && t >= tile.win;
+    const wk = tile.win !== null ? outCubic(seg(t, tile.win, tile.win + 0.25)) : 0;
+    tile.img.style.filter = `brightness(${0.42 + 0.58 * wk}) saturate(${0.6 + 0.4 * wk})`;
+    tile.box.style.outline = won ? `${3 * wk}px solid #3047e0` : "none";
+    if (tile.chip) {
+      tile.chip.style.opacity = wk;
+      tile.chip.style.transform = `translateY(${(1 - wk) * 14}px)`;
+    }
+  });
+
+  // Bar 4: the key output as big type.
+  show($("output"), t >= 6.0);
+  $("o1").style.transform = `translateY(${(1 - outExpo(seg(t, 6.0, 6.45))) * 105}%)`;
+  $("o2").style.transform = `translateY(${(1 - outExpo(seg(t, 7.0, 7.45))) * 105}%)`;
+
+  // Bar 5: the carousel turns, then whips onto the hero (motion blur comes from sub-frames).
+  const step = 360 / RING.length;
+  const startAngle = -step * 1.2;
+  const heroAngle = -step * HERO_INDEX - 360; // one extra full turn for the whip
+  const slow = lerp(startAngle, startAngle - step * 0.9, seg(t, 8.0, 9.5));
+  const angle = t < 9.5 ? slow : lerp(startAngle - step * 0.9, heroAngle, inOut(seg(t, 9.5, 10.0)));
+  $("ring").style.transform = `translateZ(${-RADIUS - 40}px) rotateX(-7deg) rotateY(${angle}deg)`;
+  $("carouselFade").style.opacity = seg(t, 8.0, 8.15);
+  cards.forEach((c, i) => {
+    setFrame(c.img, c.clip, t - 7.6 + i * 0.29);
+    setFrame(c.rimg, c.clip, t - 7.6 + i * 0.29);
+  });
+
+  // Bar 6: the hero in a phone; the panel flips on 11.0 into the result.
+  // Match cut: the phone starts exactly over the hero card as the carousel leaves it (measured, not guessed).
+  const settle = inOut(seg(t, 10.0, 10.45));
+  let from = { x: 740, y: 90, w: 440, h: 900 };
+  if (t >= 10 && t < 10.45) {
+    const was = { s5: $("s5").style.display, ring: $("ring").style.transform };
+    $("s5").style.display = "";
+    $("ring").style.transform = `translateZ(${-RADIUS - 40}px) rotateX(-7deg) rotateY(${heroAngle}deg)`;
+    const r = cards[HERO_INDEX].face.getBoundingClientRect();
+    from = { x: r.left - 14, y: r.top - 14, w: r.width + 28, h: r.height + 28 };
+    $("s5").style.display = was.s5;
+    $("ring").style.transform = was.ring;
+  }
+  const to = { x: 380, y: 90, w: 440, h: 900 };
+  Object.assign($("phone").style, { left: lerp(from.x, to.x, settle) + "px", top: lerp(from.y, to.y, settle) + "px", width: lerp(from.w, to.w, settle) + "px", height: lerp(from.h, to.h, settle) + "px" });
+  setFrame($("heroImg"), "11", t - 9.0);
+  const pk = outCubic(seg(t, 10.15, 10.5));
+  Object.assign($("panelWrap").style, { opacity: pk, transform: `translateX(${(1 - pk) * 60}px)` });
+  $("panel").style.transform = `rotateY(${180 * inOut(seg(t, 11.0, 11.4))}deg)`;
+
+  // Bar 7: big stats, one per beat, each on a push cut.
+  const STATS = [
+    ["11", "networks, one wallet"],
+    ["0.5%", "per payment run"],
+    ["Limits", "it can't break"],
+    ["Any", "business, any size"],
+  ];
+  if (t >= 12 && t < 14) {
+    const i = Math.min(3, Math.floor((t - 12) / 0.5));
+    const local = t - 12 - i * 0.5;
+    const k = outCubic(clamp(local / 0.3));
+    $("statBig").textContent = STATS[i][0];
+    $("statSmall").textContent = STATS[i][1];
+    $("s7").style.transform = `scale(${1.1 - 0.1 * k})`;
+  }
+
+  // Bar 8: the ticker.
+  ["t0", "t1", "t2"].forEach((id, i) => {
+    const at = 14 + i * 0.5;
+    const k = outExpo(seg(t, at, at + 0.36));
+    $(id).style.transform = `translateY(${(1 - k) * 105}%)`;
+    const next = i < 2 ? seg(t, at + 0.5, at + 0.7) : 0;
+    $(id).style.color = next > 0 ? `rgba(255,255,255,${1 - 0.6 * next})` : "#fff";
+  });
+
+  // Bar 9: the logo draws on (tile, branches, payee dots), then the name and the address.
+  const tk = outCubic(seg(t, 16.0, 16.4));
+  $("tile").setAttribute("transform", `translate(24 24) scale(${0.6 + 0.4 * tk}) translate(-24 -24)`);
+  $("tile").style.opacity = tk;
+  ["br0", "br1", "br2"].forEach((id, i) => $(id).setAttribute("stroke-dashoffset", 1 - inOut(seg(t, 16.5 + i * 0.06, 16.9 + i * 0.06))));
+  $("node").setAttribute("r", 5 * outCubic(seg(t, 16.35, 16.6)));
+  ["d0", "d1", "d2"].forEach((id, i) => $(id).setAttribute("r", 3.6 * outCubic(seg(t, 17.0 + i * 0.25, 17.2 + i * 0.25))));
+  $("word").style.transform = `translateY(${(1 - outExpo(seg(t, 17.5, 17.9))) * 105}%)`;
+  $("url").style.transform = `translateY(${(1 - outExpo(seg(t, 17.75, 18.1))) * 105}%)`;
+
+  // Bar 10: fade to black.
+  $("black").style.opacity = inOut(seg(t, 18.0, 19.6));
+
+  await Promise.all(pending);
+  await new Promise((r) => requestAnimationFrame(() => r()));
+};
+
+window.ready = document.fonts.ready.then(() => window.seek(0));
+</script>
+</body>
+</html>
