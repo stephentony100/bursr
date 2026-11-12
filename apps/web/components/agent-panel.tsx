@@ -98,7 +98,7 @@ export function NeedsYouList({ items, limit }: { items: NeedsYou[]; limit?: numb
   if (items.length === 0) return null;
   const shown = limit ? items.slice(0, limit) : items;
   return (
-    <section aria-labelledby="needs-you" className="rounded-2xl border border-hold/30 bg-card">
+    <section data-tour="needs-you" aria-labelledby="needs-you" className="rounded-2xl border border-hold/30 bg-card">
       <div className="flex items-center justify-between px-5 pt-4">
         <h2 id="needs-you" className="flex items-center gap-2 font-bold">
           <span className="grid h-6 min-w-6 place-items-center rounded-full bg-hold px-1.5 text-xs text-white">{items.length}</span>

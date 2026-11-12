@@ -366,3 +366,83 @@ summary::before {
 details[open] > summary::before {
   transform: rotate(90deg);
 }
+
+/* Onboarding tour (driver.js): its popover in Bursr's look. Doubled class for
+   specificity, since driver.css loads after this file. */
+.driver-popover.bursr-tour {
+  max-width: 340px;
+  border-radius: 20px;
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  color: var(--color-ink);
+  padding: 20px;
+  font-family: var(--font-sans);
+  box-shadow: 0 24px 48px -16px rgb(14 18 34 / 0.35);
+}
+.driver-popover.bursr-tour .driver-popover-title {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+.driver-popover.bursr-tour .driver-popover-description {
+  margin-top: 6px;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+.driver-popover.bursr-tour .driver-popover-footer {
+  margin-top: 18px;
+  align-items: center;
+}
+.driver-popover.bursr-tour .driver-popover-progress-text {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+.driver-popover.bursr-tour .driver-popover-navigation-btns {
+  gap: 8px;
+}
+.driver-popover.bursr-tour button.driver-popover-prev-btn,
+.driver-popover.bursr-tour button.driver-popover-next-btn {
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-shadow: none;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+.driver-popover.bursr-tour button.driver-popover-prev-btn {
+  border: 1px solid var(--color-line);
+  background: var(--color-card);
+  color: var(--color-ink);
+}
+.driver-popover.bursr-tour button.driver-popover-prev-btn:hover {
+  background: var(--color-paper);
+}
+.driver-popover.bursr-tour button.driver-popover-next-btn {
+  border: 1px solid var(--color-ledger);
+  background: var(--color-ledger);
+  color: #fff;
+}
+.driver-popover.bursr-tour button.driver-popover-next-btn:hover {
+  background: var(--color-indigo);
+  border-color: var(--color-indigo);
+}
+.driver-popover.bursr-tour button.driver-popover-close-btn {
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  color: var(--color-muted);
+}
+.driver-popover.bursr-tour button.driver-popover-close-btn:hover {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+.driver-popover.bursr-tour .driver-popover-arrow {
+  border-width: 8px;
+}

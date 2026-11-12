@@ -1,11 +1,14 @@
 "use client";
 
-import { Books, DotsThreeOutline, House, PaperPlaneTilt, Receipt, Robot, ShieldCheck, UsersThree, Wallet, X, type Icon } from "@phosphor-icons/react";
+import { Books, Compass, DotsThreeOutline, House, PaperPlaneTilt, Receipt, Robot, ShieldCheck, UsersThree, Wallet, X, type Icon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 type Item = { href: string; label: string; icon: Icon };
+
+/** The name the onboarding tour uses to find a menu item. */
+const tourName = (href: string) => `nav-${{ "/spending-rules": "limits", "/add-money": "wallet", "/this-week": "home" }[href] ?? href.slice(1)}`;
 
 const MAIN: Item[] = [
   { href: "/this-week", label: "Home", icon: House },
@@ -32,6 +35,7 @@ function SideLink({ item, path }: { item: Item; path: string }) {
   return (
     <Link
       href={item.href}
+      data-tour={tourName(item.href)}
       aria-current={active ? "page" : undefined}
       className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-colors duration-150 ${active ? "bg-ledger-soft text-ledger" : "text-muted hover:bg-paper hover:text-ink"}`}
     >
@@ -57,6 +61,10 @@ export function SideNav() {
           <SideLink key={n.href} item={n} path={path} />
         ))}
       </div>
+      <Link href="/this-week?tour=1" className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold text-muted hover:bg-paper hover:text-ink">
+        <Compass size={20} aria-hidden />
+        Take the tour
+      </Link>
     </nav>
   );
 }
@@ -79,6 +87,9 @@ export function TabBar() {
               </button>
             </div>
             <div className="grid grid-cols-2 gap-2">
+              <Link href="/this-week?tour=1" onClick={() => setOpen(false)} className="flex items-center gap-3 rounded-2xl border border-line px-4 py-4 text-sm font-semibold">
+                <Compass size={22} aria-hidden /> Take the tour
+              </Link>
               {MORE.map((m) => {
                 const Glyph = m.icon;
                 const active = isActive(path, m.href);
@@ -98,13 +109,13 @@ export function TabBar() {
             const active = isActive(path, n.href);
             const Glyph = n.icon;
             return (
-              <Link key={n.href} href={n.href} aria-current={active ? "page" : undefined} className={`flex flex-col items-center gap-1 py-2.5 text-[0.7rem] font-semibold ${active ? "text-ledger" : "text-muted"}`}>
+              <Link key={n.href} href={n.href} data-tour={tourName(n.href)} aria-current={active ? "page" : undefined} className={`flex flex-col items-center gap-1 py-2.5 text-[0.7rem] font-semibold ${active ? "text-ledger" : "text-muted"}`}>
                 <Glyph size={22} weight={active ? "fill" : "regular"} aria-hidden />
                 {n.label}
               </Link>
             );
           })}
-          <button onClick={() => setOpen(true)} className={`flex flex-col items-center gap-1 py-2.5 text-[0.7rem] font-semibold ${moreActive ? "text-ledger" : "text-muted"}`}>
+          <button onClick={() => setOpen(true)} data-tour="nav-more" className={`flex flex-col items-center gap-1 py-2.5 text-[0.7rem] font-semibold ${moreActive ? "text-ledger" : "text-muted"}`}>
             <DotsThreeOutline size={22} weight={moreActive ? "fill" : "regular"} aria-hidden />
             More
           </button>

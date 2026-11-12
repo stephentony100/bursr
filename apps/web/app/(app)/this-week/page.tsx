@@ -6,6 +6,8 @@ import { loadSample, runPaydayNowAction } from "@/app/actions";
 import { ComingUp, dayWords, NeedsYouList } from "@/components/agent-panel";
 import { AgentLine, RecentPayments, recentPayments } from "@/components/recent-payments";
 import { BalanceCard } from "@/components/balance-card";
+import { Tour } from "@/components/tour";
+import { Suspense } from "react";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { ActionForm } from "@/components/forms";
 import { agentFeed, comingUp, needsYou, nextPayday } from "@/lib/agent/view";
@@ -98,6 +100,9 @@ export default async function Home() {
   return (
     <div className="space-y-6">
       <AutoRefresh active everyMs={5000} />
+      <Suspense>
+        <Tour />
+      </Suspense>
       <div>
         <p className="text-sm text-muted">{greeting()}</p>
         <h1 className="display text-2xl sm:text-3xl">{business.name}</h1>
@@ -137,7 +142,7 @@ export default async function Home() {
         </div>
 
         <aside className="space-y-6">
-          <section aria-label="This week" className="rounded-2xl border border-line bg-card p-5">
+          <section data-tour="payday" aria-label="This week" className="rounded-2xl border border-line bg-card p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm text-muted">Next payday</p>

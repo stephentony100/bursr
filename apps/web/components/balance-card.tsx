@@ -69,7 +69,7 @@ export function BalanceCard({
   const dot = tone === "on" ? "bg-ok-bright animate-pulse" : tone === "paused" ? "bg-refuse" : "bg-hold-bright";
 
   return (
-    <section aria-label="Your Bursr wallet" className="overflow-hidden rounded-[var(--radius-card)] bg-night text-white">
+    <section data-tour="balance" aria-label="Your Bursr wallet" className="overflow-hidden rounded-[var(--radius-card)] bg-night text-white">
       <div className="relative p-5 sm:p-7">
         <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-ledger/40 blur-3xl" />
         <div className="relative flex items-center justify-between gap-3">
@@ -88,7 +88,7 @@ export function BalanceCard({
           {balance === null ? "…" : <Amount value={balance} hidden={hidden} />}
         </p>
 
-        <div className="relative mt-5">
+        <div data-tour="limit" className="relative mt-5">
           <div className="flex items-baseline justify-between text-xs text-white/70">
             <span>
               <span className="num font-semibold text-white">{hidden ? "••••" : left}</span> left this week
@@ -107,11 +107,11 @@ export function BalanceCard({
 
       <div className="grid grid-cols-3 border-t border-white/10">
         {[
-          { href: "/add-money", label: "Add money", Icon: Plus },
-          { href: "/people#pay-once", label: "Pay someone", Icon: PaperPlaneTilt },
-          { href: "/agent", label: "Ask agent", Icon: ChatCircleDots },
-        ].map(({ href, label, Icon }) => (
-          <Link key={href} href={href} className="flex flex-col items-center gap-1.5 py-4 text-xs font-semibold text-white/90 hover:bg-white/5 sm:flex-row sm:justify-center sm:gap-2 sm:text-sm">
+          { href: "/add-money", label: "Add money", Icon: Plus, tour: "add-money" },
+          { href: "/people#pay-once", label: "Pay someone", Icon: PaperPlaneTilt, tour: "pay-someone" },
+          { href: "/agent", label: "Ask agent", Icon: ChatCircleDots, tour: "ask-agent" },
+        ].map(({ href, label, Icon, tour }) => (
+          <Link key={href} href={href} data-tour={tour} className="flex flex-col items-center gap-1.5 py-4 text-xs font-semibold text-white/90 hover:bg-white/5 sm:flex-row sm:justify-center sm:gap-2 sm:text-sm">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-ledger">
               <Icon size={18} weight="bold" aria-hidden />
             </span>

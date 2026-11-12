@@ -36,7 +36,7 @@ export async function recentPayments(db: PrismaClient, take = 6) {
 
 export function RecentPayments({ rows }: { rows: Awaited<ReturnType<typeof recentPayments>> }) {
   return (
-    <section aria-labelledby="recent" className="rounded-2xl border border-line bg-card">
+    <section data-tour="recent" aria-labelledby="recent" className="rounded-2xl border border-line bg-card">
       <div className="flex items-center justify-between px-5 pt-4">
         <h2 id="recent" className="font-bold">
           Recent payments
@@ -78,7 +78,7 @@ export function RecentPayments({ rows }: { rows: Awaited<ReturnType<typeof recen
 /** The agent's latest word, in one line, with a way into the full story. */
 export function AgentLine({ entry }: { entry: FeedEntry | undefined }) {
   return (
-    <Link href="/agent" className="flex items-center gap-3 rounded-2xl border border-line bg-card px-5 py-3.5 hover:bg-paper">
+    <Link href="/agent" data-tour="agent" className="flex items-center gap-3 rounded-2xl border border-line bg-card px-5 py-3.5 hover:bg-paper">
       <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ledger-soft text-ledger">
         <Robot size={18} weight="bold" aria-hidden />
       </span>
