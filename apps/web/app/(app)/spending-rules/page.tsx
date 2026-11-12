@@ -67,7 +67,7 @@ export default async function SetupPage() {
             </div>
             <label className="mt-5 block text-sm font-medium">
               Payday
-              <select name="payday" defaultValue={r.paydayWeekday} className="mt-1 block rounded-lg border border-line bg-card px-3 py-2">
+              <select name="payday" defaultValue={r.paydayWeekday} className="mt-1 block rounded-xl border border-line bg-card px-3 py-2">
                 {DAYS.map((d, i) => (
                   <option key={d} value={i}>
                     Every {d}
@@ -86,7 +86,7 @@ export default async function SetupPage() {
               </label>
               <label className="mt-3 block text-sm font-medium">
                 Pay supplier invoices
-                <select name="invoiceTiming" defaultValue={r.invoiceTiming} className="mt-1 block rounded-lg border border-line bg-card px-3 py-2">
+                <select name="invoiceTiming" defaultValue={r.invoiceTiming} className="mt-1 block rounded-xl border border-line bg-card px-3 py-2">
                   <option value="due">The day before they&apos;re due</option>
                   <option value="asap">As soon as they pass every check</option>
                 </select>
@@ -108,7 +108,7 @@ export default async function SetupPage() {
               <p className="text-sm text-muted">Each person picks one of these when they join.</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {tokens.map((t) => (
-                  <label key={t.assetId} className="flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm has-[:checked]:border-ledger has-[:checked]:bg-ledger-soft">
+                  <label key={t.assetId} className="flex items-center gap-2 rounded-xl border border-line px-3 py-1.5 text-sm has-[:checked]:border-ledger has-[:checked]:bg-ledger-soft">
                     <input type="checkbox" name="payoutToken" value={t.assetId} defaultChecked={r.payoutTokens.some((p) => p.assetId === t.assetId)} />
                     {t.symbol} on {chainName(t.chain)}
                   </label>
@@ -154,7 +154,7 @@ export default async function SetupPage() {
           </div>
           <details className="mt-6 text-sm">
             <summary className="cursor-pointer text-muted">Technical details: the exact rules your wallet enforces (version {status.policyRevision})</summary>
-            <pre className="num mt-2 max-h-80 overflow-auto rounded-lg bg-paper p-3 text-xs">{JSON.stringify(status.policy, null, 2)}</pre>
+            <pre className="num mt-2 max-h-80 overflow-auto rounded-xl bg-paper p-3 text-xs">{JSON.stringify(status.policy, null, 2)}</pre>
           </details>
         </section>
       )}
@@ -166,7 +166,7 @@ function Money({ name, label, hint, value }: { name: string; label: string; hint
   return (
     <label className="block text-sm font-medium">
       {label}
-      <span className="mt-1 flex items-center rounded-lg border border-line bg-card focus-within:outline-2 focus-within:outline-indigo">
+      <span className="mt-1 flex items-center rounded-xl border border-line bg-card ">
         <span className="pl-3 text-muted">$</span>
         <input name={name} defaultValue={value} inputMode="decimal" required className="num w-full bg-transparent px-2 py-2 outline-none" />
       </span>

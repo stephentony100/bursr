@@ -93,7 +93,7 @@ export function WalletPanel(props: {
       {!props.ownerAccountId ? (
         <div className="mt-3">
           <p className="text-sm text-muted">Sign in with your wallet app (for example HOT Wallet) to set up or manage your business. Signing in is free.</p>
-          <button onClick={signIn} disabled={busy} className="mt-3 rounded-lg bg-indigo px-4 py-2 text-sm font-medium text-card disabled:opacity-60">
+          <button onClick={signIn} disabled={busy} className="mt-3 rounded-xl bg-ledger px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60">
             {busy ? "Check your wallet app…" : "Sign in"}
           </button>
         </div>
@@ -135,7 +135,7 @@ export function WalletPanel(props: {
               )}
               <div className="flex flex-wrap gap-2">
                 {next && (
-                  <button onClick={() => prepare(next)} disabled={busy} className="rounded-lg bg-ledger px-4 py-2 font-medium text-card disabled:opacity-60">
+                  <button onClick={() => prepare(next)} disabled={busy} className="rounded-xl bg-ledger px-4 py-2.5 font-semibold text-white hover:bg-indigo disabled:opacity-60">
                     {next === "grant_issue" && props.hasGrant ? "Renew Bursr's permission to pay" : LABELS[next]}…
                   </button>
                 )}
@@ -143,7 +143,7 @@ export function WalletPanel(props: {
                   <button
                     onClick={() => prepare(props.frozen ? "agent_unfreeze" : "agent_freeze")}
                     disabled={busy}
-                    className={`rounded-lg px-4 py-2 font-medium disabled:opacity-60 ${props.frozen ? "bg-ledger text-card" : "bg-refuse text-card"}`}
+                    className={`rounded-xl px-4 py-2 font-medium disabled:opacity-60 ${props.frozen ? "bg-ledger text-card" : "bg-refuse text-card"}`}
                   >
                     {props.frozen ? "Turn payments back on…" : "Pause all payments…"}
                   </button>
@@ -153,7 +153,7 @@ export function WalletPanel(props: {
           )}
 
           {prepared && (
-            <div className="rounded-lg border border-line bg-paper p-4">
+            <div className="rounded-xl border border-line bg-paper p-4">
               <p className="font-medium">{LABELS[prepared.kind]}</p>
               <details className="mt-1">
                 <summary className="cursor-pointer text-muted">Technical details of what you&apos;re confirming</summary>
@@ -167,10 +167,10 @@ export function WalletPanel(props: {
                 {new Date(prepared.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.
               </p>
               <div className="mt-3 flex gap-2">
-                <button onClick={signAndSubmit} disabled={busy} className="rounded-lg bg-indigo px-4 py-2 font-medium text-card disabled:opacity-60">
+                <button onClick={signAndSubmit} disabled={busy} className="rounded-xl bg-ledger px-4 py-2.5 font-semibold text-white hover:bg-indigo disabled:opacity-60">
                   {busy ? "Check your wallet app…" : "Confirm in my wallet"}
                 </button>
-                <button onClick={() => setPrepared(null)} disabled={busy} className="rounded-lg border border-line px-4 py-2">
+                <button onClick={() => setPrepared(null)} disabled={busy} className="rounded-xl border border-line px-4 py-2.5 font-semibold hover:bg-paper">
                   Cancel
                 </button>
               </div>

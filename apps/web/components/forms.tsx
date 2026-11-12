@@ -65,7 +65,7 @@ export function RuleTester({ action }: { action: (prev: RuleTestResult, f: FormD
             name="scenario"
             value={s.id}
             disabled={pending}
-            className="rounded-lg border border-line bg-card px-3 py-2 text-sm hover:bg-paper disabled:opacity-60"
+            className="rounded-xl border border-line bg-card px-3 py-2 text-sm hover:bg-paper disabled:opacity-60"
           >
             {s.label}
           </button>
@@ -74,7 +74,7 @@ export function RuleTester({ action }: { action: (prev: RuleTestResult, f: FormD
       {result && result.tried && (
         <div
           role="status"
-          className={`mt-4 rounded-lg border px-4 py-3 text-sm ${result.allowed ? "border-ledger/40 bg-ledger-soft" : "border-refuse/40 bg-refuse-soft"}`}
+          className={`mt-4 rounded-xl border px-4 py-3 text-sm ${result.allowed ? "border-ledger/40 bg-ledger-soft" : "border-refuse/40 bg-refuse-soft"}`}
         >
           <p className="text-muted">We tried: {result.tried}</p>
           <p className="mt-1 flex items-start gap-2 font-medium">
@@ -103,7 +103,7 @@ export function ItemButton({ action, itemId, label, tone = "quiet" }: { action: 
       <input type="hidden" name="itemId" value={itemId} />
       <button
         disabled={pending}
-        className={`rounded-lg px-3 py-1.5 text-sm disabled:opacity-60 ${tone === "primary" ? "bg-ledger text-card hover:bg-indigo" : "border border-line bg-card hover:bg-paper"}`}
+        className={`rounded-xl px-3 py-1.5 text-sm disabled:opacity-60 ${tone === "primary" ? "bg-ledger text-card hover:bg-indigo" : "border border-line bg-card hover:bg-paper"}`}
       >
         {pending ? "One moment" : label}
       </button>
@@ -118,12 +118,12 @@ export function ForceTester({ action }: { action: () => Promise<RuleTestResult> 
   return (
     <div>
       <form action={formAction}>
-        <button disabled={pending} className="rounded-lg border-2 border-refuse/60 bg-card px-4 py-2 text-sm font-medium text-refuse hover:bg-refuse-soft disabled:opacity-60">
+        <button disabled={pending} className="rounded-xl border-2 border-refuse/60 bg-card px-4 py-2 text-sm font-medium text-refuse hover:bg-refuse-soft disabled:opacity-60">
           {pending ? "Trying…" : "Try to sneak a big payment past your limits"}
         </button>
       </form>
       {result && result.tried && (
-        <div role="status" className={`mt-4 rounded-lg border px-4 py-3 text-sm ${result.allowed ? "border-hold/40 bg-hold-soft" : "border-refuse/40 bg-refuse-soft"}`}>
+        <div role="status" className={`mt-4 rounded-xl border px-4 py-3 text-sm ${result.allowed ? "border-hold/40 bg-hold-soft" : "border-refuse/40 bg-refuse-soft"}`}>
           <p className="text-muted">We tried: {result.tried}</p>
           <p className="mt-1 flex items-start gap-2 font-medium">
             {!result.allowed && <ShieldCheck size={18} weight="fill" className="mt-0.5 shrink-0 text-refuse" aria-hidden />}

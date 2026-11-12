@@ -256,7 +256,7 @@ export function InviteForm() {
                 void navigator.clipboard.writeText(result.link);
                 setCopied(true);
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-card px-3 py-1.5 font-semibold hover:bg-paper"
             >
               <Copy size={16} aria-hidden /> {copied ? "Copied" : "Copy link"}
             </button>
@@ -264,7 +264,7 @@ export function InviteForm() {
               href={`https://wa.me/?text=${encodeURIComponent(result.group ? `Hi all, please tell me how you'd like to be paid: ${result.link}` : `Hi ${result.name}, please tell me how you'd like to be paid: ${result.link}`)}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-card px-3 py-1.5 font-semibold hover:bg-paper"
             >
               <WhatsappLogo size={16} aria-hidden /> Send on WhatsApp
             </a>

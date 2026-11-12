@@ -169,3 +169,147 @@ html {
   75% { transform: translateX(-3px); }
 }
 .shake { animation: shake 360ms var(--ease-out); }
+
+/* ---------------------------------------------------------------------------
+   Native form controls, styled once for the whole app. Unlayered on purpose:
+   these must win over the browser's own look, while a component's utility
+   classes (size, width, margins) still apply. Colours come from the tokens;
+   the two inline SVGs use the muted and white values.
+   --------------------------------------------------------------------------- */
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+select,
+textarea {
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):hover,
+select:hover,
+textarea:hover {
+  border-color: color-mix(in srgb, var(--color-ink) 22%, var(--color-line));
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(.outline-none):focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+:has(> input.outline-none:focus-visible) {
+  outline: none;
+  border-color: var(--color-ledger);
+  box-shadow: 0 0 0 4px var(--color-ledger-soft);
+}
+::placeholder {
+  color: color-mix(in srgb, var(--color-muted) 70%, transparent);
+}
+
+/* Dropdowns: our own chevron, room for it, a pointer. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  padding-right: 2.5rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%235b6475' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 7.5 5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 1rem;
+}
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* File pickers: a dashed drop area with a proper button. */
+input[type="file"] {
+  width: 100%;
+  cursor: pointer;
+  border: 1.5px dashed var(--color-line);
+  border-radius: 16px;
+  background: var(--color-paper);
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+input[type="file"]:hover {
+  border-color: var(--color-ledger);
+  background: var(--color-ledger-soft);
+}
+input[type="file"]:focus-visible {
+  outline: none;
+  border-color: var(--color-ledger);
+  box-shadow: 0 0 0 4px var(--color-ledger-soft);
+}
+input[type="file"]::file-selector-button {
+  margin-right: 0.85rem;
+  border: 1px solid var(--color-line);
+  border-radius: 9999px;
+  background: var(--color-card);
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+input[type="file"]::file-selector-button:hover {
+  border-color: var(--color-ledger);
+  color: var(--color-ledger);
+}
+
+/* Checkboxes and radios: brand fill when on, a clear tick. */
+input[type="checkbox"]:not(.sr-only),
+input[type="radio"]:not(.sr-only) {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 1.5px solid color-mix(in srgb, var(--color-ink) 28%, var(--color-line));
+  background: var(--color-card) center / 0.8rem no-repeat;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+input[type="checkbox"] {
+  border-radius: 6px;
+}
+input[type="radio"] {
+  border-radius: 9999px;
+}
+input[type="checkbox"]:hover,
+input[type="radio"]:hover {
+  border-color: var(--color-ledger);
+}
+input[type="checkbox"]:checked {
+  border-color: var(--color-ledger);
+  background-color: var(--color-ledger);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3.5 8.5 3 3 6-7'/%3E%3C/svg%3E");
+}
+input[type="radio"]:checked {
+  border: 5px solid var(--color-ledger);
+}
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--color-ledger-soft);
+}
+
+/* "Details" toggles: our own chevron that turns when open. */
+summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+summary::before {
+  content: "";
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
+  background-color: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7.5 5 5 5-5 5'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: transform 150ms var(--ease-out);
+}
+details[open] > summary::before {
+  transform: rotate(90deg);
+}

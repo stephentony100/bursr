@@ -8,13 +8,13 @@ export function AiSummaryButton({ action }: { action: () => Promise<AiSummary> }
   return (
     <div className="mt-3">
       <form action={run}>
-        <button disabled={pending} className="rounded-lg border border-line bg-card px-3 py-1.5 text-sm hover:bg-paper disabled:opacity-60">
+        <button disabled={pending} className="rounded-xl border border-line bg-card px-3 py-1.5 text-sm hover:bg-paper disabled:opacity-60">
           {pending ? "Writing…" : "Write it as a friendly note"}
         </button>
       </form>
       {result &&
         (result.ok ? (
-          <blockquote className="mt-3 rounded-lg border border-line bg-paper px-4 py-3 text-sm">
+          <blockquote className="mt-3 rounded-xl border border-line bg-paper px-4 py-3 text-sm">
             {result.text}
             <footer className="mt-1 text-xs text-muted">
               Written privately by Bursr&apos;s AI. Every number was checked against your records before showing it to you.

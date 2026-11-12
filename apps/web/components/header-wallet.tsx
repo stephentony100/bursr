@@ -45,7 +45,7 @@ export function HeaderWallet({ accountId, tone = "light" }: { accountId: string 
       <button
         onClick={() => run(signInWithWallet)}
         disabled={busy}
-        className={`rounded-lg px-3 py-1.5 text-sm font-semibold disabled:opacity-60 ${dark ? "bg-ledger text-white hover:bg-indigo" : "bg-card text-ink hover:bg-paper"}`}
+        className={`rounded-xl px-3 py-1.5 text-sm font-semibold disabled:opacity-60 ${dark ? "bg-ledger text-white hover:bg-indigo" : "bg-card text-ink hover:bg-paper"}`}
       >
         {busy ? "Check your wallet…" : "Sign in"}
       </button>

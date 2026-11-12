@@ -101,7 +101,7 @@ function OneTap({ suggestedUsd }: { suggestedUsd: string | null }) {
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-sm font-medium">
           Amount
-          <span className="mt-1 flex items-center rounded-lg border border-line bg-card">
+          <span className="mt-1 flex items-center rounded-xl border border-line bg-card">
             <span className="pl-3 text-muted">$</span>
             <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" className="num w-32 bg-transparent px-2 py-2 outline-none" />
           </span>
@@ -145,7 +145,7 @@ function OtherChain() {
           <select
             value={`${choice.symbol}@${choice.chain}`}
             onChange={(e) => setChoice(OTHER_CHAINS.find((c) => `${c.symbol}@${c.chain}` === e.target.value)!)}
-            className="mt-1 block rounded-lg border border-line bg-card px-3 py-2"
+            className="mt-1 block rounded-xl border border-line bg-card px-3 py-2"
           >
             {OTHER_CHAINS.map((c) => (
               <option key={`${c.symbol}@${c.chain}`} value={`${c.symbol}@${c.chain}`}>
@@ -176,7 +176,7 @@ function OtherChain() {
                 void navigator.clipboard.writeText(result.address.address);
                 setCopied(true);
               }}
-              className="rounded-lg border border-line bg-card px-3 py-1.5 font-medium hover:border-ink/40"
+              className="rounded-xl border border-line bg-card px-3 py-1.5 font-semibold hover:bg-paper"
             >
               {copied ? "Copied" : "Copy address"}
             </button>

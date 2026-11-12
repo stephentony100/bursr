@@ -22,7 +22,7 @@ export default async function StatementPage() {
           <h1 className="display text-2xl sm:text-3xl">Records</h1>
           <p className="mt-1 text-muted">Every payment, with proof. Ready for your accountant.</p>
         </div>
-        <a href="/api/records.csv" className="rounded-lg bg-ledger px-4 py-2 text-sm font-medium text-card hover:bg-indigo">
+        <a href="/api/records.csv" className="rounded-xl bg-ledger px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo">
           Download CSV
         </a>
       </div>

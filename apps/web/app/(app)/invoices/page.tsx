@@ -150,7 +150,7 @@ export default async function InvoicesPage() {
             </label>
             <label className="block text-sm font-medium">
               Or paste the text of the message
-              <textarea name="pasted" rows={3} className="num mt-1 block w-full rounded-lg border border-line bg-card px-3 py-2 text-sm" />
+              <textarea name="pasted" rows={3} className="num mt-1 block w-full rounded-xl border border-line bg-card px-3 py-2 text-sm" />
             </label>
             <p className="text-sm text-muted">
               {dryRun

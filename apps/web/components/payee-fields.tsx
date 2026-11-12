@@ -2,7 +2,7 @@ import type { Payee, PayoutToken } from "@/lib/domain";
 import { formatUnits, USD_DECIMALS } from "@/lib/money";
 import { chainName } from "@/lib/tokens";
 
-const input = "mt-1 block w-full rounded-lg border border-line bg-card px-3 py-2";
+const input = "mt-1 block w-full rounded-xl border border-line bg-card px-3 py-2";
 
 export function DetailFields({ payee }: { payee?: Payee }) {
   const prices = payee?.prices.map((p) => `${p.item} = ${formatUnits(BigInt(p.unitPriceUsd), USD_DECIMALS)}`).join("\n") ?? "";
@@ -28,7 +28,7 @@ export function DetailFields({ payee }: { payee?: Payee }) {
       <div className="grid grid-cols-2 gap-3 sm:col-span-2 sm:max-w-xl sm:grid-cols-3">
         <label className="block text-sm font-medium">
           Regular pay, like wages <span className="font-normal text-muted">(optional)</span>
-          <span className="mt-1 flex items-center rounded-lg border border-line bg-card">
+          <span className="mt-1 flex items-center rounded-xl border border-line bg-card">
             <span className="pl-3 text-muted">$</span>
             <input
               name="recurringAmount"
