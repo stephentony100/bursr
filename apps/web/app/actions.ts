@@ -35,7 +35,7 @@ import {
   updateRules,
 } from "@/lib/owner-actions";
 import { chat, confirmCard, type ChatReply, type ChatTurn } from "@/lib/agent/chat";
-import { chatHistory, clearChat, markCardDone, saveChatTurn } from "@/lib/chat-log";
+import { clearChat, markCardDone, saveChatTurn } from "@/lib/chat-log";
 import { runAgent } from "@/lib/agent/engine";
 import { followPayments, kickAgent } from "@/lib/agent/loop";
 import { payApprovedPlan } from "@/lib/pay";
