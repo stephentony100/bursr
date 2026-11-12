@@ -24,7 +24,7 @@ export function Statement() {
     <section aria-label="Why Bursr" className="bg-card">
       <div className="mx-auto w-full max-w-5xl px-5 py-28 sm:py-36">
         <p ref={ref} className="display text-[clamp(1.9rem,4vw,3.4rem)] font-extrabold leading-[1.12] tracking-[-0.035em]">
-          A fake invoice from a name that looks right. The same bill sent twice. A text that says <span className="text-refuse">&ldquo;our account has changed&rdquo;</span>. These cost small
+          A fake invoice from a name that looks right. The same bill sent twice. A text that says <span className="text-refuse">&ldquo;our account has changed.&rdquo;</span> These cost small
           businesses real money. <span className="text-ledger">Bursr catches them before a single naira, dollar or cent moves.</span>
         </p>
       </div>

@@ -29,8 +29,6 @@ const PEOPLE: Person[] = [
   { name: "Amaka Eze", role: "Cashier", amount: "$120.00", network: "Solana", token: "USDC", photo: "/photos/vendor-phone.jpg", focus: "55% 32%" },
 ];
 
-const NET_COLOR: Record<string, string> = { Base: "#2f4bdb", NEAR: "#0b1220", Tron: "#d92d20", Solana: "#7c3aed" };
-
 const initials = (n: string) =>
   n
     .split(" ")
@@ -96,8 +94,6 @@ export function Payday({ people = PEOPLE }: { people?: Person[] }) {
 
   return (
     <figure ref={root} aria-label="Payday on Bursr: four people paid on their own networks, one look-alike supplier blocked" className="relative mx-auto h-[600px] w-full max-w-[640px] select-none">
-      {/* Soft field behind the phone */}
-      <div aria-hidden className="absolute inset-x-[12%] inset-y-[8%] rounded-full bg-[radial-gradient(closest-side,rgba(47,75,219,0.22),rgba(47,75,219,0.06)_60%,transparent)] blur-2xl" />
 
       {/* Phone */}
       <div data-phone className="absolute left-1/2 top-1/2 w-[272px] -translate-x-1/2 -translate-y-1/2 rounded-[44px] bg-ink p-[9px] shadow-[0_40px_80px_-30px_rgba(11,18,32,0.55)]">
@@ -169,7 +165,8 @@ export function Payday({ people = PEOPLE }: { people?: Person[] }) {
             <span className="text-[10px] font-medium text-muted">received</span>
           </p>
           <p className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-paper px-2 py-0.5 text-[10px] font-semibold">
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background: NET_COLOR[p.network] ?? "#2f4bdb" }} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/networks/${p.network.toLowerCase()}.svg`} alt="" width={14} height={14} className="h-3.5 w-3.5" />
             {p.token} on {p.network}
           </p>
           </div>

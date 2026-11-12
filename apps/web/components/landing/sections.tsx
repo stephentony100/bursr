@@ -3,7 +3,7 @@ import { CheckCircle, LockSimple } from "@phosphor-icons/react/dist/ssr";
 import { Logo } from "@/components/logo";
 import { readEnv } from "@/lib/env";
 import { Badge } from "@/components/ui/badge";
-import { TryButton } from "./hero";
+import { StartButton } from "./hero";
 import { CountUp } from "./count-up";
 
 // The quieter sections of the home page: privacy, the problem in numbers,
@@ -153,8 +153,8 @@ export function Closing() {
         <h2 id="close-title" className="display max-w-4xl text-4xl leading-[1.05] sm:text-6xl">
           Spend Friday on your business, not your bills.
         </h2>
-        <p className="mt-6 max-w-xl text-lg text-white/70">Watch an agent run a real week for a sample restaurant: six invoices, four problems caught. Two minutes, practice money.</p>
-        <TryButton className="mt-10" />
+        <p className="mt-6 max-w-xl text-lg text-white/70">Set your limits once. Your agent pays everyone on time, and stops what looks wrong.</p>
+        <StartButton className="mt-10" tone="light" />
       </div>
       <div aria-hidden className="pointer-events-none select-none overflow-hidden">
         <p className="mx-auto -mb-[0.18em] max-w-7xl bg-gradient-to-b from-white/[0.14] to-white/0 bg-clip-text px-5 font-[family-name:var(--font-display)] text-[clamp(7rem,26vw,22rem)] font-extrabold leading-none tracking-[-0.06em] text-transparent">
