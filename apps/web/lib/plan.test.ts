@@ -58,6 +58,15 @@ describe("weekly plan", () => {
     expect(placement(live, "Invoice #A").reason).toMatch(/counts twice against the limit .* needs \$200\.00/);
   });
 
+  it("charges Bursr's fee only when it's at least one cent", () => {
+    const fee = { bps: 50, payout: { token: USDT_TRON, address: demoTronAddress("fees"), memo: null } };
+    const tiny = payee({ id: "tiny", name: "Kemi", category: "staff", addedAt: OLD, recurring: { amountUsd: "100000", every: "week" } }); // $0.10
+    const small = buildPlan(input({ payees: [tiny], rules: rules({ fee }) }));
+    expect(small.items.some((i) => i.kind === "fee")).toBe(false); // 0.5% of $0.10 = $0.0005
+    const normal = buildPlan(input({ payees: [chef], rules: rules({ fee }) }));
+    expect(normal.items.find((i) => i.kind === "fee")?.amountUsd).toBe(1_100_000n); // 0.5% of $220
+  });
+
   it("puts staff pay and ready invoices in the plan, staff first", () => {
     const plan = buildPlan(input({ invoices: [invoice({ id: "a" })] }));
     expect(plan.items.map((i) => [i.forWhat, i.placement])).toEqual([

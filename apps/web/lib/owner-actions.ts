@@ -7,6 +7,7 @@ import type { PrismaClient } from "./generated/prisma/client";
 import { isOwnerSession, type OwnerSession } from "./owner";
 import { formatUsd } from "./money";
 import { buildPolicy } from "./policy";
+import { MIN_FEE_USD } from "./plan";
 import { getAccountRecord, getBusiness, getPayee, listPayees } from "./store";
 
 // Everything that changes the owner's rules or payees. Each function needs an
@@ -382,7 +383,7 @@ async function recomputeFee(db: PrismaClient, planId: string) {
   const amount = (base * BigInt(business.rules.fee.bps)) / 10_000n;
   const pct = (business.rules.fee.bps / 100).toFixed(2).replace(/\.?0+$/, "");
   const forWhat = `Bursr fee (${pct}% of ${formatUsd(base)})`;
-  if (amount === 0n) await db.planItem.update({ where: { id: fee.id }, data: { placement: "removed", reason: "Nothing left to charge a fee on." } });
+  if (amount < MIN_FEE_USD) await db.planItem.update({ where: { id: fee.id }, data: { placement: "removed", reason: "Nothing left to charge a fee on." } });
   else await db.planItem.update({ where: { id: fee.id }, data: { amountUsd: amount.toString(), forWhat, quote: null } });
 }
 

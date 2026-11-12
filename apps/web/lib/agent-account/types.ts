@@ -44,4 +44,6 @@ export interface AgentAccount {
   preview(req: ActionRequest): Promise<ActionOutcome>;
   /** The current outcome of an accepted action. */
   outcome(correlationId: string): Promise<Outcome>;
+  /** Live only: moves money that arrived in the legacy public pool into the balance payments spend from. */
+  shieldArrivals?(): Promise<{ asset: string; amount: bigint }[]>;
 }

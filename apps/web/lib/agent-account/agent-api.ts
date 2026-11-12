@@ -9,12 +9,16 @@ import type { AccountStatus, ActionOutcome, AgentAccount, Outcome } from "./type
 // limits, freeze) refuse anything outside the owner's signed policy.
 // The agent acts with a grant token only; it never holds the owner's key.
 
-// Private (confidential) payments are switched off: on 9 Nov 2026 every
-// confidential swap and withdrawal was refused by the wallet provider ("1Click's
-// intent is not the transfer that was quoted": the private balance holds
-// imt:…:nep141:USDC, the order was authorised in nep141:USDC; never submitted).
-// Public payments use the agent's public balance. See docs/DECISIONS.md.
-export const PRIVATE_PAYMENTS = false;
+// Payments are private (confidential). Since mid-November 2026 the Agent API
+// treats "the agent's account" as its confidential balance: a public swap,
+// transfer or deposit address is refused with `public_balance_exit_only`, and the
+// old public balance is a legacy pool that can only be emptied (a public withdraw,
+// or `shield` into the confidential balance). Money sent straight to intents.near
+// (the one-tap NEAR top-up) still lands in that public pool, so the agent shields
+// it before paying (shieldArrivals). Docs: docs.agentsonintents.com …/executions
+// ("The agent's account IS its confidential balance"; Shield). History (9 Nov,
+// when confidential routes were refused and payments went public): docs/DECISIONS.md.
+export const PRIVATE_PAYMENTS = true;
 export const BALANCE_SOURCE = PRIVATE_PAYMENTS ? "confidential" : "public";
 
 export interface AgentApiConfig {
@@ -75,6 +79,24 @@ export class AgentApiAccount implements AgentAccount {
       weekResetsAt: weekly.resets_at ? new Date(weekly.resets_at) : null,
       balances: Object.fromEntries(balances.balances.map((b) => [b.asset_id, BigInt(b.available_raw)])),
     };
+  }
+
+  /**
+   * Moves money that arrived in the legacy public pool (e.g. a one-tap top-up)
+   * into the confidential balance payments spend from. Not spending: shield
+   * doesn't count toward the budget or limits. Returns what was moved.
+   */
+  async shieldArrivals(): Promise<{ asset: string; amount: bigint }[]> {
+    const pub = await this.api.getBalances(this.cfg.agentId, { source: "public" });
+    const moved: { asset: string; amount: bigint }[] = [];
+    for (const b of pub.balances) {
+      const amount = BigInt(b.available_raw);
+      if (amount <= 0n) continue;
+      // Same asset and amount → same key, so a retry never shields twice.
+      await this.agent.shield(this.cfg.agentId, { asset: b.asset_id, amount: amount.toString() }, { idempotencyKey: apiIdempotencyKey(`shield:${b.asset_id}:${amount}`) });
+      moved.push({ asset: b.asset_id, amount });
+    }
+    return moved;
   }
 
   private async call(req: ActionRequest, idempotencyKey: string | undefined, dry: boolean): Promise<ActionOutcome> {

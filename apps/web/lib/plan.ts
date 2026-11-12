@@ -9,6 +9,9 @@ import { chainName } from "./tokens";
 // proposal; the owner approves it, and the agent account still refuses any
 // payment outside the rules when it is paid (lib/pay.ts).
 
+/** The smallest fee worth collecting: $0.01 (USD, 6 decimals). */
+export const MIN_FEE_USD = 10_000n;
+
 export type Placement = "in" | "held" | "deferred";
 
 export interface DraftItem {
@@ -205,7 +208,8 @@ export function buildPlan(input: PlanInput): DraftPlan {
 
   // 4. Bursr's fee: one line for the plan, paid to the fee address on the owner's signed list.
   const fee = feeOn(used);
-  if (rules.fee && fee > 0n) {
+  // No fee under one cent: charging fractions of a cent (and paying a network fee to collect them) makes no sense.
+  if (rules.fee && fee >= MIN_FEE_USD) {
     items.push({
       kind: "fee",
       invoiceId: null,

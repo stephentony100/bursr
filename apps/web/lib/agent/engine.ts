@@ -92,6 +92,23 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
     return { ...EMPTY, note: why };
   }
 
+  // 0. Live: money that arrived in the account's public pool (a one-tap top-up)
+  // is moved into the private balance payments spend from. Not spending.
+  if (account.shieldArrivals) {
+    try {
+      const moved = await account.shieldArrivals();
+      for (const m of moved) {
+        const t = rules.payoutTokens.find((x) => x.assetId === m.asset) ?? (rules.treasury.assetId === m.asset ? rules.treasury : null);
+        const amount = t ? formatUsd(rescale(m.amount, t.decimals, USD_DECIMALS)) : `${m.amount} units`;
+        await db.auditEvent.create({
+          data: { kind: "money_shielded", actor: "agent", message: `Moved ${amount} you added into your agent's private balance, ready to pay.`, data: JSON.stringify({ asset: m.asset, amount: m.amount.toString() }) },
+        });
+      }
+    } catch (e) {
+      await sayOnce(db, "shield-failed", 6 * HOUR, "agent_blocked", `I couldn't get the money you added ready to pay yet (${friendlyError(e)}). I'll try again shortly.`);
+    }
+  }
+
   // 1. Follow payments on their way and say when they arrive.
   const onTheWay = await db.planItem.findMany({ where: { payStatus: "sent" }, select: { id: true } });
   if (onTheWay.length) {
