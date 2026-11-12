@@ -50,7 +50,7 @@ export function HeaderWallet({ accountId, tone = "light" }: { accountId: string 
         {busy ? "Check your wallet…" : "Sign in"}
       </button>
       {error && (
-        <span role="alert" className={`max-w-56 text-xs ${dark ? "text-refuse" : "text-[#ffc9c3]"}`}>
+        <span role="alert" className={`max-w-56 text-xs ${dark ? "text-refuse" : "text-refuse-bright"}`}>
           {error}
         </span>
       )}

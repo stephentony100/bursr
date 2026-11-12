@@ -18,7 +18,7 @@ export function RotatingWord({ words, className = "" }: { words: string[]; class
         tl.to(el, { yPercent: -110, autoAlpha: 0, duration: 0.55, ease: "power3.in" }, "+=2.2").fromTo(
           next,
           { yPercent: 110, autoAlpha: 0 },
-          { yPercent: 0, autoAlpha: 1, duration: 0.65, ease: "power3.out" },
+          { yPercent: 0, autoAlpha: 1, duration: 0.65, ease: "power3.out", immediateRender: false },
           "<0.15",
         );
       });

@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
-/* Bursr design tokens: fintech blue for actions, navy ink, cool greys.
-   Three status colours (done, waiting, problem), always with a word too.
-   Structure comes from borders and surfaces; shadows only on menus and sheets. */
+/* Bursr design tokens. The rules for each colour are in lib/palette.ts (which
+   mirrors these values) and apps/web/DESIGN.md. Brand blue = press/follow;
+   ok = money arrived; hold = waiting; refuse = blocked. -soft = tint behind
+   the same meaning, -bright = the same meaning on dark surfaces. */
 @theme {
   /* Surfaces and text */
   --color-paper: #f5f6f8; /* app background */
@@ -15,15 +16,19 @@
   /* Brand: actions, links, active navigation */
   --color-ledger: #2f4bdb;
   --color-ledger-soft: #eef1fd;
+  --color-ledger-bright: #8ea0ff; /* brand on dark surfaces */
   --color-indigo: #2339b5; /* hover, focus */
 
   /* Status */
   --color-ok: #12a150;
   --color-ok-soft: #e7f6ec;
+  --color-ok-bright: #4ade80;
   --color-hold: #b54708;
   --color-hold-soft: #fef0c7;
+  --color-hold-bright: #fbbf24;
   --color-refuse: #d92d20;
   --color-refuse-soft: #fee4e2;
+  --color-refuse-bright: #ffc9c3;
 
   /* Dark surfaces: balance card, closing sections */
   --color-night: #0b1220;

@@ -106,7 +106,7 @@ export function Payday({ people = PEOPLE }: { people?: Person[] }) {
               <p className="flex items-center justify-between text-[9px] text-white/70">
                 Wallet balance
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-1.5 py-0.5">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4ade80]" /> Agent working
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-ok-bright" /> Agent working
                 </span>
               </p>
               <p className="num mt-1 font-[family-name:var(--font-display)] text-[26px] font-extrabold tracking-tight">

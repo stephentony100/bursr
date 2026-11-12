@@ -6,8 +6,8 @@ import { Payday } from "./payday";
 import { RotatingWord } from "./rotating-word";
 
 const NAV = [
+  { href: "#features", label: "Features" },
   { href: "#how", label: "How it works" },
-  { href: "#checks", label: "What it checks" },
   { href: "#limits", label: "Your limits" },
   { href: "#pricing", label: "Pricing" },
 ];
@@ -68,7 +68,7 @@ export function Hero() {
       <div className="relative mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)] items-center gap-6 px-5 pb-16 pt-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:pt-16">
         <div>
           <p className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-3 py-1 text-xs font-semibold text-muted">
-            <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-ok" /> Payday on autopilot · built on NEAR
+            <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-ok" /> Your AI payroll agent · built on NEAR
           </p>
           <h1 className="display mt-6 text-[clamp(2.5rem,4.6vw,3.9rem)] font-extrabold leading-[1.02] tracking-[-0.045em]">
             <span className="sr-only">Pay your staff and suppliers. Never the wrong person.</span>
@@ -79,16 +79,17 @@ export function Hero() {
             </span>
           </h1>
           <p className="mt-6 max-w-[42ch] text-lg leading-relaxed text-muted">
-            An AI agent pays your staff and suppliers in digital dollars, on any network. It checks every invoice and can&apos;t go past your limits.
+            Bursr is an AI agent that runs payroll for your business. It pays your staff on payday, checks every supplier invoice, and can&apos;t go past
+            the limits you set.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <StartButton />
           </div>
           <dl className="mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm">
             {[
-              ["Any network", "NEAR, Base, Solana, Tron and more"],
+              ["Autopilot", "weekly, every 2 weeks or monthly"],
+              ["Any network", "USDC or USDT, 11 networks"],
               ["0.5%", "per payment run, nothing else"],
-              ["Limits", "locked in your wallet, not the AI"],
             ].map(([k, v]) => (
               <div key={k}>
                 <dt className="font-[family-name:var(--font-display)] font-extrabold">{k}</dt>

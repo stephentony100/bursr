@@ -2,23 +2,19 @@
 
 Rebuilt on 11 Nov 2026 as a fintech product, from a study of Nigerian fintech apps (Moniepoint, Kuda, Paystack, PiggyVest, Cowrywise, Grey, Brass, OPay): balance first with a hide/show eye, actions beside it, transaction rows (avatar, name, one short line, amount right, status), bottom tabs on phones, one helper line per section, explanations behind "Details". Built in our own components; no branding, scripts or layouts copied.
 
-## Tokens (`app/globals.css`, `@theme`)
+## Colour system
 
-| Token | Value | Use |
-| --- | --- | --- |
-| `paper` | `#f5f6f8` | App background |
-| `paper-2` | `#eef0f4` | Tiles, table heads |
-| `card` | `#ffffff` | Cards, inputs |
-| `ink` | `#0b1220` | Text |
-| `muted` | `#5b6475` | Secondary text |
-| `line` | `#e4e7ec` | Borders |
-| `ledger` / `ledger-soft` / `indigo` | `#2f4bdb` / `#eef1fd` / `#2339b5` | Brand blue: actions, links, active nav (hover `indigo`) |
-| `ok` / `ok-soft` | `#12a150` / `#e7f6ec` | Done, paid, success |
-| `hold` / `hold-soft` | `#b54708` / `#fef0c7` | Waiting, needs a look |
-| `refuse` / `refuse-soft` | `#d92d20` / `#fee4e2` | Blocked, failed |
-| `night` | `#0b1220` | Balance card |
+One source: `lib/palette.ts` (raw values, used only where code needs them: GSAP tweens, generated images) mirrors the `@theme` tokens in `app/globals.css`. `components/colour-system.test.ts` fails if the two differ or if any screen hard-codes a colour.
 
-Three status colours, always with a word.
+| Role | Tokens | Use it for | Never for |
+| --- | --- | --- | --- |
+| Brand | `ledger` `#2f4bdb`, `ledger-soft` `#eef1fd`, `indigo` `#2339b5` (hover), `ledger-bright` `#8ea0ff` (on dark) | Buttons, links, the active page, one highlighted phrase per heading | Status of any kind |
+| Done | `ok` `#12a150`, `ok-soft`, `ok-bright` | Money arrived, paid, checks passed | Decoration, headings |
+| Waiting | `hold` `#b54708`, `hold-soft`, `hold-bright` | Waiting, needs you, on hold | Highlights |
+| Blocked | `refuse` `#d92d20`, `refuse-soft`, `refuse-bright` | Blocked, failed, refused, danger buttons | Emphasis |
+| Neutrals | `paper` `#f5f6f8`, `paper-2` `#eef0f4`, `card` `#ffffff`, `ink` `#0b1220`, `muted` `#5b6475`, `line` `#e4e7ec`, `night` `#0b1220`, `night-2` `#18213a` | Everything else: text, surfaces, borders, dark sections | |
+
+`-soft` is the tinted background behind the same meaning; `-bright` is the same meaning on a dark surface. Status always comes with a word or icon, never colour alone. Networks appear only as their own logos (`public/networks/`, web3icons MIT). No gradients in the hero or behind content.
 
 ## Type
 

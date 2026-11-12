@@ -4,6 +4,7 @@ import { HowSplit } from "@/components/landing/how-split";
 import { LimitsTabs } from "@/components/landing/limits-tabs";
 import { NetworkStrip } from "@/components/landing/network-strip";
 import { PeopleBand } from "@/components/landing/people-band";
+import { Features } from "@/components/landing/features";
 import { SmoothScroll } from "@/components/landing/smooth-scroll";
 import { Statement } from "@/components/landing/statement";
 import { Reveal } from "@/components/landing/reveal";
@@ -34,6 +35,7 @@ export default function Landing() {
       <main id="main">
         <NetworkStrip />
         <Statement />
+        <Features />
         <PeopleBand />
         <HowSplit />
         <ChecksAccordion usualAddress={demoTronAddress("eko-fresh-foods")} newAddress={demoTronAddress("eko-new-account")} />

@@ -58,7 +58,7 @@ const TILES: Tile[] = [
 const ICONS = {
   paid: { Icon: CheckCircle, tone: "text-ok bg-ok-soft" },
   checked: { Icon: Receipt, tone: "text-ledger bg-ledger-soft" },
-  once: { Icon: Lightning, tone: "text-[#b45309] bg-[#fef3c7]" },
+  once: { Icon: Lightning, tone: "text-ledger bg-ledger-soft" },
   safe: { Icon: ShieldCheck, tone: "text-refuse bg-refuse-soft" },
 };
 

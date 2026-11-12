@@ -66,7 +66,7 @@ export function BalanceCard({
     }
     window.dispatchEvent(new Event(EVENT));
   };
-  const dot = tone === "on" ? "bg-[#4ade80] animate-pulse" : tone === "paused" ? "bg-refuse" : "bg-[#fbbf24]";
+  const dot = tone === "on" ? "bg-ok-bright animate-pulse" : tone === "paused" ? "bg-refuse" : "bg-hold-bright";
 
   return (
     <section aria-label="Your Bursr wallet" className="overflow-hidden rounded-[var(--radius-card)] bg-night text-white">
@@ -100,7 +100,7 @@ export function BalanceCard({
             <span className="num sm:hidden">of {cap}</span>
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/15" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label="Weekly limit used">
-            <div className={`h-full rounded-full ${pct >= 100 ? "bg-refuse" : pct >= 80 ? "bg-[#fbbf24]" : "bg-white"}`} style={{ width: `${pct}%` }} />
+            <div className={`h-full rounded-full ${pct >= 100 ? "bg-refuse" : pct >= 80 ? "bg-hold-bright" : "bg-white"}`} style={{ width: `${pct}%` }} />
           </div>
         </div>
       </div>

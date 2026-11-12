@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { PALETTE } from "@/lib/palette";
 import { gsap, prefersReducedMotion, useGSAP } from "./gsap";
 
 // "How a week works" as a pinned split screen, the way Hear.ai builds its
@@ -14,9 +15,9 @@ const STEPS: { when: string; title: string; body: string; panel: string; ink: st
   {
     when: "Monday to Thursday",
     title: "Invoices come in.",
-    body: "Snap a photo of each supplier invoice and upload it. Bursr reads it privately: who it's from, what you bought, how much, and where they want the money.",
-    panel: "#eceef2",
-    ink: "#0f1623",
+    body: "Send a photo or paste the text. Your agent reads who it's from, what you bought and how much, privately.",
+    panel: PALETTE["paper-2"],
+    ink: PALETTE.ink,
     rings: [
       { cx: 300, cy: 170, rx: 230, ry: 48, rot: 0 },
       { cx: 300, cy: 250, rx: 230, ry: 48, rot: 0 },
@@ -26,10 +27,10 @@ const STEPS: { when: string; title: string; body: string; panel: string; ink: st
   },
   {
     when: "As they arrive",
-    title: "Every one is checked.",
-    body: "Is it really your supplier? Have you paid it already? Did their bank details change? Are the prices what you agreed? Anything odd is held, with the reason in one plain sentence.",
-    panel: "#fdf1dd",
-    ink: "#0f1623",
+    title: "Your agent checks them.",
+    body: "Is it really your supplier? Paid already? New bank details? Prices as agreed? Anything odd waits for you, with the reason in one line.",
+    panel: PALETTE["ledger-soft"],
+    ink: PALETTE.ledger,
     rings: [
       { cx: 300, cy: 290, rx: 230, ry: 230, rot: 0 },
       { cx: 300, cy: 290, rx: 165, ry: 165, rot: 0 },
@@ -39,10 +40,10 @@ const STEPS: { when: string; title: string; body: string; panel: string; ink: st
   },
   {
     when: "Friday",
-    title: "One list. One OK.",
-    body: "Staff pay and the clean invoices go on one list, with every fee shown. You read it, then approve everyone at once.",
-    panel: "#e3f4ec",
-    ink: "#0f1623",
+    title: "Payday runs itself.",
+    body: "On payday your agent pays your staff and the clean invoices, inside your limits. You only step in for the unusual.",
+    panel: PALETTE.card,
+    ink: PALETTE.ink,
     rings: [
       { cx: 300, cy: 290, rx: 240, ry: 70, rot: -30 },
       { cx: 300, cy: 290, rx: 240, ry: 70, rot: -10 },
@@ -52,10 +53,10 @@ const STEPS: { when: string; title: string; body: string; panel: string; ink: st
   },
   {
     when: "Minutes later",
-    title: "Everyone is paid.",
-    body: "Six payments, $661.29, each in digital dollars on the network the payee chose: NEAR, Base, Tron or Solana. The four problem invoices wait for you, each with its reason.",
-    panel: "#0f1623",
-    ink: "#6ee7b7",
+    title: "Everyone gets paid in full.",
+    body: "Each person gets digital dollars on the network they chose, and you cover the network fee. Every payment lands in your records.",
+    panel: PALETTE.night,
+    ink: PALETTE["ok-bright"],
     rings: [
       { cx: 120, cy: 290, rx: 50, ry: 130, rot: 0 },
       { cx: 180, cy: 290, rx: 110, ry: 130, rot: 0 },
@@ -99,7 +100,7 @@ export function HowSplit() {
         tl.to(texts[i - 1], { autoAlpha: 0, filter: "blur(16px)", y: -14, duration: 0.2 }, at);
         tl.to(whens[i - 1], { autoAlpha: 0, duration: 0.2 }, at);
         tl.fromTo(texts[i], { autoAlpha: 0, filter: "blur(16px)", y: 14 }, { autoAlpha: 1, filter: "blur(0px)", y: 0, duration: 0.25, ease: "power2.out" }, at + 0.15);
-        tl.to(whens[i], { autoAlpha: 1, color: i === STEPS.length - 1 ? "#ffffff" : "#0f1623", duration: 0.2 }, at + 0.15);
+        tl.to(whens[i], { autoAlpha: 1, color: i === STEPS.length - 1 ? PALETTE.card : PALETTE.ink, duration: 0.2 }, at + 0.15);
       });
     },
     { scope: root },

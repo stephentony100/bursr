@@ -153,11 +153,11 @@ export function Closing() {
         <h2 id="close-title" className="display max-w-4xl text-4xl leading-[1.05] sm:text-6xl">
           Spend Friday on your business, not your bills.
         </h2>
-        <p className="mt-6 max-w-xl text-lg text-white/70">Set your limits once. Your agent pays everyone on time, and stops what looks wrong.</p>
+        <p className="mt-6 max-w-xl text-lg text-white/70">Hand payroll to an agent that pays everyone on time, in full, and stops what looks wrong.</p>
         <StartButton className="mt-10" tone="light" />
       </div>
       <div aria-hidden className="pointer-events-none select-none overflow-hidden">
-        <p className="mx-auto -mb-[0.18em] max-w-7xl bg-gradient-to-b from-white/[0.14] to-white/0 bg-clip-text px-5 font-[family-name:var(--font-display)] text-[clamp(7rem,26vw,22rem)] font-extrabold leading-none tracking-[-0.06em] text-transparent">
+        <p className="-mb-[0.2em] w-full whitespace-nowrap text-center text-white/[0.07] font-[family-name:var(--font-display)] text-[42vw] font-extrabold leading-[0.85] tracking-[-0.07em] [text-indent:-0.07em]">
           Bursr
         </p>
       </div>
@@ -165,8 +165,8 @@ export function Closing() {
         <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-5 px-5 py-7 text-sm text-white/65">
           <Logo tone="light" />
           <nav aria-label="Footer" className="flex flex-wrap gap-6">
+            <a href="#features" className="hover:text-white">Features</a>
             <a href="#how" className="hover:text-white">How it works</a>
-            <a href="#checks" className="hover:text-white">What it checks</a>
             <a href="#limits" className="hover:text-white">Your limits</a>
             <a href="#pricing" className="hover:text-white">Pricing</a>
             <Link href={live ? "/signin" : "/this-week"} className="text-white underline decoration-white/40 hover:decoration-white">{live ? "Sign in" : "Open the app"}</Link>
