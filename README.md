@@ -2,6 +2,8 @@
 
 > Built at NEAR HACKATHON (1–14 Nov 2026). Tracks: Autonomous Business, Real-World Money, Privacy & Private AI, AI Security & Defense.
 
+**Use it live: https://bursr.xyz** (NEAR mainnet, real money). Sign in with a NEAR wallet such as HOT Wallet, set up your business with your own limits and people, add a little USDC, and your agent pays inside the limits your wallet signs. Every wallet sees only its own business. No wallet or keys? Everything below runs locally in practice mode with no keys and no funds; that is the path to follow to check the code.
+
 ## What it is
 
 An AI agent that pays a small business's staff and suppliers in stablecoins. The owner sets the limits once; the agent then works on its own: it reads supplier invoices and checks them for mistakes and fraud, pays each person on their own schedule (weekly, every two weeks, monthly, or when an invoice is due) in the stablecoin and on the chain they chose, retries what fails, and asks the owner only about exceptions (someone it has never paid, an amount above the owner's threshold, a suspicious invoice). The owner can watch every step it takes and talk to it. The limits are enforced by the agent's account on NEAR Intents, not by the AI.

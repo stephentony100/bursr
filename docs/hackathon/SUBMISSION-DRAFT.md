@@ -2,20 +2,20 @@
 
 Deadline: **14 Nov 2026, 23:59 UTC** (00:59 on 15 Nov in Lagos). One submission, no edits after sending.
 
-## 1. Demo video (under 2 minutes)
+## 1. Demo video (under 2 minutes, recorded on https://bursr.xyz with real money)
 
-Record in practice mode from a fresh `npm run demo` (it shows "Demo · practice money"), plus the live mainnet links at the end. Screen at 1440×900, browser zoom 100%. Lead with the problem; show one full moment; say plainly what NEAR does.
+Before recording: a fresh business on bursr.xyz (signed in with your NEAR wallet), limits small (e.g. $20 a week, $10 a payment), 1–2 USDC added, and one person whose wallet you control (another of your addresses, e.g. USDC on Base). Screen at 1440×900, zoom 100%. Lead with the problem, show one complete moment, say plainly what NEAR does.
 
 | Time | Screen | Say (or caption) |
 | --- | --- | --- |
-| 0:00–0:10 | Home page hero: the phone running payday, the look-alike blocked | "Paying staff and suppliers is where small businesses lose money: fake invoices, changed bank details, the same bill twice. Bursr is an AI payroll agent that pays everyone, and never the wrong person." |
-| 0:10–0:25 | **Get started** → Home: balance card, Recent payments filling in by themselves | "On payday the agent pays everyone on its own, in digital dollars, on the network each person uses: Base, Solana, Tron, NEAR." |
-| 0:25–0:45 | **Invoices**: Ek0 Fresh Foods blocked, changed bank details blocked, duplicate and overpriced held | "Every invoice is read by NEAR AI in a sealed computer and checked. A look-alike supplier, new bank details, a double bill, a price above what you agreed: none of them get paid." |
-| 0:45–0:55 | **Check the proof** → "Proof checked" | "And you don't have to trust us: Bursr checks the hardware's signed proof live." |
-| 0:55–1:15 | **Payments** → **Try to sneak a big payment past your limits** → "Blocked by your spending rules" | "The AI never holds the keys. Your limits live in the agent's own account on NEAR Intents. Even a tricked AI can't send more than you allow, or to anyone you didn't approve." |
-| 1:15–1:30 | **Agent** chat: "Pay Bisi a $20 bonus for Sunday" → card → **Yes, pay it** (needs a NEAR AI key), or **Run payday now** | "Talk to it like a manager. Nothing moves until you confirm." |
-| 1:30–1:45 | **People** → Add people tabs (spreadsheet, group link) and **Wallet** → Move money back | "Add your whole team from a spreadsheet or one link in your staff chat, and take your money back any time." |
-| 1:45–1:58 | README "Live run": the Base and Sui transactions | "It already runs on NEAR mainnet: real payments, real limits, refused exactly when they should be. Bursr: built at NEAR HACKATHON." |
+| 0:00–0:10 | bursr.xyz home: the phone running payday, the look-alike blocked | "Paying staff and suppliers is where small businesses lose money: fake invoices, changed bank details, the same bill twice. Bursr is an AI payroll agent that pays everyone, and never the wrong person." |
+| 0:10–0:25 | **Get started** → **Connect my wallet** → setup: your business, **Your limits** | "You sign in with your own NEAR wallet and set your limits once. They're signed into the agent's own account on NEAR Intents, so the AI can't change them." |
+| 0:25–0:40 | **Who you pay** → invite link → the person's page (another browser) → **Approve** → **Confirm with my wallet** | "Your staff fill in how they want to be paid, on any network. Only your wallet can add them." |
+| 0:40–0:55 | **Wallet** → add money (one tap from your NEAR wallet) | "Top up with USDC. The agent pays from its own wallet, never from yours." |
+| 0:55–1:15 | Home → **Ask agent**: "Pay Kemi $0.50 for Saturday" → **Yes, pay it** → feed: started, exchanging, sending, received | "Talk to it like a manager. It pays across chains through NEAR Intents, and the business covers the network fee so they get every cent." |
+| 1:15–1:30 | Block explorer: the payment arriving in the other wallet | "Real money, on mainnet, in seconds." |
+| 1:30–1:45 | **Invoices** → paste an invoice from a look-alike name → **Blocked: don't pay** | "Every invoice is read by NEAR AI in a sealed computer and checked: look-alikes, changed bank details, duplicates, overcharges." |
+| 1:45–1:58 | **Payments** → **Try to sneak a big payment past your limits** → refused | "Even a tricked AI can't send more than you allow. Bursr: built at NEAR HACKATHON. Try it at bursr.xyz." |
 
 ## 2. X post (owner posts; must say it was built at NEAR HACKATHON and attach the video)
 
@@ -23,7 +23,8 @@ Record in practice mode from a fresh `npm run demo` (it shows "Demo · practice 
 >
 > I built Bursr at #NEARHackathon: an AI payroll agent that pays your staff and suppliers in USDC/USDT on any network, checks every invoice first, and can't break your limits, because they're enforced by its NEAR Intents account, not the AI.
 >
-> Live on NEAR mainnet. Code: https://github.com/stephentony100/bursr
+> Live on NEAR mainnet: https://bursr.xyz
+> Code: https://github.com/stephentony100/bursr
 >
 > @NEARProtocol
 
