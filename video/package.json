@@ -1,0 +1,17 @@
+{
+  "name": "bursr-launch-video",
+  "private": true,
+  "description": "Bursr's launch film, made with Remotion (free for individuals; see https://remotion.dev/license).",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts Launch out/bursr-launch.mp4 --codec h264 --crf 18",
+    "still": "remotion still src/index.ts Launch out/frame.png"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.543",
+    "@remotion/google-fonts": "4.0.543",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.543"
+  }
+}
