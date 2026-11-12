@@ -49,11 +49,11 @@ Each milestone ends at a checkpoint: `/ship-check`, report, wait for OK.
 - [x] NEAR AI Cloud Verified panel
 - [x] Monthly summary (Bursr computes the facts; NEAR AI only rephrases; any figure not in the records is rejected)
 - [x] Bursr fee: 0.5% per plan as one line paid through the account to a fee address on the owner's signed list (the Agent API has no app-fee field; see DECISIONS)
-- [ ] **With the human:** live mainnet run with tiny amounts (one same-chain, one cross-chain payment); save links for README. 7 Nov: payees + rules signed (revision 3), live dry preview clean; paused because the account is not funded (owner chose to defer)
+- [x] **With the human:** live mainnet run with tiny amounts (one same-chain, one cross-chain payment); save links for README. 7 Nov: payees + rules signed (revision 3), live dry preview clean; paused because the account is not funded (owner chose to defer)
 
 ## M5 — Submission (12–14 Nov)
 
-- [ ] README final: problem, how it works, how NEAR is used (concrete), trust model, try-it steps (dry-run first), live-run evidence, limitations, Built with
-- [ ] `/ship-check`; tag `hackathon-submission`
+- [x] README final: problem, how it works, how NEAR is used (concrete), trust model, try-it steps (dry-run first), live-run evidence, limitations, Built with
+- [x] `/ship-check` (12 Nov: fresh clone, 263 tests, README steps 1–20 walked; step 14 fixed); tag `hackathon-submission`
 - [ ] Demo video ≤ 2 min + X post draft per `docs/hackathon/SUBMITTING.md` — **human posts**
 - [ ] Submission payload (tracks: business, realworld, privacy, security) — **human confirms before sending**
