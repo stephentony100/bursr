@@ -154,7 +154,7 @@ Photos on the home page (free licences, `apps/web/public/photos/`):
 - Tomato and pepper seller, Bodija Market, Ibadan: Tunde Buremo, [Unsplash](https://unsplash.com/photos/a-group-of-people-standing-around-a-table-filled-with-tomatoes-cnVn4Gg4b00) (Unsplash License)
 - Fruit seller with her phone: Ali Mkumbwa, [Unsplash](https://unsplash.com/photos/a-woman-standing-in-front-of-a-fruit-stand-holding-a-cell-phone-5dFuO02OHh0) (Unsplash License)
 
-Network logos (NEAR, Base, Solana, Tron, Ethereum, Arbitrum, Polygon, BNB Chain, Optimism, Avalanche, Sui): web3icons (MIT), saved in `apps/web/public/networks/`. The phone mockup and cards are drawn in code from the app's own screens.
+Bursr logo: designed for this project by its builder (`apps/web/public/brand/`). Plus Jakarta Sans font files for the share image: Fontsource (SIL OFL, `apps/web/assets/fonts/`). Network logos (NEAR, Base, Solana, Tron, Ethereum, Arbitrum, Polygon, BNB Chain, Optimism, Avalanche, Sui): web3icons (MIT), saved in `apps/web/public/networks/`. The phone mockup and cards are drawn in code from the app's own screens.
 
 ## License
 

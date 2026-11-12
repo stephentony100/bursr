@@ -61,7 +61,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-8">
             <span className="flex items-center gap-3">
               <Link href="/this-week" aria-label="Bursr home" className="lg:hidden">
-                <Logo />
+                <Logo size="sm" />
               </Link>
               <span className="hidden text-sm text-muted lg:inline">
                 {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}

@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { PALETTE } from "@/lib/palette";
 
@@ -6,18 +8,29 @@ export const alt = "Bursr: the AI payroll agent for small businesses";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OpengraphImage() {
+// The wordmark is Plus Jakarta Sans 800 (OFL, from Fontsource), loaded for the image renderer
+// the way Next's docs do it: from a project folder, by path.
+const fontFile = (name: string) => readFile(join(process.cwd(), "assets/fonts", name));
+
+export default async function OpengraphImage() {
+  const [w800, w700] = await Promise.all([fontFile("plus-jakarta-sans-latin-800-normal.woff"), fontFile("plus-jakarta-sans-latin-700-normal.woff")]);
   return new ImageResponse(
     (
-      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 72, background: PALETTE.night, color: "#fff" }}>
+      <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 72, fontFamily: "Jakarta", background: PALETTE.night, color: "#fff" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
-          <svg width="64" height="64" viewBox="0 0 32 32">
-            <rect width="32" height="32" rx="9" fill={PALETTE.ledger} />
-            <path d="M11 7.5v17" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" />
-            <circle cx="16.8" cy="18.6" r="5.8" fill="none" stroke="#fff" strokeWidth="3.4" />
-            <path d="M16.8 16c.27 1.6 1 2.33 2.6 2.6-1.6.27-2.33 1-2.6 2.6-.27-1.6-1-2.33-2.6-2.6 1.6-.27 2.33-1 2.6-2.6z" fill="#fff" />
+          <svg width="64" height="64" viewBox="3 3 42 42">
+            <rect x="3" y="3" width="42" height="42" rx="12" fill={PALETTE.card} />
+            <g fill="none" stroke={PALETTE.ink} strokeWidth="3.2" strokeLinecap="round">
+              <path d="M16 24C22 24 24 15 30 15" />
+              <path d="M16 24L31 24" />
+              <path d="M16 24C22 24 24 33 30 33" />
+            </g>
+            <circle cx="15" cy="24" r="5" fill={PALETTE.ink} />
+            <circle cx="33.5" cy="15" r="3.6" fill={PALETTE.ledger} />
+            <circle cx="34.5" cy="24" r="3.6" fill={PALETTE.ledger} />
+            <circle cx="33.5" cy="33" r="3.6" fill={PALETTE.ledger} />
           </svg>
-          <span style={{ fontSize: 48, fontWeight: 800, letterSpacing: -2 }}>Bursr</span>
+          <span style={{ fontSize: 52, fontWeight: 800, letterSpacing: -2.3 }}>Bursr</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <span style={{ fontSize: 76, fontWeight: 800, lineHeight: 1.02, letterSpacing: -3 }}>Your AI payroll agent.</span>
@@ -26,6 +39,12 @@ export default function OpengraphImage() {
         <span style={{ fontSize: 28, color: PALETTE["paper-2"], opacity: 0.7 }}>Pays your staff and suppliers in digital dollars, on any network, inside limits it can&apos;t change.</span>
       </div>
     ),
-    size,
+    {
+      ...size,
+      fonts: [
+        { name: "Jakarta", data: w800, weight: 800, style: "normal" },
+        { name: "Jakarta", data: w700, weight: 700, style: "normal" },
+      ],
+    },
   );
 }

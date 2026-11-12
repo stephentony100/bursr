@@ -9,14 +9,14 @@
   --color-paper: #f5f6f8; /* app background */
   --color-paper-2: #eef0f4; /* subtle fill: table heads, tiles */
   --color-card: #ffffff; /* cards, tables, inputs */
-  --color-ink: #0b1220; /* primary text */
+  --color-ink: #0e1222; /* primary text */
   --color-muted: #5b6475; /* secondary text, 4.5:1+ on white and paper */
   --color-line: #e4e7ec; /* borders, dividers */
 
   /* Brand: actions, links, active navigation */
-  --color-ledger: #2f4bdb;
+  --color-ledger: #3047e0;
   --color-ledger-soft: #eef1fd;
-  --color-ledger-bright: #8ea0ff; /* brand on dark surfaces */
+  --color-ledger-bright: #7c8cff; /* brand on dark surfaces */
   --color-indigo: #2339b5; /* hover, focus */
 
   /* Status */
@@ -31,7 +31,7 @@
   --color-refuse-bright: #ffc9c3;
 
   /* Dark surfaces: balance card, closing sections */
-  --color-night: #0b1220;
+  --color-night: #0e1222;
   --color-night-2: #18213a;
   --color-cream: #ffffff;
   --color-stamp: #d92d20;
@@ -41,7 +41,7 @@
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   --radius-card: 20px;
-  --shadow-pop: 0 8px 24px rgb(11 18 32 / 0.12);
+  --shadow-pop: 0 8px 24px rgb(14 18 34 / 0.12);
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);

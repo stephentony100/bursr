@@ -96,7 +96,7 @@ export function Payday({ people = PEOPLE }: { people?: Person[] }) {
     <figure ref={root} aria-label="Payday on Bursr: four people paid on their own networks, one look-alike supplier blocked" className="relative mx-auto h-[600px] w-full max-w-[640px] select-none">
 
       {/* Phone */}
-      <div data-phone className="absolute left-1/2 top-1/2 w-[272px] -translate-x-1/2 -translate-y-1/2 rounded-[44px] bg-ink p-[9px] shadow-[0_40px_80px_-30px_rgba(11,18,32,0.55)]">
+      <div data-phone className="absolute left-1/2 top-1/2 w-[272px] -translate-x-1/2 -translate-y-1/2 rounded-[44px] bg-ink p-[9px] shadow-[0_40px_80px_-30px_rgba(14,18,34,0.55)]">
         <div className="relative overflow-hidden rounded-[36px] bg-paper">
           <div aria-hidden className="absolute left-1/2 top-2 z-10 h-[22px] w-[86px] -translate-x-1/2 rounded-full bg-ink" />
           <div className="px-4 pb-5 pt-10">
@@ -150,7 +150,7 @@ export function Payday({ people = PEOPLE }: { people?: Person[] }) {
         <div key={p.name} data-card={i} aria-hidden className={`absolute hidden sm:block ${SPOTS[i]}`}>
           <div
           data-float
-          className={`w-[208px] rounded-2xl border border-line bg-card/95 p-3 shadow-[0_18px_40px_-18px_rgba(11,18,32,0.35)] backdrop-blur`}
+          className={`w-[208px] rounded-2xl border border-line bg-card/95 p-3 shadow-[0_18px_40px_-18px_rgba(14,18,34,0.35)] backdrop-blur`}
           >
           <div className="flex items-center gap-2.5">
             <Face p={p} />

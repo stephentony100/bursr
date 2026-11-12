@@ -1,4 +1,5 @@
-// Bursr's colour system: every colour in the product, with the one job it does.
+// Bursr's colour system (brand blue, navy and the dark-mode accent come from the
+// logo handoff: #3047E0, #0E1222, #7C8CFF): every colour in the product, with the one job it does.
 // The same values are the `@theme` tokens in app/globals.css (colour-system.test.ts
 // keeps the two identical). Use the token classes in markup (bg-ledger, text-ok…);
 // use this object only where code needs a raw value (GSAP tweens, generated images).
@@ -16,12 +17,12 @@ export const PALETTE = {
   paper: "#f5f6f8",
   "paper-2": "#eef0f4",
   card: "#ffffff",
-  ink: "#0b1220",
+  ink: "#0e1222",
   muted: "#5b6475",
   line: "#e4e7ec",
-  ledger: "#2f4bdb",
+  ledger: "#3047e0",
   "ledger-soft": "#eef1fd",
-  "ledger-bright": "#8ea0ff",
+  "ledger-bright": "#7c8cff",
   indigo: "#2339b5",
   ok: "#12a150",
   "ok-soft": "#e7f6ec",
@@ -32,6 +33,6 @@ export const PALETTE = {
   refuse: "#d92d20",
   "refuse-soft": "#fee4e2",
   "refuse-bright": "#ffc9c3",
-  night: "#0b1220",
+  night: "#0e1222",
   "night-2": "#18213a",
 } as const;

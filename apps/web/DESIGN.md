@@ -8,13 +8,17 @@ One source: `lib/palette.ts` (raw values, used only where code needs them: GSAP 
 
 | Role | Tokens | Use it for | Never for |
 | --- | --- | --- | --- |
-| Brand | `ledger` `#2f4bdb`, `ledger-soft` `#eef1fd`, `indigo` `#2339b5` (hover), `ledger-bright` `#8ea0ff` (on dark) | Buttons, links, the active page, one highlighted phrase per heading | Status of any kind |
+| Brand | `ledger` `#3047e0`, `ledger-soft` `#eef1fd`, `indigo` `#2339b5` (hover), `ledger-bright` `#7c8cff` (on dark) | Buttons, links, the active page, one highlighted phrase per heading | Status of any kind |
 | Done | `ok` `#12a150`, `ok-soft`, `ok-bright` | Money arrived, paid, checks passed | Decoration, headings |
 | Waiting | `hold` `#b54708`, `hold-soft`, `hold-bright` | Waiting, needs you, on hold | Highlights |
 | Blocked | `refuse` `#d92d20`, `refuse-soft`, `refuse-bright` | Blocked, failed, refused, danger buttons | Emphasis |
-| Neutrals | `paper` `#f5f6f8`, `paper-2` `#eef0f4`, `card` `#ffffff`, `ink` `#0b1220`, `muted` `#5b6475`, `line` `#e4e7ec`, `night` `#0b1220`, `night-2` `#18213a` | Everything else: text, surfaces, borders, dark sections | |
+| Neutrals | `paper` `#f5f6f8`, `paper-2` `#eef0f4`, `card` `#ffffff`, `ink` `#0e1222`, `muted` `#5b6475`, `line` `#e4e7ec`, `night` `#0e1222`, `night-2` `#18213a` | Everything else: text, surfaces, borders, dark sections | |
 
 `-soft` is the tinted background behind the same meaning; `-bright` is the same meaning on a dark surface. Status always comes with a word or icon, never colour alone. Networks appear only as their own logos (`public/networks/`, web3icons MIT). No gradients in the hero or behind content.
+
+## Logo
+
+The "fan-out" tile: one source node (the agent) branching to three payees. Source of truth: the owner's logo handoff (48-unit grid, viewBox `3 3 42 42`, tile `rx=12`, branches stroke 3.2, node r=5, payee dots r=3.6). Production files in `public/brand/` (primary, reversed, mono navy and white, app icon, favicon); `components/logo.tsx` draws the same geometry inline (`Mark`, `Logo` with `tone="light"` = reversed on dark). Lockup: Plus Jakarta Sans 800, -0.045em; nav mark 34px with a 26px word and an 8px gap. Favicon `app/icon.svg` plus `app/icon1.png` (32px), `app/apple-icon.png` (180px) and `public/brand/app-icon-512.png`, rendered from `app-icon.svg`. Never put the blue tile on a blue background (use reversed); never recolour the payee dots to match the branches.
 
 ## Type
 
