@@ -48,6 +48,6 @@ export async function POST(req: Request) {
 
   // Any wallet may sign in: it sees only the business it owns (lib/tenant.ts), or sets one up.
   const res = NextResponse.json({ accountId });
-  res.cookies.set(SESSION_COOKIE, issueSessionCookie(accountId, publicKey), { httpOnly: true, sameSite: "strict", path: "/", maxAge: 12 * 60 * 60 });
+  res.cookies.set(SESSION_COOKIE, issueSessionCookie(accountId, publicKey), { httpOnly: true, sameSite: "strict", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 12 * 60 * 60 });
   return res;
 }
