@@ -108,7 +108,8 @@
     </svg>
     <div class="tight" style="font-size:210px;font-weight:800;color:#fff"><span class="mask"><span id="word">Bursr</span></span></div>
   </div>
-  <div style="margin-top:44px;font-size:44px;font-weight:500;color:#aab3c5;letter-spacing:-0.02em"><span class="mask"><span id="url">bursr.xyz</span></span></div>
+  <div style="margin-top:48px;font-size:56px;font-weight:600;color:#fff;letter-spacing:-0.03em"><span class="mask"><span id="tag">The AI payroll agent that pays your staff and suppliers</span></span></div>
+  <div style="margin-top:26px;font-size:40px;font-weight:500;color:#aab3c5;letter-spacing:-0.02em"><span class="mask"><span id="url">bursr.xyz</span></span></div>
 </div>
 <div id="black" class="layer" style="background:#000"></div>
 
@@ -221,7 +222,7 @@ window.seek = async function (t) {
   $("w1").style.opacity = 1 - seg(t, 2.0, 2.14);
   const bx = lerp(wordRect.x, box.x, m), by = lerp(wordRect.y, box.y, m), bw = lerp(wordRect.w, box.w, m), bh = lerp(wordRect.h, box.h, m);
   Object.assign($("box").style, { left: bx + "px", top: by + "px", width: bw + "px", height: bh + "px", opacity: seg(t, 2.0, 2.12), borderRadius: lerp(20, 30, m) + "px" });
-  const text = "Pay my team";
+  const text = "Pay my staff";
   const typedN = t < 2.25 ? 0 : Math.min(text.length, Math.floor(seg(t, 2.25, 3.0) * text.length + 0.0001) + (t >= 3.0 ? 0 : 0));
   $("typed").textContent = text.slice(0, t >= 3.0 ? text.length : typedN);
   $("typed").style.opacity = seg(t, 2.2, 2.3);
@@ -329,10 +330,11 @@ window.seek = async function (t) {
   $("node").setAttribute("r", 5 * outCubic(seg(t, 16.35, 16.6)));
   ["d0", "d1", "d2"].forEach((id, i) => $(id).setAttribute("r", 3.6 * outCubic(seg(t, 17.0 + i * 0.25, 17.2 + i * 0.25))));
   $("word").style.transform = `translateY(${(1 - outExpo(seg(t, 17.5, 17.9))) * 105}%)`;
-  $("url").style.transform = `translateY(${(1 - outExpo(seg(t, 17.75, 18.1))) * 105}%)`;
+  $("tag").style.transform = `translateY(${(1 - outExpo(seg(t, 17.7, 18.1))) * 105}%)`;
+  $("url").style.transform = `translateY(${(1 - outExpo(seg(t, 17.9, 18.3))) * 105}%)`;
 
-  // Bar 10: fade to black.
-  $("black").style.opacity = inOut(seg(t, 18.0, 19.6));
+  // Bar 10: hold the end card long enough to read the line, then fade to black.
+  $("black").style.opacity = inOut(seg(t, 18.7, 19.8));
 
   await Promise.all(pending);
   await new Promise((r) => requestAnimationFrame(() => r()));

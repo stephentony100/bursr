@@ -214,7 +214,7 @@ hits.append(("logo tile", 16.0))
 # Master: gentle glue and a final fade so the tail reaches silence at 20.0.
 mix = np.tanh(mix * 1.1) / np.tanh(1.1)
 fade = np.ones(N)
-f0 = int(18.0 * SR)
+f0 = int(18.5 * SR)
 fade[f0:] = np.linspace(1, 0, N - f0) ** 1.6
 mix *= fade[:, None]
 mix /= max(1e-9, np.abs(mix).max()) / 0.89
