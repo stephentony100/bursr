@@ -1,5 +1,5 @@
 import React from "react";
-import { AbsoluteFill, Easing, interpolate, Sequence, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Audio, Easing, interpolate, Sequence, staticFile, useCurrentFrame } from "remotion";
 import { Card, Check, clamp, Eyebrow, Face, Fill, Mark, NetLogo, Shield, useEnter, Wordmark, Words } from "./kit";
 import { BODY, C, DISPLAY } from "./theme";
 
@@ -25,6 +25,8 @@ export const Launch: React.FC = () => {
   let from = 0;
   return (
     <AbsoluteFill style={{ background: C.navy }}>
+      {/* "Infinity" by Arulo, Mixkit Stock Music Free License (commercial use, no attribution required). */}
+      <Audio src={staticFile("music.mp3")} volume={(f) => interpolate(f, [0, 30, LAUNCH_FRAMES - 75, LAUNCH_FRAMES], [0, 0.85, 0.85, 0], clamp)} />
       {SCENES.map(({ len, C: Scene }, i) => {
         const start = from;
         from += len - OVERLAP;
