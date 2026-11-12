@@ -35,6 +35,7 @@ import {
   updateRules,
 } from "@/lib/owner-actions";
 import { chat, confirmCard, type ChatReply, type ChatTurn } from "@/lib/agent/chat";
+import { chatHistory, clearChat, markCardDone, saveChatTurn } from "@/lib/chat-log";
 import { runAgent } from "@/lib/agent/engine";
 import { followPayments, kickAgent } from "@/lib/agent/loop";
 import { payApprovedPlan } from "@/lib/pay";
@@ -489,15 +490,28 @@ export async function chatAction(history: ChatTurn[]): Promise<ChatReply> {
       .filter((h) => (h.role === "user" || h.role === "assistant") && typeof h.content === "string")
       .map((h) => ({ role: h.role, content: h.content.slice(0, 2000) }))
       .slice(-12);
-    return await chat((await appDb()), owner, clean);
+    const sdb = await appDb();
+    const question = clean.at(-1);
+    if (question?.role === "user") await saveChatTurn(sdb, "user", question.content);
+    const reply = await chat(sdb, owner, clean);
+    await saveChatTurn(sdb, "assistant", reply.reply, reply.cards);
+    return reply;
   } catch (e) {
     return { reply: friendlyError(e, "Something went wrong."), cards: [], ai: false };
   }
 }
 
+/** Starts the conversation afresh (the agent's activity is kept). */
+export async function clearChatAction(): Promise<void> {
+  await requireOwner();
+  await clearChat(await appDb());
+  revalidatePath("/agent");
+}
+
 export async function confirmCardAction(token: string): Promise<FormResult> {
   return run(async () => {
     const message = await confirmCard((await appDb()), await requireOwner(), token);
+    await markCardDone(await appDb(), token, message);
     followPayments();
     revalidatePath("/", "layout");
     return message;

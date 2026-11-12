@@ -94,9 +94,11 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
 
   // 0. Live: money that arrived in the account's public pool (a one-tap top-up)
   // is moved into the private balance payments spend from. Not spending.
+  let shieldedNow = false;
   if (account.shieldArrivals) {
     try {
       const moved = await account.shieldArrivals();
+      shieldedNow = moved.length > 0;
       for (const m of moved) {
         const t = rules.payoutTokens.find((x) => x.assetId === m.asset) ?? (rules.treasury.assetId === m.asset ? rules.treasury : null);
         const amount = t ? formatUsd(rescale(m.amount, t.decimals, USD_DECIMALS)) : `${m.amount} units`;
@@ -148,12 +150,14 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
   if (last && held > BigInt(last.value)) {
     await say(db, "money_in", `Your Bursr wallet received ${formatUsd(held - BigInt(last.value))}. It now holds ${formatUsd(held)}.`);
     // Payments waiting for money get their try in this same run, not on the next check.
-    const woke = await db.planItem.updateMany({ where: { payStatus: "waiting", payCode: "funds" }, data: { retryAt: now } });
+    // (Also those waiting after a refused or failed try: new money is a good moment to try again.)
+    const woke = await db.planItem.updateMany({ where: { payStatus: "waiting", payCode: { in: ["funds", "transient"] } }, data: { retryAt: now } });
     if (woke.count) await say(db, "agent_run", `Trying the ${woke.count} payment${woke.count === 1 ? "" : "s"} that ${woke.count === 1 ? "was" : "were"} waiting for money now.`);
   }
   await db.setting.upsert({ where: { key: "agent_last_balance" }, update: { value: held.toString() }, create: { key: "agent_last_balance", value: held.toString() } });
   const need = await paydayNeed(db, held, now);
-  if (need && need.short > 0n && daysUntil(localDay(now, rules.timeZone), need.payday) <= 3) {
+  // Money just moved into the private balance shows on the next check: no "add money" warning in this run.
+  if (!shieldedNow && need && need.short > 0n && daysUntil(localDay(now, rules.timeZone), need.payday) <= 3) {
     await sayOnce(
       db,
       `short:${need.payday}`,

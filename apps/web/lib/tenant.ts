@@ -11,7 +11,7 @@ import type { PrismaClient } from "./generated/prisma/client";
 // - Setting: keys are kept per business ("<businessId>:key"); the first
 //   business ("main", from before many businesses) keeps its plain keys.
 
-const SCOPED = new Set(["Payee", "Invoice", "Plan", "PlanItem", "AccountAction", "AuditEvent", "TelegramMessage", "PayeeInvite"]);
+const SCOPED = new Set(["Payee", "Invoice", "Plan", "PlanItem", "AccountAction", "AuditEvent", "TelegramMessage", "PayeeInvite", "ChatMessage"]);
 const BY_ID = new Set(["Business", "AgentAccount"]);
 /** Settings shared by every business (the Telegram bot's own name). */
 const GLOBAL_SETTINGS = new Set(["telegram_bot_username"]);

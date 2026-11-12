@@ -244,3 +244,19 @@ model PayeeInvite {
 
   @@index([businessId])
 }
+
+/// The owner's chat with the agent, kept so it's still there after leaving the page.
+model ChatMessage {
+  id         String   @id @default(cuid())
+  /// The business this belongs to (every query is limited to one business: lib/tenant.ts).
+  businessId String   @default("main")
+  at         DateTime @default(now())
+  /// user | assistant
+  role       String
+  content    String
+  /// Action cards offered with this reply (JSON), and what happened when one was confirmed (JSON map token → message).
+  cards      String?
+  done       String?
+
+  @@index([businessId, at])
+}

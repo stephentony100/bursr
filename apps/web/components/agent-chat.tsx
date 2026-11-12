@@ -3,7 +3,8 @@
 import { PaperPlaneRight, Robot, ShieldCheck } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { chatAction, confirmCardAction } from "@/app/actions";
+import { chatAction, clearChatAction, confirmCardAction } from "@/app/actions";
+import type { SavedLine } from "@/lib/chat-log";
 import type { ActionCard, ChatTurn } from "@/lib/agent/chat";
 
 // The chat with Bursr's agent. Answers come from the agent's tools; any
@@ -11,14 +12,24 @@ import type { ActionCard, ChatTurn } from "@/lib/agent/chat";
 
 type Line = ChatTurn & { cards?: ActionCard[] };
 
-export function AgentChat({ businessName, quickQuestions, privateModel }: { businessName: string; quickQuestions: string[]; privateModel: string | null }) {
+export function AgentChat({
+  businessName,
+  quickQuestions,
+  privateModel,
+  history = [],
+}: {
+  businessName: string;
+  quickQuestions: string[];
+  privateModel: string | null;
+  /** The saved conversation (lib/chat-log.ts), oldest first. */
+  history?: SavedLine[];
+}) {
   const router = useRouter();
-  const [lines, setLines] = useState<Line[]>([
-    { role: "assistant", content: `Hi, I'm the agent that pays ${businessName}'s people. Ask me what I've paid, what's coming up, or tell me to pay someone.` },
-  ]);
+  const greeting: Line = { role: "assistant", content: `Hi, I'm the agent that pays ${businessName}'s people. Ask me what I've paid, what's coming up, or tell me to pay someone.` };
+  const [lines, setLines] = useState<Line[]>([greeting, ...history]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<Record<string, string>>({});
+  const [done, setDone] = useState<Record<string, string>>(() => Object.assign({}, ...history.map((h) => h.done ?? {})));
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
     // Braces matter: newer browsers return a Promise from scrollIntoView, which must not be the effect's return value.
@@ -50,6 +61,18 @@ export function AgentChat({ businessName, quickQuestions, privateModel }: { busi
         <p className="flex items-center gap-2 font-semibold">
           <Robot size={18} weight="bold" aria-hidden className="text-ledger" /> Ask your agent
         </p>
+        {lines.length > 1 && (
+          <button
+            onClick={async () => {
+              await clearChatAction();
+              setLines([greeting]);
+              setDone({});
+            }}
+            className="text-xs font-semibold text-muted hover:text-ink"
+          >
+            New chat
+          </button>
+        )}
         {privateModel && (
           <p className="flex items-center gap-1 text-xs text-muted" title={privateModel}>
             <ShieldCheck size={14} weight="bold" aria-hidden className="text-ledger" /> Private: runs in a sealed computer

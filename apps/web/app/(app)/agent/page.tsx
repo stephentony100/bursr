@@ -7,6 +7,7 @@ import { agentFeed, needsYou, nextPayday } from "@/lib/agent/view";
 import { guardPage, appDb } from "@/lib/session";
 import { readEnv } from "@/lib/env";
 import { getBusiness } from "@/lib/store";
+import { chatHistory } from "@/lib/chat-log";
 
 export default async function AgentPage() {
   await guardPage();
@@ -14,7 +15,7 @@ export default async function AgentPage() {
   const business = await getBusiness((await appDb()));
   if (!business) return <p className="text-muted">Set up your business first.</p>;
   const env = readEnv();
-  const [feed, waiting] = await Promise.all([agentFeed((await appDb()), 20), needsYou((await appDb()))]);
+  const [feed, waiting, history] = await Promise.all([agentFeed((await appDb()), 20), needsYou((await appDb())), chatHistory(await appDb())]);
   const r = business.rules;
   return (
     <div className="space-y-6">
@@ -30,6 +31,7 @@ export default async function AgentPage() {
           businessName={business.name}
           quickQuestions={QUICK_QUESTIONS}
           privateModel={env.NEAR_AI_API_KEY ? (env.NEAR_AI_CHAT_MODEL ?? DEFAULT_CHAT_MODEL) : null}
+          history={history}
         />
         <AgentFeed entries={feed} />
       </div>
