@@ -59,7 +59,8 @@ body {
   background: var(--color-ledger);
   color: #fff;
 }
-:focus-visible {
+/* Buttons and links get an outline; form fields get their own ring (below). */
+:focus-visible:where(:not(input, select, textarea)) {
   outline: 2px solid var(--color-indigo);
   outline-offset: 2px;
   border-radius: 4px;
@@ -213,6 +214,53 @@ select {
 select:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
+/* The open list of options: our own card where the browser allows it
+   (Chrome's customisable select); elsewhere the browser's native list. */
+@supports (appearance: base-select) {
+  select,
+  ::picker(select) {
+    appearance: base-select;
+  }
+  select::picker-icon {
+    display: none;
+  }
+  ::picker(select) {
+    margin-top: 6px;
+    border: 1px solid var(--color-line);
+    border-radius: 16px;
+    background: var(--color-card);
+    padding: 6px;
+    box-shadow: var(--shadow-pop);
+    max-height: 18rem;
+    overflow-y: auto;
+  }
+  select option {
+    border-radius: 10px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.9375rem;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  select option:hover,
+  select option:focus-visible {
+    outline: none;
+    background: var(--color-paper);
+  }
+  select option:checked {
+    background: var(--color-ledger-soft);
+    color: var(--color-ledger);
+    font-weight: 600;
+  }
+  select option::checkmark {
+    display: none;
+  }
 }
 
 /* File pickers: a dashed drop area with a proper button. */
