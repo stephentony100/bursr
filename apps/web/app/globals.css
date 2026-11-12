@@ -231,6 +231,11 @@ textarea:focus-visible {
   select::picker-icon {
     display: none;
   }
+  /* A customisable select stretches like a block; size it to its options again
+     unless the component asked for full width. */
+  select:not(.w-full) {
+    width: fit-content;
+  }
   ::picker(select) {
     margin-top: 6px;
     border: 1px solid var(--color-line);
