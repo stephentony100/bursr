@@ -7,7 +7,7 @@ import { AddMoney } from "@/components/add-money";
 import { Logo } from "@/components/logo";
 import { ActionForm } from "@/components/forms";
 import { InvitesList } from "@/components/invites-list";
-import { ConnectWallet, InviteForm, LimitsForm, TimeZoneField } from "@/components/onboarding";
+import { ConnectWallet, DisconnectWallet, InviteForm, LimitsForm, TimeZoneField } from "@/components/onboarding";
 import { DetailFields, PayoutFields } from "@/components/payee-fields";
 import { WalletPanel } from "@/components/wallet-panel";
 import { comingUp } from "@/lib/agent/view";
@@ -127,9 +127,12 @@ async function StepBody({ step, live, businessName, signedInAs }: { step: Step; 
               <p className="text-ink">
                 Connected as <span className="num font-semibold">{signedInAs}</span>.
               </p>
-              <Link href="/welcome" className="inline-block rounded-xl bg-ledger px-5 py-3 font-semibold text-white hover:bg-indigo">
-                Continue
-              </Link>
+              <div className="flex flex-wrap gap-3">
+                <Link href="/welcome" className="inline-block rounded-xl bg-ledger px-5 py-3 font-semibold text-white hover:bg-indigo">
+                  Continue
+                </Link>
+                <DisconnectWallet />
+              </div>
             </>
           ) : (
             <ConnectWallet />

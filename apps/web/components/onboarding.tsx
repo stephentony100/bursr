@@ -8,13 +8,36 @@ import { ActionForm } from "@/components/forms";
 import type { PayoutToken, Rules } from "@/lib/domain";
 import { formatUnits, USD_DECIMALS } from "@/lib/money";
 import { chainName } from "@/lib/chains";
-import { signInWithWallet } from "./wallet";
+import { signInWithWallet, signOut } from "./wallet";
 import { friendlyError } from "@/lib/errors";
 
 // The interactive parts of /welcome. Each form posts to a server action that
 // saves and returns to /welcome, which then shows the next step.
 
 const input = "mt-1 block w-full rounded-xl border border-line bg-card px-3 py-2";
+
+/** The wallet step for an owner who is already signed in: disconnect to use another wallet. */
+export function DisconnectWallet() {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await signOut();
+        } finally {
+          router.refresh();
+          setBusy(false);
+        }
+      }}
+      disabled={busy}
+      className="rounded-xl border border-line px-5 py-3 font-semibold text-ink hover:border-ink/40 disabled:opacity-60"
+    >
+      {busy ? "Disconnecting…" : "Disconnect"}
+    </button>
+  );
+}
 
 export function ConnectWallet() {
   const router = useRouter();

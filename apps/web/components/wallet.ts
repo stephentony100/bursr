@@ -34,8 +34,14 @@ export async function signInWithWallet() {
   await post("/api/auth/verify", { token: c.token, accountId: signed.accountId, publicKey: signed.publicKey, signature: signed.signature });
 }
 
+/** Signs out of Bursr and disconnects the wallet, so the next "Connect" can pick any wallet. */
 export async function signOut() {
   await post("/api/auth/signout", {});
+  try {
+    await connector?.disconnect();
+  } catch {
+    /* already disconnected */
+  }
 }
 
 export type OwnerIntentKind = "agent_create" | "policy_update" | "agent_freeze" | "agent_unfreeze" | "grant_issue";
