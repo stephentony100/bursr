@@ -28,6 +28,8 @@ export function ConnectWallet() {
           setError(null);
           try {
             await signInWithWallet();
+            // Back to the first open step (a link may have asked for this one).
+            router.replace("/welcome");
             router.refresh();
           } catch (e) {
             setError(friendlyError(e));

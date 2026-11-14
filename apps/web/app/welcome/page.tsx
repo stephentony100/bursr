@@ -101,7 +101,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
           ) : (
             <>
               <h1 className="display text-3xl">{STEP_TITLES[step]}</h1>
-              <div className="mt-6">{await StepBody({ step, live: state.live, businessName: signedOut ? null : (business?.name ?? null) })}</div>
+              <div className="mt-6">{await StepBody({ step, live: state.live, businessName: signedOut ? null : (business?.name ?? null), signedInAs: state.live ? (owner?.accountId ?? null) : null })}</div>
             </>
           )}
         </section>
@@ -110,7 +110,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
   );
 }
 
-async function StepBody({ step, live, businessName }: { step: Step; live: boolean; businessName: string | null }) {
+async function StepBody({ step, live, businessName, signedInAs }: { step: Step; live: boolean; businessName: string | null; signedInAs: string | null }) {
   const business = await getBusiness((await appDb()));
   switch (step) {
     case "wallet":
@@ -122,7 +122,18 @@ async function StepBody({ step, live, businessName }: { step: Step; live: boolea
           <p className="text-sm">
             No wallet yet? Install a NEAR wallet app such as HOT Wallet, create an account, then come back here.
           </p>
-          <ConnectWallet />
+          {signedInAs ? (
+            <>
+              <p className="text-ink">
+                Connected as <span className="num font-semibold">{signedInAs}</span>.
+              </p>
+              <Link href="/welcome" className="inline-block rounded-xl bg-ledger px-5 py-3 font-semibold text-white hover:bg-indigo">
+                Continue
+              </Link>
+            </>
+          ) : (
+            <ConnectWallet />
+          )}
         </div>
       );
 
