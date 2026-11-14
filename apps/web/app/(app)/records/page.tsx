@@ -1,11 +1,14 @@
 import { connection } from "next/server";
 import { guardPage, appDb } from "@/lib/session";
-import { formatUsd } from "@/lib/money";
+import { formatUsd, parseUnits, rescale } from "@/lib/money";
 import { refreshPayments } from "@/lib/pay";
 import { statementLines } from "@/lib/statement";
 import { monthFacts, plainSummary } from "@/lib/summary";
 import { aiSummaryAction } from "@/app/actions";
 import { AiSummaryButton } from "@/components/ai-summary";
+
+/** The statement's fee (a decimal in the payee's token, any decimals) in USD micros; stablecoins only. */
+const feeMicros = (fee: string) => (fee ? rescale(parseUnits(fee, 18), 18, 6) : 0n);
 
 export default async function StatementPage() {
   await guardPage();
@@ -57,7 +60,9 @@ export default async function StatementPage() {
                   <td className="px-4 py-3">{l.forWhat}</td>
                   <td className="num px-4 py-3 text-right">
                     {formatUsd(l.amountUsd)}
-                    {l.networkFee && Number(l.networkFee) > 0 && <p className="text-xs text-muted">+ {l.networkFee} network fee</p>}
+                    {feeMicros(l.networkFee) > 0n && (
+                      <p className="text-xs text-muted">+ {feeMicros(l.networkFee) < 10_000n ? "under $0.01" : formatUsd(feeMicros(l.networkFee))} network fee, paid by you</p>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className="num text-xs break-all">{l.receivedAs}</span>

@@ -672,7 +672,7 @@ export async function moveMoneyHomeAction(f: FormData): Promise<{ ok: boolean; m
     revalidatePath("/", "layout");
     return {
       ok: true,
-      message: `Moving ${formatUsd(r.amountUsd)} back to your wallet${r.parts > 1 ? ` in ${r.parts} parts` : ""}. The feed on This week shows when it's done.`,
+      message: `Moving ${formatUsd(r.amountUsd)} back to your wallet${r.parts > 1 ? ` in ${r.parts} parts` : ""}. The feed on Home shows when it's done.`,
     };
   } catch (e) {
     return { ok: false, message: friendlyError(e) };
@@ -784,7 +784,7 @@ export async function payOnceAction(f: FormData): Promise<PayOnceResult> {
       name,
       message: mustConfirm
         ? `${name} is added. Confirm with your wallet from the bar at the top, and the agent pays them ${formatUsd(amountUsd)} straight away.`
-        : `The agent is paying ${name} ${formatUsd(amountUsd)} now. Watch it in the feed on This week.`,
+        : `The agent is paying ${name} ${formatUsd(amountUsd)} now. Watch it in the feed on Home.`,
     };
   } catch (e) {
     console.error("[bursar]", e);

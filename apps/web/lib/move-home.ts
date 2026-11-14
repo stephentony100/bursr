@@ -98,7 +98,7 @@ export async function moveMoneyHome(
         // One money action at a time per wallet: wait for this part before the next.
         const o = r.simulated ? { state: "done" as const } : await settle(account, r.correlationId);
         if (o.state === "pending") {
-          await say("home_pending", `Moving ${formatUsd(part)} back to your wallet is taking longer than usual. Check the feed on This week before trying again.`);
+          await say("home_pending", `Moving ${formatUsd(part)} back to your wallet is taking longer than usual. Check the feed on Home before trying again.`);
           break;
         }
         if (o.state !== "done") {

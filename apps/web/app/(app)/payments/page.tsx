@@ -46,7 +46,7 @@ export default async function PlanPage() {
       <p className="text-muted">
         Set up the business first on the{" "}
         <Link href="/this-week" className="text-indigo underline">
-          This week
+          Home
         </Link>{" "}
         page.
       </p>
@@ -62,6 +62,9 @@ export default async function PlanPage() {
   const total = inPlan.reduce((a, i) => a + i.amountUsd, 0n);
   const cost = inPlan.reduce((a, i) => a + (i.quote ? BigInt(i.quote.minAmountIn) : 0n), 0n);
   const unquoted = inPlan.filter((i) => !i.quote).length;
+  // Once everything has gone out, the real network fees replace the estimate.
+  const allSettled = inPlan.length > 0 && inPlan.every((i) => i.networkFee !== null);
+  const feesPaid = inPlan.reduce((a, i) => a + (i.networkFee !== null ? rescale(i.networkFee, i.payout?.token.decimals ?? 6, 6) : 0n), 0n);
   const waitingTaps = inPlan.filter((i) => i.needsOwnTap && !i.ownTapAt).length;
   const moving = inPlan.some((i) => i.payStatus === "paying" || i.payStatus === "sent");
   // The approve form disappears once the list is approved, so the page itself says what happened.
@@ -95,7 +98,9 @@ export default async function PlanPage() {
               )}
               <p className="text-sm text-muted">
                 {inPlan.length} payments ·{" "}
-                {unquoted === 0
+                {allSettled
+                  ? `${formatUsd(feesPaid)} in network fees, paid by you`
+                  : unquoted === 0
                   ? `about ${formatUsd(rescale(cost, treasury.decimals, 6))} including transfer fees`
                   : `fees for ${unquoted} will be worked out when paid`}{" "}
                 ·{" "}
@@ -130,7 +135,7 @@ export default async function PlanPage() {
                       <p className="text-muted">{i.forWhat}</p>
                       {i.ownTapReason && !i.ownTapAt && <p className="text-hold">{i.ownTapReason}</p>}
                       {i.payReason && <p className="text-refuse">{i.payReason}</p>}
-                      {!i.quote && i.quoteError && plan.status === "draft" && <p className="text-xs text-muted">{i.quoteError}</p>}
+                      {!i.quote && i.quoteError && plan.status === "draft" && <p className="text-xs text-muted">No price right now; it is worked out again when paying.</p>}
                     </td>
                     <td className="px-3 py-3 text-muted">{i.payout ? `gets ${i.payout.token.symbol} on ${chainName(i.payout.token.chain)}` : "Not set"}</td>
                     <td className="px-3 py-3 text-right">

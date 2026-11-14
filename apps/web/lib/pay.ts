@@ -47,9 +47,10 @@ type Problem =
   | { kind: "budget"; message: string; until: Date | null } // weekly limit used up: retry when it refills
   | { kind: "paused"; message: string } // owner paused payments: retry when they're back on
   | { kind: "payee"; message: string } // their NEAR account can't hold the token yet: check again daily
-  | { kind: "transient"; message: string; definite: boolean } // network or service trouble: retry with backoff
+  | { kind: "transient"; message: string; definite: boolean; soon?: boolean } // network or service trouble: retry with backoff
   | { kind: "final"; message: string }; // needs the owner (removed payee, changed details, rule refusal)
 
+const QUOTE_FAILED = "I couldn't get a price for this payment from the exchange service, so nothing was sent. I'll try again shortly.";
 const MINUTE = 60_000;
 const BACKOFF_MIN = [1, 5, 15, 60, 180];
 export const MAX_ATTEMPTS = BACKOFF_MIN.length + 1;
@@ -90,7 +91,9 @@ export async function payItem(
         ? (p.until ?? new Date(now.getTime() + 60 * MINUTE))
         : p.kind === "payee"
           ? new Date(now.getTime() + 24 * 60 * MINUTE)
-          : p.kind === "transient"
+          : p.kind === "transient" && p.soon && nextAttempts === 1
+            ? new Date(now.getTime() + 30_000) // first missed price: try again on the agent's next tick
+            : p.kind === "transient"
             ? new Date(now.getTime() + BACKOFF_MIN[Math.min(nextAttempts, BACKOFF_MIN.length - 1)] * MINUTE)
             : new Date(now.getTime() + (p.kind === "funds" ? 2 : 10) * MINUTE);
     const status = giveUp ? ("failed" as const) : ("waiting" as const);
@@ -148,7 +151,12 @@ export async function payItem(
     let q: Awaited<ReturnType<typeof quote>> | null = null;
     if (token.assetId !== treasury.assetId) {
       q = await quote(treasury, planned, item.amountUsd);
-      if (!q.ok) return stop({ kind: "transient", message: q.reason, definite: true });
+      // A price request can fail once (e.g. the first one after start-up): ask again before waiting.
+      if (!q.ok) {
+        await new Promise((r) => setTimeout(r, quote === quotePayout ? 2000 : 0));
+        q = await quote(treasury, planned, item.amountUsd);
+      }
+      if (!q.ok) return stop({ kind: "transient", message: QUOTE_FAILED, definite: true, soon: true });
     }
     const networkFee = q?.ok ? BigInt(q.quote.withdrawFee) : 0n;
     const gross = amountOut + networkFee;

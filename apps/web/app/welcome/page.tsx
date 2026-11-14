@@ -91,7 +91,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
               <h1 className="display text-3xl">Set up your own business</h1>
               <p className="text-muted">
                 You&apos;re looking at the sample restaurant. To try setting up a business of your own with practice money, start fresh: the sample is cleared (you can load it again
-                any time from This week).
+                any time from Home).
               </p>
               <ActionForm action={startOwnPracticeAction} submit="Start my own business" />
               <Link href="/this-week" className="block text-sm text-indigo underline">

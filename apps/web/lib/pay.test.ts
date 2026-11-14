@@ -150,6 +150,31 @@ describe("weekly plan → approval → payment (practice mode)", () => {
     expect((await getPlan(t.db, plan.id))!.items.filter((i) => i.placement === "in").every((i) => i.payStatus === "sent")).toBe(true);
   }, 30_000);
 
+  it("a missed price at payment time is asked again at once, then retried within a minute in plain words", async () => {
+    const plan = await prepareWeeklyPlan(t.db, new Date(), fakeQuote);
+    await approvePlan(t.db, owner, plan.id);
+    const down: typeof quotePayout = async () => ({ ok: false, reason: "No price quote: fetch failed" });
+    const now = Date.now();
+    await payApprovedPlan(t.db, await agentAccount(t.db), plan.id, down);
+    const crossChain = (await getPlan(t.db, plan.id))!.items.filter((i) => i.placement === "in" && i.payout?.token.chain !== "near");
+    expect(crossChain.length).toBeGreaterThan(0);
+    for (const i of crossChain) {
+      expect(i.payStatus).toBe("waiting");
+      expect(i.payReason).toMatch(/^I couldn't get a price for this payment/);
+      expect(i.retryAt!.getTime() - now).toBeLessThanOrEqual(60_000);
+    }
+
+    await t.reset();
+    await loadSampleBusiness(t.db);
+    let calls = 0;
+    const once: typeof quotePayout = async (...args) => (++calls % 2 === 1 ? { ok: false, reason: "No price quote: fetch failed" } : fakeQuote(...args));
+    const plan2 = await prepareWeeklyPlan(t.db, new Date(), fakeQuote);
+    await approvePlan(t.db, owner, plan2.id);
+    await payApprovedPlan(t.db, await agentAccount(t.db), plan2.id, once);
+    const items = (await getPlan(t.db, plan2.id))!.items.filter((i) => i.placement === "in");
+    expect(items.every((i) => i.payStatus !== "waiting" && i.payStatus !== "failed")).toBe(true);
+  }, 30_000);
+
   it("the agent cannot approve: approval needs the owner's session", async () => {
     const plan = await prepareWeeklyPlan(t.db, new Date(), fakeQuote);
     await expect(approvePlan(t.db, {} as never, plan.id)).rejects.toThrow(/Only the owner/);

@@ -56,8 +56,8 @@ export async function statementLines(db: PrismaClient): Promise<StatementLine[]>
         receivedAs: `${token.symbol} on ${chainName(token.chain)} to ${i.payout.address}`,
         status: STATUS_WORDS[i.payStatus],
         approval:
-          `Approved by ${plan.approvedBy ?? "?"} on ${plan.approvedAt?.toISOString().slice(0, 16).replace("T", " ") ?? "?"}` +
-          (i.ownTapAt ? `; own OK ${i.ownTapAt.toISOString().slice(0, 16).replace("T", " ")}` : ""),
+          `Approved by ${plan.approvedBy ?? "?"} on ${plan.approvedAt ? `${plan.approvedAt.toISOString().slice(0, 16).replace("T", " ")} UTC` : "?"}` +
+          (i.ownTapAt ? `; own OK ${i.ownTapAt.toISOString().slice(0, 16).replace("T", " ")} UTC` : ""),
         planId: plan.id,
         references: i.references.join(" "),
         note: i.payReason ?? "",
