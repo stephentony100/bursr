@@ -19,4 +19,10 @@ describe("errors in plain words", () => {
     expect(friendlyError(new Error("e is not a function"))).toMatch(/Something went wrong/);
     expect(friendlyError(new Error("Signature not accepted: bad key"))).toMatch(/sign in again/);
   });
+
+  it("a closed passkey prompt is not a network problem", () => {
+    const closed = Object.assign(new Error("The operation either timed out or was not allowed. See: https://www.w3.org/TR/webauthn-2/#sctn-privacy-considerations-client."), { name: "NotAllowedError" });
+    expect(friendlyError(closed)).toMatch(/closed the passkey prompt/);
+    expect(friendlyError({ error: { code: "signer_mismatch", message: "x" } })).toMatch(/isn't the one that controls/);
+  });
 });

@@ -34,9 +34,13 @@ const CODES: Record<string, string> = {
   idempotency_conflict: "This payment was already started with different details. Bursr stopped it so nothing is paid twice.",
   validation_failed: "The payment service couldn't process this request. Nothing was sent. Bursr will try again shortly.",
   unauthorized: "Your session has ended. Please sign in again.",
+  signer_mismatch: "That passkey isn't the one that controls your agent's wallet. Use the passkey you created for Bursr.",
 };
 
 const PLAIN: [RegExp, string][] = [
+  // Passkey prompts (WebAuthn) report a closed prompt as "timed out or was not allowed": not a network problem.
+  [/NotAllowedError|timed out or was not allowed|not allowed by the user agent/i, "You closed the passkey prompt before confirming, so nothing changed. Try again when you're ready."],
+  [/SecurityError|not a valid domain|relying party id|rp ?id/i, "Passkeys don't work on this web address. Open Bursr at its usual address and try again."],
   [/user (rejected|cancel|denied)|rejected by user|request rejected|cancel(l)?ed|closed (the )?(window|popup|modal)|popup closed|window closed|user closed/i, "You closed your wallet before confirming, so nothing changed. Try again when you're ready."],
   [/no wallet|wallet not (found|installed|selected)|not installed|no (selected|connected) wallet/i, "Bursr couldn't find a wallet to connect. Install a NEAR wallet app such as HOT Wallet, then try again."],
   [/failed to fetch|fetch failed|networkerror|network error|econn|enotfound|etimedout|timed? ?out|aborted|socket hang up|load failed/i, "Bursr couldn't reach the network just now. Check your internet connection and try again."],

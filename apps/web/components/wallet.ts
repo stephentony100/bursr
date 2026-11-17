@@ -5,6 +5,8 @@ import { friendlyError } from "@/lib/errors";
 
 // One wallet connection for the whole app (HOT and other NEAR wallets via
 // @hot-labs/near-connect). The owner's key never leaves the wallet.
+// Agent wallets created since 17 Nov 2026 are owned by a passkey instead; its
+// private key never leaves the owner's device (@simplewebauthn/browser).
 
 let connector: NearConnector | null = null;
 
@@ -44,6 +46,14 @@ export async function signOut() {
   }
 }
 
+/** Creates the passkey that will own the agent's wallet (the device's Face ID, fingerprint or PIN prompt). Returns whether it syncs to a password manager. */
+export async function createPasskey(): Promise<{ backedUp: boolean }> {
+  const { startRegistration } = await import("@simplewebauthn/browser");
+  const options = await post<Parameters<typeof startRegistration>[0]["optionsJSON"]>("/api/owner/passkey", { step: "options" });
+  const response = await startRegistration({ optionsJSON: options });
+  return post<{ backedUp: boolean }>("/api/owner/passkey", { step: "verify", response });
+}
+
 export type OwnerIntentKind = "agent_create" | "policy_update" | "agent_freeze" | "agent_unfreeze" | "grant_issue";
 
 export interface PreparedIntent {
@@ -63,13 +73,18 @@ export function prepareIntent(kind: OwnerIntentKind): Promise<PreparedIntent> {
 
 /** The owner's wallet signs the prepared change and Bursr submits it. Throws a plain-words error if it isn't applied. */
 export async function signAndSubmitIntent(prepared: PreparedIntent): Promise<void> {
-  const w = await wallet();
   const { intent } = prepared;
   let signedData: Record<string, unknown>;
-  if (intent.standard === "nep366") {
+  if (intent.standard === "webauthn") {
+    // Passkey owner: the device signs the Agent API's own prompt, passed through unchanged (SDK README).
+    const { startAuthentication } = await import("@simplewebauthn/browser");
+    signedData = { ...intent, credential: await startAuthentication({ optionsJSON: intent.payload as never }) };
+  } else if (intent.standard === "nep366") {
+    const w = await wallet();
     const out = await w.signDelegateActions({ delegateActions: [intent.payload as never] });
     signedData = { ...intent, signed_delegate: out.signedDelegateActions[0] };
   } else if (intent.standard === "nep413") {
+    const w = await wallet();
     const p = intent.payload as { message: string; recipient: string; nonce: string };
     const nonce = Uint8Array.from(atob(p.nonce), (ch) => ch.charCodeAt(0));
     const out = await w.signMessage({ message: p.message, recipient: p.recipient, nonce });

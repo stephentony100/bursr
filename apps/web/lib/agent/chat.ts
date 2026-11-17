@@ -303,13 +303,13 @@ export async function confirmCard(db: PrismaClient, owner: OwnerSession, token: 
   if (action.kind === "pay_new") {
     const invite = await createInvite(db, owner, { name: action.name, category: "supplier", recurring: null, oneOff: { amountUsd: action.amountUsd, note: action.note || "One-time job", removeAfterPaid: true } });
     const link = `${readEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/join/${invite.token}`;
-    return `Send ${invite.name} this link: ${link} When they've sent their details, approve them on People${readEnv().BURSAR_MODE === "live" ? " and confirm with your wallet" : ""}, and I'll pay them ${formatUsd(BigInt(action.amountUsd))} straight away.`;
+    return `Send ${invite.name} this link: ${link} When they've sent their details, approve them on People${readEnv().BURSAR_MODE === "live" ? " and confirm" : ""}, and I'll pay them ${formatUsd(BigInt(action.amountUsd))} straight away.`;
   }
   if (action.kind === "run_payday") {
     const r = await runAgent(db, { dueBy: "payday", quote });
     return r.newPayments || r.attempted ? `The agent is paying ${r.attempted} payment${r.attempted === 1 ? "" : "s"}; ${r.needsOwner} need your OK.` : "Nothing is due yet.";
   }
-  if (readEnv().BURSAR_MODE === "live") throw new Error("In live mode, pause from Limits: your wallet confirms it.");
+  if (readEnv().BURSAR_MODE === "live") throw new Error("In live mode, pause from Limits: you confirm it with your passkey or wallet.");
   await setFrozen(db, owner, action.pause);
   return action.pause ? "All payments are paused." : "Payments are back on.";
 }

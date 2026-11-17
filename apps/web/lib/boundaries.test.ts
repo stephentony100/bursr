@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 // checks, planning, paying) must never import the owner-only modules.
 
 const LIB = import.meta.dirname;
-const OWNER_ONLY = ["owner-actions", "owner"];
+const OWNER_ONLY = ["owner-actions", "owner", "passkey"];
 
 /** Agent-side modules: everything the AI and the payment loop run. */
 // lib/agent/chat.ts is not here on purpose: the model only proposes cards; confirming one runs an owner action with the owner's session.

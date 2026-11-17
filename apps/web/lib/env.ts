@@ -37,6 +37,9 @@ const EnvSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().default("http://localhost:3000"),
   DATABASE_URL: z.string().default("file:./dev.db"),
   BURSAR_SESSION_SECRET: optional,
+  // Live only: the passkey domain (WebAuthn rp_id). Defaults to the hostname of NEXT_PUBLIC_APP_URL.
+  // Passkeys made under one domain only work there, so set it once and keep it (bursr.xyz in production).
+  BURSAR_PASSKEY_RP_ID: optional,
 
   // The Agent API and NEAR Intents exist only on mainnet, so the owner signs in with a mainnet account.
   NEAR_NETWORK: z.enum(["testnet", "mainnet"]).default("mainnet"),

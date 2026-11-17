@@ -43,7 +43,7 @@ If a doc disagrees with this spec, the doc wins. Note it in DECISIONS.md and upd
 - A business records which owner it has:
   - `{ kind: "near", accountId, publicKey }` for existing businesses;
   - `{ kind: "passkey", credentialId, publicKey, rpId, origin }` for new ones.
-- It is stored with the agent account record (Prisma migration).
+- The passkey is stored on `Business.ownerPasskey` (it must exist before `agent_create`, when there is no agent record yet; DECISIONS.md 17 Nov). The owner kind follows from the data: passkey on file = passkey owner; agent and no passkey = NEAR owner.
 - `lib/owner-intents.ts` builds the Agent API `owner` field from this record. Today it takes `owner.publicKey` from the sign-in session, which is NEAR-only.
 - In the browser, a signer helper signs `generated.intent` with the NEAR wallet (`nep413`/`nep366`, unchanged) or the passkey (`webauthn` via `@simplewebauthn/browser`, as the Agent API README shows).
 - Rule 3 still holds: the agent never holds an owner key, and the passkey never leaves the owner's device.

@@ -18,6 +18,8 @@ model Business {
   ownerAccountId String
   /// Rules (lib/domain.ts RulesSchema) as JSON.
   rules          String
+  /// Live only: the passkey that owns the agent's wallet (lib/passkey.ts), as JSON. Public data only; the private key stays on the owner's device.
+  ownerPasskey   String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

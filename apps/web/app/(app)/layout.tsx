@@ -8,6 +8,7 @@ import { readEnv } from "@/lib/env";
 import { getOwner, appDb } from "@/lib/session";
 import { getBusiness } from "@/lib/store";
 import { pendingChanges } from "@/lib/pending-changes";
+import { getOwnerPasskey } from "@/lib/passkey";
 import { PendingChangesBar } from "@/components/pending-changes-bar";
 
 /** A business's own pages stay out of search engines. */
@@ -34,6 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!dryRun && !business) redirect("/welcome");
   // Live: changes made in Bursr that the owner's wallet hasn't confirmed yet, shown on every page.
   const pending = !dryRun && business ? await pendingChanges(await appDb()) : null;
+  const withPasskey = pending ? Boolean(await getOwnerPasskey(await appDb())) : false;
   return (
     <div className="min-h-[100dvh] lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
       <a href="#main" className="skip-link">
@@ -71,7 +73,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
 
-        {pending && <PendingChangesBar lines={pending.lines} onlyTighter={pending.onlyTighter} />}
+        {pending && <PendingChangesBar lines={pending.lines} onlyTighter={pending.onlyTighter} withPasskey={withPasskey} />}
 
         <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 [overflow-wrap:anywhere] sm:px-8 sm:py-8">
           {children}

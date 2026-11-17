@@ -2,12 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { prepareIntent, signAndSubmitIntent, signInWithWallet, signOut as walletSignOut, type OwnerIntentKind, type PreparedIntent } from "./wallet";
+import { createPasskey, prepareIntent, signAndSubmitIntent, signInWithWallet, signOut as walletSignOut, type OwnerIntentKind, type PreparedIntent } from "./wallet";
 import { friendlyError } from "@/lib/errors";
 
-// Live mode only. The owner's wallet (HOT, via @hot-labs/near-connect) signs
-// everything; Bursr's server never sees the owner's key. Before any signature
-// the owner sees exactly what the Agent API prepared.
+// Live mode only. The owner signs everything: with the passkey that owns the
+// agent's wallet (new businesses), or with their NEAR wallet (agent wallets
+// created before passkeys). Bursr's server never sees the owner's key. Before
+// any signature the owner sees exactly what the Agent API prepared.
 
 type Kind = OwnerIntentKind;
 type Prepared = PreparedIntent;
@@ -30,6 +31,8 @@ export function WalletPanel(props: {
   /** ISO date the payment pass ends, when it ends within 3 days. */
   grantRenewBy: string | null;
   frozen: boolean;
+  /** The passkey that owns (or will own) the agent's wallet; null for agent wallets owned by a NEAR wallet. */
+  passkey: { backedUp: boolean } | null;
   /** Inside /welcome: no heading, sign-out or pause; the two confirmations are counted. */
   onboarding?: boolean;
 }) {
@@ -69,6 +72,14 @@ export function WalletPanel(props: {
       setPrepared(await prepareIntent(kind));
     });
 
+  const makePasskey = () =>
+    guard(async () => {
+      setNotice(null);
+      const { backedUp } = await createPasskey();
+      setNotice(backedUp ? "Passkey saved. It syncs to your password manager." : "Passkey saved on this device only.");
+      router.refresh();
+    });
+
   const signAndSubmit = () =>
     guard(async () => {
       if (!prepared) return;
@@ -78,6 +89,9 @@ export function WalletPanel(props: {
       router.refresh();
     });
 
+  // Passkey owners confirm with the device's Face ID, fingerprint or PIN; older agent wallets with the NEAR wallet app.
+  const withPasskey = Boolean(props.passkey) || !props.agentId;
+  const needsPasskey = !props.agentId && !props.passkey;
   const next: Kind | null = !props.agentId
     ? "agent_create"
     : props.needsSigning
@@ -119,22 +133,41 @@ export function WalletPanel(props: {
 
           {props.onboarding && next && (
             <p className="font-medium">
-              Confirmation {next === "grant_issue" ? 2 : 1} of 2: {next === "grant_issue" ? "let your agent pay inside your limits." : "create your agent's wallet with your limits and the people you pay."}
+              Step {needsPasskey ? 1 : next === "grant_issue" ? 3 : 2} of 3:{" "}
+              {needsPasskey ? "create your passkey." : next === "grant_issue" ? "let your agent pay inside your limits." : "create your agent's wallet with your limits and the people you pay."}
             </p>
           )}
 
           {props.businessExists && (
             <>
               <p className="text-muted">
-                {props.agentId ? (props.hasGrant ? "Your wallet is set up and Bursr can pay inside your limits." : "Your wallet is set up. One more step lets Bursr make payments.") : "Next: set up your Bursr wallet. It's free; your wallet app just confirms it."}
+                {props.agentId
+                  ? props.hasGrant
+                    ? "Your wallet is set up and Bursr can pay inside your limits."
+                    : "Your wallet is set up. One more step lets Bursr make payments."
+                  : needsPasskey
+                    ? "Your passkey is the key to your agent's wallet. Save it to iCloud Keychain or Google Password Manager so you never lose it. If it's lost, nobody, not even Bursr, can change your limits."
+                    : "Next: set up your Bursr wallet. It's free; your passkey just confirms it."}
               </p>
+              {props.passkey && (
+                <p className={props.passkey.backedUp ? "text-muted" : "text-hold"}>
+                  {props.passkey.backedUp
+                    ? "Your agent's wallet is controlled by your passkey, synced to your password manager."
+                    : "Your passkey is saved on this device only. If you lose this device, nobody can change your limits. Keep it safe."}
+                </p>
+              )}
               {props.grantRenewBy && (
                 <p className="text-hold">
                   Bursr&apos;s permission to pay ends on {new Date(props.grantRenewBy).toLocaleDateString([], { day: "numeric", month: "short" })}. Renew it so payday isn&apos;t missed.
                 </p>
               )}
               <div className="flex flex-wrap gap-2">
-                {next && (
+                {needsPasskey && (
+                  <button onClick={makePasskey} disabled={busy} className="rounded-xl bg-ledger px-4 py-2.5 font-semibold text-white hover:bg-indigo disabled:opacity-60">
+                    {busy ? "Check the passkey prompt…" : "Create your passkey"}
+                  </button>
+                )}
+                {next && !needsPasskey && (
                   <button onClick={() => prepare(next)} disabled={busy} className="rounded-xl bg-ledger px-4 py-2.5 font-semibold text-white hover:bg-indigo disabled:opacity-60">
                     {next === "grant_issue" && props.hasGrant ? "Renew Bursr's permission to pay" : LABELS[next]}…
                   </button>
@@ -163,12 +196,12 @@ export function WalletPanel(props: {
                 )}
               </details>
               <p className="mt-2 text-muted">
-                Your wallet app will ask you to confirm. It costs you nothing. Please confirm before{" "}
+                {withPasskey ? "Your device will ask for your Face ID, fingerprint or PIN." : "Your wallet app will ask you to confirm."} It costs you nothing. Please confirm before{" "}
                 {new Date(prepared.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.
               </p>
               <div className="mt-3 flex gap-2">
                 <button onClick={signAndSubmit} disabled={busy} className="rounded-xl bg-ledger px-4 py-2.5 font-semibold text-white hover:bg-indigo disabled:opacity-60">
-                  {busy ? "Check your wallet app…" : "Confirm in my wallet"}
+                  {busy ? (withPasskey ? "Check the passkey prompt…" : "Check your wallet app…") : withPasskey ? "Confirm with my passkey" : "Confirm in my wallet"}
                 </button>
                 <button onClick={() => setPrepared(null)} disabled={busy} className="rounded-xl border border-line px-4 py-2.5 font-semibold hover:bg-paper">
                   Cancel

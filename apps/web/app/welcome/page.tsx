@@ -13,6 +13,7 @@ import { WalletPanel } from "@/components/wallet-panel";
 import { comingUp } from "@/lib/agent/view";
 import { grantState } from "@/lib/grant-store";
 import { listInvites } from "@/lib/invites";
+import { getOwnerPasskey } from "@/lib/passkey";
 import { formatUsd } from "@/lib/money";
 import { onboardingState, STEP_TITLES, STEPS, type Step } from "@/lib/onboarding";
 import { policyNeedsSigning } from "@/lib/owner-actions";
@@ -220,8 +221,8 @@ async function StepBody({ step, live, businessName, signedInAs }: { step: Step; 
         return (
           <div className="space-y-4 text-muted">
             <p>
-              In live mode your wallet now confirms twice: once to create your agent&apos;s own wallet with your limits and people locked in, once to let the agent pay inside them. Both
-              are free. In practice mode the wallet is simulated.
+              In live mode you create a passkey, then confirm twice with it: once to create your agent&apos;s own wallet with your limits and people locked in, once to let the agent
+              pay inside them. All free. In practice mode the wallet is simulated.
             </p>
             <ActionForm action={onboardNextAction} submit="Turn on my agent">
               <input type="hidden" name="step" value="agent" />
@@ -232,11 +233,12 @@ async function StepBody({ step, live, businessName, signedInAs }: { step: Step; 
       const owner = await getOwner();
       const record = await getAccountRecord((await appDb()));
       const grant = grantState(record);
+      const passkey = await getOwnerPasskey(await appDb());
       return (
         <div className="space-y-4">
           <p className="text-muted">
-            Your agent gets its own wallet, separate from yours, with your limits and the people you pay locked into it. Your wallet app asks you to confirm twice. Both are free and
-            move no money.
+            Your agent gets its own wallet, separate from yours, with your limits and the people you pay locked into it. You create a passkey that controls it, then confirm
+            twice with Face ID, fingerprint or PIN. All free; no money moves.
           </p>
           <WalletPanel
             onboarding
@@ -248,6 +250,7 @@ async function StepBody({ step, live, businessName, signedInAs }: { step: Step; 
             hasGrant={grant.usable}
             grantRenewBy={null}
             frozen={business!.rules.frozen}
+            passkey={passkey ? { backedUp: passkey.backedUp } : null}
           />
         </div>
       );

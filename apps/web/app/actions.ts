@@ -109,7 +109,7 @@ export async function saveRules(_prev: FormResult, f: FormData): Promise<FormRes
     kickAgent();
     if (readEnv().BURSAR_MODE === "dry-run") return "Saved. Your new limits apply straight away.";
     return (await walletMustConfirm())
-      ? "Saved. Lower limits apply right away; to make higher limits count, confirm with your wallet from the bar at the top of the page."
+      ? "Saved. Lower limits apply right away; to make higher limits count, confirm them from the bar at the top of the page."
       : "Saved. Your agent follows the new limits now.";
   });
 }
@@ -772,7 +772,7 @@ export async function payOnceAction(f: FormData): Promise<PayOnceResult> {
         ok: true,
         name: invite.name,
         link: `${readEnv().NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/join/${invite.token}`,
-        message: `When ${invite.name} sends their details, approve them on People${live ? " and confirm with your wallet" : ""}; the agent then pays them ${formatUsd(amountUsd)} straight away.`,
+        message: `When ${invite.name} sends their details, approve them on People${live ? " and confirm" : ""}; the agent then pays them ${formatUsd(amountUsd)} straight away.`,
       };
     }
     await payOnce(sdb, owner, { name, amountUsd, note, payout: await payoutFrom(f), removeAfterPaid });

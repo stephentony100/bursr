@@ -10,6 +10,7 @@ import { readEnv } from "./env";
 import type { PrismaClient } from "./generated/prisma/client";
 import { desiredPolicy, NotOwnerError, setFrozen } from "./owner-actions";
 import { isOwnerSession, type OwnerSession } from "./owner";
+import { getOwnerPasskey, passkeyOwner } from "./passkey";
 import { dataKey, saveGrant } from "./grant-store";
 import { getAccountRecord, getBusiness } from "./store";
 import { trustSignedPayees } from "./trust";
@@ -53,10 +54,9 @@ function api() {
 }
 
 async function assertLiveOwner(db: PrismaClient, owner: OwnerSession) {
-  if (!isOwnerSession(owner) || owner.demo) throw new NotOwnerError("Sign in with your NEAR wallet first.");
+  if (!isOwnerSession(owner) || owner.demo) throw new NotOwnerError("Sign in with your wallet first.");
   const business = await getBusiness(db);
   if (!business || business.ownerAccountId !== owner.accountId) throw new NotOwnerError();
-  if (!owner.publicKey) throw new NotOwnerError("Sign in again so Bursr knows your wallet key.");
   return business;
 }
 
@@ -79,11 +79,15 @@ export async function prepareOwnerIntent(db: PrismaClient, owner: OwnerSession, 
 
   if (kind === "agent_create") {
     if (record) throw new Error("This business already has an agent account.");
+    // New agent wallets are owned by the business's passkey, whatever wallet the owner signs in with.
+    // (Agents created before this keep their NEAR owner; the Agent API can't change an owner.)
+    const passkey = await getOwnerPasskey(db);
+    if (!passkey) throw new Error("Create your passkey first.");
     const policy = (await desiredPolicy(db))!;
     const g = await client.generateIntent({
       type: "agent_create",
       name: `Bursr: ${business.name}`.slice(0, 64),
-      owner: { type: "near", account_id: owner.accountId, public_key: owner.publicKey! },
+      owner: passkeyOwner(passkey),
       policy,
     });
     return prepared(kind, g, policy);

@@ -11,7 +11,8 @@ import { prepareIntent, signAndSubmitIntent, type PreparedIntent } from "./walle
 // first tap prepares the change, the second opens the wallet (browsers only
 // let a wallet open from a tap).
 
-export function PendingChangesBar({ lines, onlyTighter }: { lines: string[]; onlyTighter: boolean }) {
+export function PendingChangesBar({ lines, onlyTighter, withPasskey }: { lines: string[]; onlyTighter: boolean; /** The agent's wallet is owned by a passkey, not a wallet app. */ withPasskey: boolean }) {
+  const key = withPasskey ? "passkey" : "wallet";
   const router = useRouter();
   const [prepared, setPrepared] = useState<PreparedIntent | null>(null);
   const [busy, setBusy] = useState(false);
@@ -44,7 +45,7 @@ export function PendingChangesBar({ lines, onlyTighter }: { lines: string[]; onl
         <div className="min-w-0 text-sm">
           <p className="flex items-center gap-2 font-semibold">
             <ShieldCheck size={16} weight="bold" aria-hidden className="text-hold" />
-            {lines.length === 1 ? "1 change to confirm with your wallet" : `${lines.length} changes to confirm with your wallet`}: {lines.join(" · ")}
+            {lines.length === 1 ? `1 change to confirm with your ${key}` : `${lines.length} changes to confirm with your ${key}`}: {lines.join(" · ")}
           </p>
           <p className="text-muted">
             {onlyTighter
@@ -70,7 +71,7 @@ export function PendingChangesBar({ lines, onlyTighter }: { lines: string[]; onl
             disabled={busy}
             className="rounded-xl bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60"
           >
-            {busy ? "Check your wallet app…" : "Open my wallet to confirm"}
+            {busy ? (withPasskey ? "Check the passkey prompt…" : "Check your wallet app…") : withPasskey ? "Use my passkey to confirm" : "Open my wallet to confirm"}
           </button>
         ) : (
           <button
@@ -78,7 +79,7 @@ export function PendingChangesBar({ lines, onlyTighter }: { lines: string[]; onl
             disabled={busy}
             className="rounded-xl bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60"
           >
-            {busy ? "Preparing…" : "Confirm with my wallet"}
+            {busy ? "Preparing…" : `Confirm with my ${key}`}
           </button>
         )}
       </div>
