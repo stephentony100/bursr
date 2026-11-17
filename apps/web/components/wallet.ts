@@ -1,6 +1,7 @@
 "use client";
 
 import type { NearConnector } from "@hot-labs/near-connect";
+import type { DAppKit, UiWallet } from "@mysten/dapp-kit-core";
 import { friendlyError } from "@/lib/errors";
 
 // One wallet connection for the whole app (HOT and other NEAR wallets via
@@ -10,9 +11,14 @@ import { friendlyError } from "@/lib/errors";
 
 let connector: NearConnector | null = null;
 
-export async function wallet() {
+async function nearConnector(): Promise<NearConnector> {
   const { NearConnector } = await import("@hot-labs/near-connect");
   connector ??= new NearConnector({ network: "mainnet" });
+  return connector;
+}
+
+export async function wallet() {
+  const connector = await nearConnector();
   try {
     return await connector.wallet();
   } catch {
@@ -27,13 +33,80 @@ export async function post<T>(url: string, body: unknown): Promise<T> {
   return data as T;
 }
 
-/** Signs a NEP-413 sign-in message with the wallet; the server checks it and sets the owner session. */
-export async function signInWithWallet() {
+/** One wallet the owner can pick in "Connect your wallet" (after choosing its chain). */
+export interface WalletChoice {
+  id: string;
+  name: string;
+  icon: string;
+}
+
+/** The NEAR wallets HOT's connector knows (browser extensions, apps and web wallets). */
+export async function nearWallets(): Promise<WalletChoice[]> {
+  const c = await nearConnector();
+  await c.whenManifestLoaded;
+  return c.availableWallets.map((w) => ({ id: w.manifest.id, name: w.manifest.name, icon: w.manifest.icon }));
+}
+
+/** Connects the NEAR wallet the owner picked and signs the NEP-413 sign-in message; the server checks it and sets the owner session. */
+export async function signInWithNear(walletId?: string) {
   const c = await (await fetch("/api/auth/challenge")).json();
-  const w = await wallet();
+  const w = walletId ? await (await nearConnector()).connect({ walletId }) : await wallet();
   const nonce = Uint8Array.from(atob(c.nonce), (ch) => ch.charCodeAt(0));
   const signed = await w.signMessage({ message: c.message, recipient: c.recipient, nonce });
   await post("/api/auth/verify", { token: c.token, accountId: signed.accountId, publicKey: signed.publicKey, signature: signed.signature });
+}
+
+// --- Sui (dApp Kit core: every Sui wallet installed in this browser, plus Slush on the web) ---
+
+let suiKit: Promise<DAppKit> | null = null;
+
+function sui(): Promise<DAppKit> {
+  suiKit ??= (async () => {
+    const [{ createDAppKit }, { SuiGrpcClient }] = await Promise.all([import("@mysten/dapp-kit-core"), import("@mysten/sui/grpc")]);
+    return createDAppKit({
+      networks: ["mainnet"],
+      // Sign-in is always a fresh choice: never reconnect a wallet by itself.
+      autoConnect: false,
+      createClient: (network) => new SuiGrpcClient({ network, baseUrl: "https://fullnode.mainnet.sui.io:443" }),
+      slushWalletConfig: { appName: "Bursr" },
+    }) as unknown as DAppKit;
+  })();
+  return suiKit;
+}
+
+async function suiWalletId(w: UiWallet): Promise<string> {
+  const { getWalletUniqueIdentifier } = await import("@mysten/dapp-kit-core");
+  return getWalletUniqueIdentifier(w);
+}
+
+/** Calls back with the Sui wallets available now and whenever one registers (extensions load a moment after the page). */
+export function watchSuiWallets(cb: (wallets: WalletChoice[]) => void): () => void {
+  let stop = () => {};
+  let stopped = false;
+  void sui().then((kit) => {
+    if (stopped) return;
+    stop = kit.stores.$wallets.subscribe(async (list) => {
+      cb(await Promise.all(list.map(async (w) => ({ id: await suiWalletId(w), name: w.name, icon: w.icon }))));
+    });
+  });
+  return () => {
+    stopped = true;
+    stop();
+  };
+}
+
+/** Connects the Sui wallet the owner picked and signs Bursr's sign-in message; the server checks it and sets the owner session. */
+export async function signInWithSui(walletId: string) {
+  const kit = await sui();
+  let picked: UiWallet | undefined;
+  for (const w of kit.stores.$wallets.get()) if ((await suiWalletId(w)) === walletId) picked = w;
+  if (!picked) throw new Error("That Sui wallet isn't available any more. Pick it again.");
+  const { accounts } = await kit.connectWallet({ wallet: picked });
+  const account = accounts[0];
+  if (!account) throw new Error("Your Sui wallet didn't share an account. Open it, unlock it, and try again.");
+  const c = await (await fetch("/api/auth/challenge")).json();
+  const signed = await kit.signPersonalMessage({ message: new TextEncoder().encode(c.suiMessage), account });
+  await post("/api/auth/verify", { chain: "sui", token: c.token, address: account.address, signature: signed.signature });
 }
 
 /** Signs out of Bursr and disconnects the wallet, so the next "Connect" can pick any wallet. */
@@ -41,6 +114,11 @@ export async function signOut() {
   await post("/api/auth/signout", {});
   try {
     await connector?.disconnect();
+  } catch {
+    /* already disconnected */
+  }
+  try {
+    if (suiKit) await (await suiKit).disconnectWallet();
   } catch {
     /* already disconnected */
   }

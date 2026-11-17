@@ -6,7 +6,7 @@ import { homeView, type HomeView } from "@/lib/move-home";
 import { ActionForm } from "@/components/forms";
 import { agentAccount } from "@/lib/agent-account";
 import { nextPayday, paydayNeed } from "@/lib/agent/view";
-import { guardPage, appDb } from "@/lib/session";
+import { getOwner, guardPage, appDb } from "@/lib/session";
 import { readEnv } from "@/lib/env";
 import { formatUnits, formatUsd, rescale, USD_DECIMALS } from "@/lib/money";
 import { getBusiness } from "@/lib/store";
@@ -62,7 +62,14 @@ export default async function AddMoneyPage() {
           </ActionForm>
         </section>
       ) : (
-        <AddMoney suggestedUsd={short > 0n ? formatUnits(short, USD_DECIMALS).replace(/\.?0+$/, "") : null} />
+        <AddMoney suggestedUsd={short > 0n ? formatUnits(short, USD_DECIMALS).replace(/\.?0+$/, "") : null} from={(await getOwner())?.chain ?? "near"} />
+      )}
+
+      {!dryRun && !home && business.ownerAccountId.startsWith("sui:") && (
+        <section className="rounded-2xl border border-dashed border-line p-5">
+          <h2 className="text-base font-bold">Move money back to my wallet</h2>
+          <p className="mt-1 text-sm text-muted">Coming soon for Sui wallets.</p>
+        </section>
       )}
 
       {home && (

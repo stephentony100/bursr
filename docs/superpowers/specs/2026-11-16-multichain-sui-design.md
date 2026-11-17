@@ -61,7 +61,8 @@ Adapters in this work:
 
 ### 3. Sui sign-in
 
-- The sign-in page offers "Connect Sui wallet" next to NEAR, listing the Sui wallets the browser has (Wallet Standard via `@mysten/dapp-kit-react`, client-only).
+- **Flow (owner's choice, 17 Nov):** Connect wallet → choose a chain (NEAR, Sui, later more) → pick a wallet from that chain's list (`components/connect-wallet.tsx`). Built with `@mysten/dapp-kit-core` (see DECISIONS.md).
+- The sign-in page offers "Connect Sui wallet" next to NEAR, listing the Sui wallets the browser has (Wallet Standard via `@mysten/dapp-kit-core`, client-only).
 - Flow:
   1. `/api/auth/challenge` issues the one-time challenge (unchanged).
   2. The wallet signs it as a personal message.

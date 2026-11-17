@@ -2,8 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createPasskey, prepareIntent, signAndSubmitIntent, signInWithWallet, signOut as walletSignOut, type OwnerIntentKind, type PreparedIntent } from "./wallet";
+import { ConnectWallet } from "./connect-wallet";
+import { createPasskey, prepareIntent, signAndSubmitIntent, signOut as walletSignOut, type OwnerIntentKind, type PreparedIntent } from "./wallet";
 import { friendlyError } from "@/lib/errors";
+import { ownerLabel } from "@/lib/owner-id";
 
 // Live mode only. The owner signs everything: with the passkey that owns the
 // agent's wallet (new businesses), or with their NEAR wallet (agent wallets
@@ -54,12 +56,6 @@ export function WalletPanel(props: {
     }
   }
 
-  const signIn = () =>
-    guard(async () => {
-      await signInWithWallet();
-      router.refresh();
-    });
-
   const signOut = () =>
     guard(async () => {
       await walletSignOut();
@@ -106,16 +102,14 @@ export function WalletPanel(props: {
 
       {!props.ownerAccountId ? (
         <div className="mt-3">
-          <p className="text-sm text-muted">Sign in with your wallet app (for example HOT Wallet) to set up or manage your business. Signing in is free.</p>
-          <button onClick={signIn} disabled={busy} className="mt-3 rounded-xl bg-ledger px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60">
-            {busy ? "Check your wallet app…" : "Sign in"}
-          </button>
+          <p className="mb-3 text-sm text-muted">Sign in with your wallet to set up or manage your business. Signing in is free.</p>
+          <ConnectWallet next="/spending-rules" />
         </div>
       ) : (
         <div className="mt-3 space-y-4 text-sm">
           {!props.onboarding && (
             <p>
-              Signed in as <span className="num font-medium">{props.ownerAccountId}</span>{" "}
+              Signed in as <span className="num font-medium">{ownerLabel(props.ownerAccountId)}</span>{" "}
               <button onClick={signOut} className="text-indigo underline">
                 Sign out
               </button>

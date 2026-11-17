@@ -21,7 +21,7 @@ const Body = z.discriminatedUnion("step", [
 
 export async function POST(req: Request) {
   const owner = await getOwner();
-  if (!owner || owner.demo) return NextResponse.json({ error: "Sign in with your NEAR wallet first." }, { status: 401 });
+  if (!owner || owner.demo) return NextResponse.json({ error: "Sign in with your wallet first." }, { status: 401 });
   const body = Body.safeParse(await req.json());
   if (!body.success) return NextResponse.json({ error: "Bad request." }, { status: 400 });
   try {

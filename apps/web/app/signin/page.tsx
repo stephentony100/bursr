@@ -25,8 +25,8 @@ export default async function SignIn() {
           <ConnectWallet />
         </div>
         <p className="mt-6 text-sm text-muted">
-          Only you can see your business, your people and your payments. Connecting is free and moves no money. No wallet yet? Install a NEAR wallet app such as HOT
-          Wallet, create an account, then come back here.
+          Only you can see your business, your people and your payments. Connecting is free and moves no money. No wallet yet? Install HOT Wallet (NEAR) or Slush
+          (Sui), create an account, then come back here.
         </p>
       </main>
     </div>

@@ -48,4 +48,11 @@ describe("buildPolicy", () => {
   it("does not list the same destination twice", () => {
     expect(buildPolicy(rules(), [NEAR_PAYEE, { ...NEAR_PAYEE, id: "dup" }]).destinations.list).toHaveLength(1);
   });
+
+  it("puts the owner's own NEAR account on the list, but never a Sui owner ID on NEAR", () => {
+    const near = buildPolicy(rules(), [], "owner.near").destinations.list;
+    expect(near).toEqual([{ action: "withdraw", chain: rules().treasury.chain, address: "owner.near", memo: null }]);
+    const sui = buildPolicy(rules(), [], `sui:0x${"ab".repeat(32)}`).destinations.list;
+    expect(sui).toEqual([]);
+  });
 });

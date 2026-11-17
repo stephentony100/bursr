@@ -13,6 +13,7 @@ import { WalletPanel } from "@/components/wallet-panel";
 import { comingUp } from "@/lib/agent/view";
 import { grantState } from "@/lib/grant-store";
 import { listInvites } from "@/lib/invites";
+import { ownerLabel } from "@/lib/owner-id";
 import { getOwnerPasskey } from "@/lib/passkey";
 import { formatUsd } from "@/lib/money";
 import { onboardingState, STEP_TITLES, STEPS, type Step } from "@/lib/onboarding";
@@ -121,12 +122,12 @@ async function StepBody({ step, live, businessName, signedInAs }: { step: Step; 
             Your wallet is how Bursr knows it&apos;s you. Only your wallet can change your limits or who gets paid; your agent never can. Connecting is free and moves no money.
           </p>
           <p className="text-sm">
-            No wallet yet? Install a NEAR wallet app such as HOT Wallet, create an account, then come back here.
+            No wallet yet? Install HOT Wallet (NEAR) or Slush (Sui), create an account, then come back here.
           </p>
           {signedInAs ? (
             <>
               <p className="text-ink">
-                Connected as <span className="num font-semibold">{signedInAs}</span>.
+                Connected as <span className="num font-semibold">{ownerLabel(signedInAs)}</span>.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link href="/welcome" className="inline-block rounded-xl bg-ledger px-5 py-3 font-semibold text-white hover:bg-indigo">
@@ -261,7 +262,7 @@ async function StepBody({ step, live, businessName, signedInAs }: { step: Step; 
         <div className="space-y-5">
           <p className="text-muted">Your agent pays from its own wallet, never from yours. Put in enough for the first payday; it tells you when the money arrives and when it&apos;s running low.</p>
           {live ? (
-            <AddMoney suggestedUsd={null} />
+            <AddMoney suggestedUsd={null} from={(await getOwner())?.chain ?? "near"} />
           ) : (
             <ActionForm action={practiceMoneyAction} submit="Add $500 of practice money">
               <input type="hidden" name="amount" value="500" />

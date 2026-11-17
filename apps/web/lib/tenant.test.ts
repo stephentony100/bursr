@@ -65,4 +65,17 @@ describe("one Bursr, many businesses", () => {
     expect((await scoped(t.db, businessIdFor("bayo.near")).payeeInvite.count())).toBe(0);
     expect((await a.payeeInvite.findFirst())!.status).toBe("submitted");
   });
+
+  it("a Sui owner and a NEAR owner never see each other's business", async () => {
+    const suiId = `sui:0x${"cd".repeat(32)}`;
+    const sui = sessionFromCookie(issueSessionCookie(suiId, "")) as OwnerSession;
+    const { a } = await twoBusinesses();
+    const s = await dbForOwner(t.db, suiId);
+    expect(await getBusiness(s)).toBeNull();
+    await setupBusiness(s, sui, { name: "Sui Shop", rules: rules() });
+    expect((await getBusiness(s))!.name).toBe("Sui Shop");
+    expect((await getBusiness(a))!.name).toBe("Ada's Bakery");
+    expect(await listPayees(s)).toEqual([]);
+    expect(businessIdFor(suiId)).not.toBe(businessIdFor("ada.near"));
+  });
 });

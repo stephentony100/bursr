@@ -1,28 +1,34 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { readEnv } from "./env";
+import { ownerChain, type OwnerChain } from "./owner-id";
 
 // Who is the owner? Only code holding an OwnerSession can change rules or
 // payees (lib/owner-actions.ts). The session can only be made here:
 //   - dry-run: the demo owner, no wallet needed;
-//   - live: after the owner signs a NEP-413 sign-in message with a full-access
-//     key of their NEAR account (verified in app/api/auth/verify).
+//   - live: after the owner signs in with a NEAR wallet (a NEP-413 message
+//     signed by a full-access key of their account) or a Sui wallet (a personal
+//     message, lib/sui-signin.ts); both are verified in app/api/auth/verify.
 // Agent-side code never imports this module (enforced by lib/boundaries.test.ts).
 
 const OWNER = Symbol("bursar.owner");
 
 export interface OwnerSession {
   readonly [OWNER]: true;
+  /** The owner's ID: a NEAR account (`alice.near`), or `sui:0x…` for a Sui wallet. */
   readonly accountId: string;
-  /** The full-access public key the owner signed in with (needed as the Agent API owner key). */
+  readonly chain: OwnerChain;
+  /** NEAR only: the full-access public key the owner signed in with. */
   readonly publicKey: string | null;
   readonly demo: boolean;
 }
+
+export { ownerChain, ownerLabel, type OwnerChain } from "./owner-id";
 
 export const DEMO_OWNER_ID = "demo-owner.near";
 
 export function demoOwner(): OwnerSession {
   if (readEnv().BURSAR_MODE !== "dry-run") throw new Error("The demo owner exists only in dry-run mode.");
-  return { [OWNER]: true, accountId: DEMO_OWNER_ID, publicKey: null, demo: true };
+  return { [OWNER]: true, accountId: DEMO_OWNER_ID, chain: "near", publicKey: null, demo: true };
 }
 
 /**
@@ -31,7 +37,7 @@ export function demoOwner(): OwnerSession {
  * code from their signed-in web session.
  */
 export function telegramOwnerSession(accountId: string): OwnerSession {
-  return { [OWNER]: true, accountId, publicKey: null, demo: accountId === DEMO_OWNER_ID };
+  return { [OWNER]: true, accountId, chain: ownerChain(accountId), publicKey: null, demo: accountId === DEMO_OWNER_ID };
 }
 
 export function isOwnerSession(x: unknown): x is OwnerSession {
@@ -73,7 +79,7 @@ export function openPayload<T>(token: string, now = Date.now()): T | null {
   return p;
 }
 
-/** Called only after the NEP-413 signature has been verified. */
+/** Called only after the wallet's sign-in signature has been verified (publicKey is empty for Sui). */
 export function issueSessionCookie(accountId: string, publicKey: string, now = Date.now()): string {
   const body = Buffer.from(JSON.stringify({ a: accountId, k: publicKey, e: now + SESSION_MS })).toString("base64url");
   return `${body}.${mac(body)}`;
@@ -89,7 +95,7 @@ export function sessionFromCookie(value: string | undefined, now = Date.now()): 
   const { a, k, e } = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as { a: string; k: string; e: number };
   // Only session payloads: an action card (signed with the same key) has no account and is refused here.
   if (typeof e !== "number" || now > e || typeof a !== "string" || !a || typeof k !== "string") return null;
-  return { [OWNER]: true, accountId: a, publicKey: k, demo: false };
+  return { [OWNER]: true, accountId: a, chain: ownerChain(a), publicKey: k || null, demo: false };
 }
 
 // --- sign-in challenge -------------------------------------------------------

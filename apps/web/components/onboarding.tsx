@@ -8,8 +8,7 @@ import { ActionForm } from "@/components/forms";
 import type { PayoutToken, Rules } from "@/lib/domain";
 import { formatUnits, USD_DECIMALS } from "@/lib/money";
 import { chainName } from "@/lib/chains";
-import { signInWithWallet, signOut } from "./wallet";
-import { friendlyError } from "@/lib/errors";
+import { signOut } from "./wallet";
 
 // The interactive parts of /welcome. Each form posts to a server action that
 // saves and returns to /welcome, which then shows the next step.
@@ -39,40 +38,7 @@ export function DisconnectWallet() {
   );
 }
 
-export function ConnectWallet() {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  return (
-    <div className="space-y-4">
-      <button
-        onClick={async () => {
-          setBusy(true);
-          setError(null);
-          try {
-            await signInWithWallet();
-            // Back to the first open step (a link may have asked for this one).
-            router.replace("/welcome");
-            router.refresh();
-          } catch (e) {
-            setError(friendlyError(e));
-          } finally {
-            setBusy(false);
-          }
-        }}
-        disabled={busy}
-        className="rounded-xl bg-ledger px-5 py-3 font-semibold text-white hover:bg-indigo disabled:opacity-60"
-      >
-        {busy ? "Check your wallet app…" : "Connect my wallet"}
-      </button>
-      {error && (
-        <p role="alert" className="text-sm text-refuse">
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
+export { ConnectWallet } from "./connect-wallet";
 
 /** Fills the time zone with the browser's own, so most owners never touch it. */
 const noSubscribe = () => () => {};

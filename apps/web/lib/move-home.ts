@@ -6,6 +6,7 @@ import { canReceiveOnNear, notRegisteredText } from "./near-storage";
 import { isOwnerSession, type OwnerSession } from "./owner";
 import { NotOwnerError } from "./owner-actions";
 import { settle } from "./pay";
+import { ownerChain } from "./owner-id";
 import { getBusiness } from "./store";
 
 // "Move money back to my wallet": the owner takes money out of the Bursr
@@ -28,7 +29,8 @@ export interface HomeView {
 
 export async function homeView(db: PrismaClient, account: AgentAccount): Promise<HomeView | null> {
   const business = await getBusiness(db);
-  if (!business) return null;
+  // Only NEAR owners have their own account on the list they signed (lib/policy.ts); Sui comes with Sui withdrawals.
+  if (!business || ownerChain(business.ownerAccountId) !== "near") return null;
   const t = business.rules.treasury;
   const s = await account.status();
   const balanceUsd = rescale(s.balances[t.assetId] ?? 0n, t.decimals, USD_DECIMALS);
@@ -55,7 +57,8 @@ export async function moveMoneyHome(
   if (!isOwnerSession(owner)) throw new NotOwnerError();
   const business = await getBusiness(db);
   if (!business || business.ownerAccountId !== owner.accountId) throw new NotOwnerError();
-  const view = (await homeView(db, account))!;
+  const view = await homeView(db, account);
+  if (!view) throw new Error("Moving money back to a Sui wallet is coming soon.");
   const want = amountUsd === "all" ? view.canMoveUsd : amountUsd;
   if (want <= 0n) throw new Error(view.limitedBy ?? "There's no money in your Bursr wallet to move.");
   if (want > view.balanceUsd) throw new Error(`Your Bursr wallet has ${formatUsd(view.balanceUsd)}.`);

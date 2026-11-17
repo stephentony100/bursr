@@ -22,8 +22,16 @@ const OTHER_CHAINS = [
 
 const button = "rounded-xl bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60";
 
-export function AddMoney({ suggestedUsd }: { suggestedUsd: string | null }) {
+export function AddMoney({ suggestedUsd, from = "near" }: { suggestedUsd: string | null; /** The wallet family the owner signed in with. */ from?: "near" | "sui" }) {
   const [tab, setTab] = useState<"near" | "other">("near");
+  // One tap needs a NEAR wallet; a Sui owner gets an address for USDC on Sui (one tap from Sui comes later).
+  if (from !== "near") {
+    return (
+      <div className="rounded-2xl border border-line bg-card p-5">
+        <OtherChain first="sui" />
+      </div>
+    );
+  }
   return (
     <div className="rounded-2xl border border-line bg-card">
       <div role="tablist" aria-label="How to add money" className="flex border-b border-line text-sm">
@@ -119,8 +127,8 @@ function OneTap({ suggestedUsd }: { suggestedUsd: string | null }) {
   );
 }
 
-function OtherChain() {
-  const [choice, setChoice] = useState(OTHER_CHAINS[0]);
+function OtherChain({ first }: { first?: string }) {
+  const [choice, setChoice] = useState(OTHER_CHAINS.find((c) => c.chain === first) ?? OTHER_CHAINS[0]);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<DepositResult | null>(null);
   const [copied, setCopied] = useState(false);

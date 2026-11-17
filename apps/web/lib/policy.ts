@@ -1,5 +1,6 @@
 import type { Policy } from "@near-intents-agent-api/sdk";
 import { normaliseAddress, type Payee, type Rules } from "./domain";
+import { ownerChain } from "./owner-id";
 import { formatUnits, rescale, USD_DECIMALS } from "./money";
 
 // Turns the owner's rules and payee list into the Agent API policy the owner
@@ -37,7 +38,8 @@ export function buildPolicy(rules: Rules, payees: Payee[], ownerAccountId?: stri
     ? [{ action: "withdraw" as const, chain: rules.fee.payout.token.chain, address: normaliseAddress(rules.fee.payout.address), memo: rules.fee.payout.memo }]
     : [];
   // The owner can always move money back to their own account: it's on the list they sign.
-  const home = ownerAccountId ? [homeDestination(rules, ownerAccountId)] : [];
+  // NEAR owners only for now; a Sui owner's own address (chain sui) comes with Sui withdrawals.
+  const home = ownerAccountId && ownerChain(ownerAccountId) === "near" ? [homeDestination(rules, ownerAccountId)] : [];
   const list = [...payees.map(destinationFor), ...feeDestination, ...home]
     .filter((d) => {
       const key = JSON.stringify(d);
