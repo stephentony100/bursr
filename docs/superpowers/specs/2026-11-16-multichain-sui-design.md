@@ -1,6 +1,6 @@
 # Multi-chain owners, starting with Sui — design
 
-Date: 16 Nov 2026. Status: approved in conversation, awaiting written-spec review.
+Date: 16 Nov 2026. Status: approved by the owner on 17 Nov 2026; built on branch `multichain-sui`.
 
 ## Goal
 
@@ -21,8 +21,9 @@ A person with a Sui wallet can connect it to Bursr, send money to their agent wa
 - **Lost passkey.** With no owner rotation in the Agent API, an owner who loses their passkey can no longer change rules, add payees, freeze or delete that agent wallet. Mitigations:
   - Setup tells the owner to save the passkey to iCloud Keychain or Google Password Manager so it syncs.
   - The rules screen shows where the passkey lives.
-  - Before building, step 0 below records in DECISIONS.md what the Agent API docs say about funds when the owner can no longer sign.
-- **Domain lock-in.** A passkey belongs to one domain (`rp_id`). Owners depend on bursr.xyz (or the configured domain) to manage their agent wallet. `rp_id` and origin come from env, never from hard-coded values.
+  - Answer from the docs (DECISIONS.md, 17 Nov): after a lost passkey, money can still leave only while the agent's grant lives (30 days in Bursr, 365 at most) and only to addresses already on the list. So `agent_create` always puts the owner's own payout address on the list.
+- **Domain lock-in.** A passkey belongs to one domain (`rp_id`, a hostname or its parent) and one exact HTTPS `origin`. Owners depend on bursr.xyz (or the configured domain) to manage their agent wallet, so the domain must be final before the first owner signs up. `rp_id` and origin come from env, never from hard-coded values. The docs ask for "your site's exact HTTPS origin" and refuse passkey prompts inside another site's iframe, so testing passkey owners needs an HTTPS host (practice mode is unaffected).
+- **SDK version.** Bursr pins `@near-intents-agent-api/sdk` 0.8.0; 0.9.2 is out. Its types still say deposit `confidential` defaults to false (the docs say true). Upgrade only as its own step with the full test suite.
 
 ## Pieces
 
@@ -33,7 +34,7 @@ Each piece has one job, a typed interface, and its own tests.
 Look up and record in DECISIONS.md, quoting the doc line each time (AGENTS.md rules 1 and 11):
 - Agent API: the passkey owner flow (`OwnerWallet` `passkey`, `webauthn` intent standard) for `agent_create`, `policy_update`, `grant_issue` and freeze/unfreeze, plus what happens to funds when the owner cannot sign.
 - Agent API `deposit`: a deposit address on chain `sui` for the treasury token, and its status follow-up.
-- Sui: the current wallet-connect library (`@mysten/dapp-kit`), personal-message signing, server-side verification (`@mysten/sui`, including zkLogin signatures), and the USDC coin type on Sui mainnet, read from the token list rather than typed in.
+- Sui: the current wallet-connect library (`@mysten/dapp-kit-react`; the older `@mysten/dapp-kit` is deprecated, see DECISIONS.md 17 Nov), personal-message signing, server-side verification (`@mysten/sui`, including zkLogin signatures), and the USDC coin type on Sui mainnet, read from the token list rather than typed in.
 
 If a doc disagrees with this spec, the doc wins. Note it in DECISIONS.md and update this spec.
 
@@ -60,7 +61,7 @@ Adapters in this work:
 
 ### 3. Sui sign-in
 
-- The sign-in page offers "Connect Sui wallet" next to NEAR, listing the Sui wallets the browser has (Wallet Standard via dapp-kit).
+- The sign-in page offers "Connect Sui wallet" next to NEAR, listing the Sui wallets the browser has (Wallet Standard via `@mysten/dapp-kit-react`, client-only).
 - Flow:
   1. `/api/auth/challenge` issues the one-time challenge (unchanged).
   2. The wallet signs it as a personal message.
