@@ -24,7 +24,8 @@ describe("moving money back to the owner's wallet", () => {
   it("moves the amount to the owner's own account, in parts no bigger than the largest single payment", async () => {
     const account = await agentAccount(t.db);
     const before = (await homeView(t.db, account))!;
-    expect(before.accountId).toBe(owner.accountId);
+    expect(before.label).toBe(owner.accountId);
+    expect(before.exchanged).toBe(false);
     const r = await moveMoneyHome(t.db, owner, account, 1_000n * M); // above the $900 per-payment cap
     expect(r.parts).toBe(2);
     await r.done;

@@ -107,6 +107,65 @@ export async function signInWithSui(walletId: string) {
   const c = await (await fetch("/api/auth/challenge")).json();
   const signed = await kit.signPersonalMessage({ message: new TextEncoder().encode(c.suiMessage), account });
   await post("/api/auth/verify", { chain: "sui", token: c.token, address: account.address, signature: signed.signature });
+  // Remember the wallet, so a top-up later asks this same wallet.
+  try {
+    localStorage.setItem(SUI_WALLET_KEY, walletId);
+  } catch {
+    /* storage blocked: the owner picks the wallet again */
+  }
+}
+
+const SUI_WALLET_KEY = "bursr:sui-wallet";
+/** Network fee headroom on Sui, in MIST (0.01 SUI). */
+const SUI_GAS_MIN = 10_000_000n;
+
+/** The connected Sui account, reconnecting to the wallet the owner signed in with if needed. It must be the owner's own address. */
+async function ownerSuiAccount(kit: DAppKit, ownerAddress: string) {
+  const { normalizeSuiAddress } = await import("@mysten/sui/utils");
+  const want = normalizeSuiAddress(ownerAddress);
+  const now = kit.stores.$connection.get();
+  if (now.isConnected && normalizeSuiAddress(now.account.address) === want) return now.account;
+  let savedId: string | null = null;
+  try {
+    savedId = localStorage.getItem(SUI_WALLET_KEY);
+  } catch {
+    savedId = null;
+  }
+  let wallet: UiWallet | undefined;
+  for (const w of kit.stores.$wallets.get()) if ((await suiWalletId(w)) === savedId) wallet = w;
+  if (!wallet) throw new Error("Open the Sui wallet you signed in with (for example Slush), unlock it, and try again.");
+  const { accounts } = await kit.connectWallet({ wallet });
+  const account = accounts.find((a) => normalizeSuiAddress(a.address) === want);
+  if (!account) throw new Error(`Switch your Sui wallet to the account you signed in with (${want.slice(0, 6)}…${want.slice(-4)}), then try again.`);
+  return account;
+}
+
+/**
+ * One-tap top-up from the owner's Sui wallet: one USDC transfer on Sui to the
+ * agent wallet's one-time deposit address. Checks the wallet holds enough USDC
+ * and a little SUI for the network fee before the wallet opens. Amounts are in
+ * USDC's smallest units.
+ */
+export async function sendUsdcFromSui(p: { amount: bigint; decimals: number; coinType: string; to: string; ownerAddress: string; minimumUnits: string | null }): Promise<{ digest: string }> {
+  if (p.minimumUnits && p.amount < BigInt(p.minimumUnits)) {
+    throw new Error(`The smallest top-up from Sui is $${(Number(p.minimumUnits) / 10 ** p.decimals).toFixed(2)}.`);
+  }
+  const kit = await sui();
+  const account = await ownerSuiAccount(kit, p.ownerAddress);
+  const client = kit.getClient();
+  const [usdc, gas] = await Promise.all([client.core.getBalance({ owner: account.address, coinType: p.coinType }), client.core.getBalance({ owner: account.address })]);
+  const held = BigInt(usdc.balance.balance);
+  if (held < p.amount) {
+    throw new Error(`Your Sui wallet holds $${(Number(held) / 10 ** p.decimals).toFixed(2)} USDC, less than you asked to add. Add USDC to it, or add less.`);
+  }
+  if (BigInt(gas.balance.balance) < SUI_GAS_MIN) throw new Error("Your Sui wallet needs a little SUI (about 0.01) for the network fee.");
+  const { Transaction } = await import("@mysten/sui/transactions");
+  const tx = new Transaction();
+  tx.setSender(account.address);
+  tx.transferObjects([tx.coin({ balance: p.amount, type: p.coinType })], p.to);
+  const r = await kit.signAndExecuteTransaction({ transaction: tx, account });
+  if (r.$kind === "FailedTransaction") throw new Error("The transfer didn't go through on Sui, so nothing was sent. Please try again.");
+  return { digest: r.Transaction.digest };
 }
 
 /** Signs out of Bursr and disconnects the wallet, so the next "Connect" can pick any wallet. */

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { homeFor } from "./home";
 import { buildPolicy } from "./policy";
 import { BASE_PAYEE, NEAR_PAYEE, TRON_PAYEE, USDC_NEAR, USDT_TRON, rules, usd } from "./test-fixtures";
+
+const USDC_SUI = { assetId: "nep141:sui-c1b81ecaf27933252d31a963bc5e9458f13c18ce.omft.near", symbol: "USDC" as const, chain: "sui", decimals: 6 };
 
 describe("buildPolicy", () => {
   const policy = buildPolicy(rules(), [NEAR_PAYEE, TRON_PAYEE, BASE_PAYEE]);
@@ -49,10 +52,18 @@ describe("buildPolicy", () => {
     expect(buildPolicy(rules(), [NEAR_PAYEE, { ...NEAR_PAYEE, id: "dup" }]).destinations.list).toHaveLength(1);
   });
 
-  it("puts the owner's own NEAR account on the list, but never a Sui owner ID on NEAR", () => {
-    const near = buildPolicy(rules(), [], "owner.near").destinations.list;
-    expect(near).toEqual([{ action: "withdraw", chain: rules().treasury.chain, address: "owner.near", memo: null }]);
-    const sui = buildPolicy(rules(), [], `sui:0x${"ab".repeat(32)}`).destinations.list;
-    expect(sui).toEqual([]);
+  it("puts the owner's own wallet on the list: a NEAR account in the treasury token, a Sui address in USDC on Sui", () => {
+    const near = buildPolicy(rules(), [], homeFor(rules(), "owner.near", USDC_SUI));
+    expect(near.destinations.list).toEqual([{ action: "withdraw", chain: rules().treasury.chain, address: "owner.near", memo: null }]);
+    expect(near.assets).toEqual([rules().treasury.assetId]);
+
+    const addr = `0x${"ab".repeat(32)}`;
+    const sui = buildPolicy(rules(), [], homeFor(rules(), `sui:${addr}`, USDC_SUI));
+    expect(sui.destinations.list).toEqual([{ action: "withdraw", chain: "sui", address: addr, memo: null }]);
+    expect(sui.assets).toContain(USDC_SUI.assetId);
+    expect(sui.limits?.per_transaction?.[USDC_SUI.assetId]).toBeDefined();
+    // Never the raw owner ID on NEAR, and nothing at all without the Sui token.
+    expect(JSON.stringify(sui.destinations)).not.toContain("sui:");
+    expect(homeFor(rules(), `sui:${addr}`, null)).toBeNull();
   });
 });

@@ -3,6 +3,7 @@ import { demoTronAddress } from "./demo-addresses";
 import { issueSessionCookie, sessionFromCookie, type OwnerSession } from "./owner";
 import { addPayee, removePayee, setupBusiness, updateRules } from "./owner-actions";
 import { pendingChanges } from "./pending-changes";
+import { homeFor } from "./home";
 import { buildPolicy } from "./policy";
 import { getBusiness, listPayees } from "./store";
 import { createTestDb } from "./test-db";
@@ -16,7 +17,8 @@ const owner = sessionFromCookie(issueSessionCookie("owner.near", "ed25519:x")) a
 async function signedBusiness() {
   await setupBusiness(t.db, owner, { name: "Shop", rules: rules() });
   const id = await addPayee(t.db, owner, { name: "Kemi", category: "staff", payout: { token: USDT_TRON, address: demoTronAddress("kemi"), memo: null }, prices: [], recurring: null });
-  const policy = buildPolicy((await getBusiness(t.db))!.rules, await listPayees(t.db), owner.accountId);
+  const r = (await getBusiness(t.db))!.rules;
+  const policy = buildPolicy(r, await listPayees(t.db), homeFor(r, owner.accountId, null));
   await t.db.agentAccount.create({ data: { backend: "agent-api", agentId: "agent-1", policy: JSON.stringify(policy), policyRevision: 1 } });
   return id;
 }

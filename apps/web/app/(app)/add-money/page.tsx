@@ -65,18 +65,11 @@ export default async function AddMoneyPage() {
         <AddMoney suggestedUsd={short > 0n ? formatUnits(short, USD_DECIMALS).replace(/\.?0+$/, "") : null} from={(await getOwner())?.chain ?? "near"} />
       )}
 
-      {!dryRun && !home && business.ownerAccountId.startsWith("sui:") && (
-        <section className="rounded-2xl border border-dashed border-line p-5">
-          <h2 className="text-base font-bold">Move money back to my wallet</h2>
-          <p className="mt-1 text-sm text-muted">Coming soon for Sui wallets.</p>
-        </section>
-      )}
-
       {home && (
         <section className="rounded-2xl border border-line bg-card p-5">
           <h2 className="text-base font-bold">Move money back to my wallet</h2>
           <div className="mt-2">
-            <MoveHome accountId={home.accountId} balance={formatUsd(home.balanceUsd)} canMove={formatUsd(home.canMoveUsd)} limitedBy={home.limitedBy} />
+            <MoveHome label={home.label} exchanged={home.exchanged} balance={formatUsd(home.balanceUsd)} canMove={formatUsd(home.canMoveUsd)} limitedBy={home.limitedBy} />
           </div>
         </section>
       )}

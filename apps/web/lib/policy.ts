@@ -1,6 +1,6 @@
 import type { Policy } from "@near-intents-agent-api/sdk";
 import { normaliseAddress, type Payee, type Rules } from "./domain";
-import { ownerChain } from "./owner-id";
+import type { OwnerHome } from "./home";
 import { formatUnits, rescale, USD_DECIMALS } from "./money";
 
 // Turns the owner's rules and payee list into the Agent API policy the owner
@@ -17,13 +17,13 @@ export function destinationFor(p: Payee): Policy["destinations"]["list"][number]
   };
 }
 
-/** The owner's own NEAR account, where "Move money back to my wallet" sends the treasury token. */
-export function homeDestination(rules: Rules, ownerAccountId: string) {
-  return { action: "withdraw" as const, chain: rules.treasury.chain, address: normaliseAddress(ownerAccountId), memo: null };
+/** The owner's own wallet (lib/home.ts), where "Move money back to my wallet" sends money. */
+export function homeDestination(home: OwnerHome) {
+  return { action: "withdraw" as const, chain: home.chain, address: normaliseAddress(home.address), memo: null };
 }
 
-export function buildPolicy(rules: Rules, payees: Payee[], ownerAccountId?: string): Policy {
-  const tokens = [rules.treasury, ...payees.map((p) => p.payout.token), ...(rules.fee ? [rules.fee.payout.token] : [])];
+export function buildPolicy(rules: Rules, payees: Payee[], home?: OwnerHome | null): Policy {
+  const tokens = [rules.treasury, ...payees.map((p) => p.payout.token), ...(rules.fee ? [rules.fee.payout.token] : []), ...(home ? [home.token] : [])];
   const byAsset = new Map(tokens.map((t) => [t.assetId, t]));
 
   // Caps are set in USD; every allowed token is a USD stablecoin, so the cap
@@ -37,10 +37,8 @@ export function buildPolicy(rules: Rules, payees: Payee[], ownerAccountId?: stri
   const feeDestination = rules.fee
     ? [{ action: "withdraw" as const, chain: rules.fee.payout.token.chain, address: normaliseAddress(rules.fee.payout.address), memo: rules.fee.payout.memo }]
     : [];
-  // The owner can always move money back to their own account: it's on the list they sign.
-  // NEAR owners only for now; a Sui owner's own address (chain sui) comes with Sui withdrawals.
-  const home = ownerAccountId && ownerChain(ownerAccountId) === "near" ? [homeDestination(rules, ownerAccountId)] : [];
-  const list = [...payees.map(destinationFor), ...feeDestination, ...home]
+  // The owner can always move money back to their own wallet: it's on the list they sign.
+  const list = [...payees.map(destinationFor), ...feeDestination, ...(home ? [homeDestination(home)] : [])]
     .filter((d) => {
       const key = JSON.stringify(d);
       return seen.has(key) ? false : (seen.add(key), true);

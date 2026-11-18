@@ -84,6 +84,8 @@ The existing setup steps and the "go to the first open step" behaviour stay.
 
 ### 5. Adding money from Sui
 
+- **Built 18 Nov:** "From my Sui wallet (one tap)" in Add money (`components/add-money.tsx`, `sendUsdcFromSui` in `components/wallet.ts`, `suiOneTap` in `lib/funding.ts`).
+
 - **One tap:** the server gets the agent wallet's deposit address on Sui for the treasury token (Agent API `deposit`). The Sui wallet asks the owner to confirm a USDC transfer of the amount they typed (smallest units, bigint) to that address. The agent follows the deposit status and says when the money lands. If the owner's wallet holds less than they typed, the button says so before the wallet opens.
 - **Any other chain:** deposit address + QR code, unchanged.
 - The agent never pulls from the owner's wallet.
@@ -93,6 +95,8 @@ The existing setup steps and the "go to the first open step" behaviour stay.
 No change. Sui is already a payout chain (DECISIONS.md, 9 Nov).
 
 ### 7. Taking money out
+
+- **Built 18 Nov:** the owner's Sui address is "home" (`lib/home.ts`); money goes there as a swap into USDC on Sui then a withdraw (DECISIONS.md 18 Nov).
 
 - "Move money back to my wallet" (DECISIONS.md, 11 Nov) withdraws today to the owner's NEAR account, which `buildPolicy` always puts on the allowed list.
 - For a Sui owner, `buildPolicy` instead puts a `withdraw` destination on chain `sui` to their own Sui address on the list, and the button withdraws the treasury token there as USDC on Sui.

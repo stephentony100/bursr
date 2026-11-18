@@ -11,7 +11,7 @@ import { clearPracticeBusiness, loadSampleBusiness, loadSampleInvoices } from "@
 import { ingestInvoice } from "@/lib/invoices";
 import { demoEvmAddress, demoNearImplicit, demoTronAddress } from "@/lib/demo-addresses";
 import { PayeeCategory, type Payout, type PriceItem } from "@/lib/domain";
-import { addPracticeMoney, depositAddress, oneTapDeposit, type DepositAddress, type OneTapDeposit } from "@/lib/funding";
+import { addPracticeMoney, depositAddress, oneTapDeposit, suiOneTap, type DepositAddress, type OneTapDeposit, type SuiOneTap } from "@/lib/funding";
 import { readEnv } from "@/lib/env";
 import { approveAllInvites, approveInvite, createInvite, declineInvite, submitInvite } from "@/lib/invites";
 import { readImport, type ImportRow } from "@/lib/people-import";
@@ -457,6 +457,17 @@ export async function oneTapDepositAction(): Promise<{ ok: true; deposit: OneTap
   try {
     const owner = await requireOwner();
     return { ok: true, deposit: await oneTapDeposit((await appDb()), owner.accountId) };
+  } catch (e) {
+    return { ok: false, message: friendlyError(e, "Couldn't prepare the top-up.") };
+  }
+}
+
+/** What the owner's Sui wallet signs for a one-tap top-up (live mode, Sui owners). */
+export async function suiOneTapAction(): Promise<{ ok: true; deposit: SuiOneTap } | { ok: false; message: string }> {
+  try {
+    const owner = await requireOwner();
+    if (readEnv().BURSAR_MODE === "dry-run") throw new Error("In practice mode, use \"Add practice money\".");
+    return { ok: true, deposit: await suiOneTap(await appDb(), owner.accountId) };
   } catch (e) {
     return { ok: false, message: friendlyError(e, "Couldn't prepare the top-up.") };
   }

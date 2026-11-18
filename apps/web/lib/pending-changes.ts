@@ -3,7 +3,8 @@ import { chainName } from "./chains";
 import { normaliseAddress, PayoutSchema } from "./domain";
 import type { PrismaClient } from "./generated/prisma/client";
 import { formatUsd, parseUnits, rescale, USD_DECIMALS } from "./money";
-import { buildPolicy, destinationFor } from "./policy";
+import { ownerHome } from "./home";
+import { buildPolicy, destinationFor, homeDestination } from "./policy";
 import { getAccountRecord, getBusiness, listPayees } from "./store";
 
 // Live mode: what the owner changed in Bursr that their wallet hasn't signed
@@ -25,7 +26,8 @@ export async function pendingChanges(db: PrismaClient): Promise<PendingChanges |
   const [business, record] = await Promise.all([getBusiness(db), getAccountRecord(db)]);
   if (!business || !record || record.backend !== "agent-api") return null;
   const payees = await listPayees(db);
-  const want = buildPolicy(business.rules, payees, business.ownerAccountId);
+  const home = await ownerHome(business.rules, business.ownerAccountId);
+  const want = buildPolicy(business.rules, payees, home);
   const have = record.policy;
   if (isDeepStrictEqual(want, have)) return null;
 
@@ -43,7 +45,7 @@ export async function pendingChanges(db: PrismaClient): Promise<PendingChanges |
   const haveDest = new Map(((have.destinations?.list ?? []) as Dest[]).map((d) => [keyOf(d), d]));
   for (const [k, d] of wantDest) {
     if (!haveDest.has(k)) {
-      const isHome = d.chain === business.rules.treasury.chain && normaliseAddress(d.address) === normaliseAddress(business.ownerAccountId) && !payees.some((p) => keyOf(destinationFor(p) as Dest) === k);
+      const isHome = home !== null && keyOf(homeDestination(home)) === k && !payees.some((p) => keyOf(destinationFor(p) as Dest) === k);
       lines.push(isHome ? "Let you move money back to your own wallet" : `Add ${nameFor(d)} (paid on ${chainName(d.chain)})`);
       onlyTighter = false;
     }

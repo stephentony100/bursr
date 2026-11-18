@@ -4,6 +4,8 @@ import type { PrismaClient } from "./generated/prisma/client";
 import { readEnv } from "./env";
 import { formatUnits, parseUnits } from "./money";
 import { tokenBalanceOnNear } from "./near-storage";
+import { findToken, getTokens as oneClickTokens } from "./oneclick";
+import { ownerChain } from "./owner-id";
 import { getAccountRecord, getBusiness } from "./store";
 import { CHAIN_NAMES } from "./tokens";
 
@@ -12,6 +14,8 @@ import { CHAIN_NAMES } from "./tokens";
 //   USDC to `intents.near` naming the agent's NEAR Intents account (NEAR
 //   Intents docs, "Deposits": the `msg` "specifying who will own the tokens";
 //   Agent API funding: "send a transfer to agent.wallet.near_account_id");
+// - one tap from the owner's connected Sui wallet: a USDC transfer on Sui to a
+//   one-time deposit address (below), which the owner's wallet signs;
 // - from any other chain: a one-time deposit address (Agent API `deposit`),
 //   shown with a QR code; the agent watches and says when it arrives;
 // - practice mode: practice money, one tap.
@@ -61,6 +65,8 @@ export interface DepositAddress {
   address: string;
   memo: string | null;
   minimum: string | null;
+  /** The same minimum in the token's smallest units. */
+  minimumUnits: string | null;
   openUntil: string | null;
 }
 
@@ -87,8 +93,30 @@ export async function depositAddress(db: PrismaClient, symbol: string, chain: st
     address: det.deposit_address,
     memo: det.memo ?? null,
     minimum: det.min_amount ? formatUnits(BigInt(det.min_amount), origin.decimals) : null,
+    minimumUnits: det.min_amount ?? null,
     openUntil: det.expires_at ?? null,
   };
+}
+
+export interface SuiOneTap {
+  /** A one-time address on Sui; what arrives is changed into the Bursr wallet's currency. */
+  depositAddress: string;
+  /** Smallest amount the address accepts, in USDC's smallest units. */
+  minimumUnits: string | null;
+  /** USDC's coin type on Sui, from the 1Click token list (never typed by hand). */
+  coinType: string;
+  decimals: number;
+  /** The owner's own Sui address, from their sign-in ID: the wallet must send from it. */
+  ownerAddress: string;
+}
+
+/** What the owner's Sui wallet signs for a one-tap top-up (live mode, Sui owners). */
+export async function suiOneTap(db: PrismaClient, ownerAccountId: string): Promise<SuiOneTap> {
+  if (ownerChain(ownerAccountId) !== "sui") throw new Error("One tap from a Sui wallet is for owners who signed in with Sui.");
+  const usdc = findToken(await oneClickTokens(), "USDC", "sui");
+  if (!usdc.contractAddress) throw new Error("Bursr can't find USDC on Sui just now. Try again in a minute.");
+  const d = await depositAddress(db, "USDC", "sui");
+  return { depositAddress: d.address, minimumUnits: d.minimumUnits, coinType: usdc.contractAddress, decimals: usdc.decimals, ownerAddress: ownerAccountId.slice("sui:".length) };
 }
 
 /** Practice mode: adds practice money to the simulated wallet. */

@@ -8,6 +8,7 @@ import { isOwnerSession, type OwnerSession } from "./owner";
 import { formatUsd } from "./money";
 import { buildPolicy } from "./policy";
 import { MIN_FEE_USD } from "./plan";
+import { ownerHome } from "./home";
 import { getAccountRecord, getBusiness, getPayee, listPayees } from "./store";
 
 // Everything that changes the owner's rules or payees. Each function needs an
@@ -41,7 +42,7 @@ async function audit(db: PrismaClient, owner: OwnerSession, kind: string, messag
 export async function desiredPolicy(db: PrismaClient): Promise<Policy | null> {
   const business = await getBusiness(db);
   if (!business) return null;
-  return buildPolicy(business.rules, await listPayees(db), business.ownerAccountId);
+  return buildPolicy(business.rules, await listPayees(db), await ownerHome(business.rules, business.ownerAccountId));
 }
 
 /** Live mode: true when rules or payees changed since the owner last signed. */
@@ -86,7 +87,7 @@ export async function setupBusiness(db: PrismaClient, owner: OwnerSession, input
     update: { name: input.name, rules: JSON.stringify(rules) },
   });
   if (owner.demo) {
-    const policy = buildPolicy(rules, await listPayees(db), owner.accountId);
+    const policy = buildPolicy(rules, await listPayees(db), await ownerHome(rules, owner.accountId));
     const balances = Object.fromEntries(Object.entries(input.demoBalances ?? {}).map(([k, v]) => [k, v.toString()]));
     await db.agentAccount.upsert({
       where: { id: "main" },
@@ -136,7 +137,7 @@ export const MAX_ADDRESSES = 256;
 export async function addressesWith(db: PrismaClient, rules: Rules, extra: Payout[]): Promise<number> {
   const payees = await listPayees(db);
   const added = extra.map((payout, i) => ({ ...payees[0], id: `new-${i}`, payout }) as Payee);
-  return buildPolicy(rules, [...payees, ...added], (await getBusiness(db))?.ownerAccountId).destinations.list.length;
+  return buildPolicy(rules, [...payees, ...added], await ownerHome(rules, (await getBusiness(db))?.ownerAccountId)).destinations.list.length;
 }
 
 function tooManyText(count: number) {

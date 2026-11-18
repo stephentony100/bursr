@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { depositAddressAction, noticeTopUpAction, oneTapDepositAction, type DepositResult } from "@/app/actions";
+import { depositAddressAction, noticeTopUpAction, oneTapDepositAction, suiOneTapAction, type DepositResult } from "@/app/actions";
 import { parseUnits } from "@/lib/money";
-import { wallet } from "./wallet";
+import { sendUsdcFromSui, wallet } from "./wallet";
 import { friendlyError } from "@/lib/errors";
 
-// Adding money to the agent's wallet. Live: one tap from the owner's NEAR
-// wallet, or a one-time address (with QR) for USDC on any other chain.
+// Adding money to the agent's wallet. Live: one tap from the wallet the owner
+// signed in with (NEAR or Sui), or a one-time address (with QR) for USDC on any
+// other chain.
 // Nothing to copy for the one-tap path; the agent announces arrivals.
 
 const OTHER_CHAINS = [
@@ -23,21 +24,13 @@ const OTHER_CHAINS = [
 const button = "rounded-xl bg-ledger px-4 py-2 text-sm font-semibold text-white hover:bg-indigo disabled:opacity-60";
 
 export function AddMoney({ suggestedUsd, from = "near" }: { suggestedUsd: string | null; /** The wallet family the owner signed in with. */ from?: "near" | "sui" }) {
-  const [tab, setTab] = useState<"near" | "other">("near");
-  // One tap needs a NEAR wallet; a Sui owner gets an address for USDC on Sui (one tap from Sui comes later).
-  if (from !== "near") {
-    return (
-      <div className="rounded-2xl border border-line bg-card p-5">
-        <OtherChain first="sui" />
-      </div>
-    );
-  }
+  const [tab, setTab] = useState<"one" | "other">("one");
   return (
     <div className="rounded-2xl border border-line bg-card">
       <div role="tablist" aria-label="How to add money" className="flex border-b border-line text-sm">
         {(
           [
-            ["near", "From my NEAR wallet (one tap)"],
+            ["one", from === "sui" ? "From my Sui wallet (one tap)" : "From my NEAR wallet (one tap)"],
             ["other", "From another wallet or exchange"],
           ] as const
         ).map(([id, label]) => (
@@ -52,7 +45,9 @@ export function AddMoney({ suggestedUsd, from = "near" }: { suggestedUsd: string
           </button>
         ))}
       </div>
-      <div className="p-5">{tab === "near" ? <OneTap suggestedUsd={suggestedUsd} /> : <OtherChain />}</div>
+      <div className="p-5">
+        {tab === "one" ? from === "sui" ? <SuiOneTap suggestedUsd={suggestedUsd} /> : <OneTap suggestedUsd={suggestedUsd} /> : <OtherChain first={from === "sui" ? "sui" : undefined} />}
+      </div>
     </div>
   );
 }
@@ -116,6 +111,53 @@ function OneTap({ suggestedUsd }: { suggestedUsd: string | null }) {
         </label>
         <button onClick={send} disabled={busy} className={button}>
           {busy ? "Check your wallet app…" : "Add money"}
+        </button>
+      </div>
+      {msg && (
+        <p role="status" className={`text-sm ${msg.ok ? "text-ok" : "text-refuse"}`}>
+          {msg.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function SuiOneTap({ suggestedUsd }: { suggestedUsd: string | null }) {
+  const [amount, setAmount] = useState(suggestedUsd ?? "");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function send() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      if (!/^\d{1,7}(\.\d{1,6})?$/.test(amount) || Number(amount) <= 0) throw new Error("Enter an amount, like 250.");
+      const info = await suiOneTapAction();
+      if (!info.ok) throw new Error(info.message);
+      const d = info.deposit;
+      await sendUsdcFromSui({ amount: parseUnits(amount, d.decimals), decimals: d.decimals, coinType: d.coinType, to: d.depositAddress, ownerAddress: d.ownerAddress, minimumUnits: d.minimumUnits });
+      await noticeTopUpAction();
+      setMsg({ ok: true, text: `Sent $${amount} USDC from your Sui wallet. Your agent will say here when it has arrived (usually a few minutes).` });
+    } catch (e) {
+      setMsg({ ok: false, text: friendlyError(e) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted">Your Sui wallet asks you to confirm one USDC transfer to your Bursr wallet. Nothing to copy. You need a little SUI for the network fee.</p>
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="text-sm font-medium">
+          Amount
+          <span className="mt-1 flex items-center rounded-xl border border-line bg-card">
+            <span className="pl-3 text-muted">$</span>
+            <input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" className="num w-32 bg-transparent px-2 py-2 outline-none" />
+          </span>
+        </label>
+        <button onClick={send} disabled={busy} className={button}>
+          {busy ? "Check your wallet…" : "Add money"}
         </button>
       </div>
       {msg && (

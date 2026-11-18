@@ -6,7 +6,7 @@ import { moveMoneyHomeAction } from "@/app/actions";
 
 // "Move money back to my wallet": only to the owner's own account, inside their limits.
 
-export function MoveHome({ accountId, balance, canMove, limitedBy }: { accountId: string; balance: string; canMove: string; limitedBy: string | null }) {
+export function MoveHome({ label, exchanged, balance, canMove, limitedBy }: { label: string; exchanged: boolean; balance: string; canMove: string; limitedBy: string | null }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
@@ -23,7 +23,8 @@ export function MoveHome({ accountId, balance, canMove, limitedBy }: { accountId
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted">
-        Goes to your own wallet, <span className="num text-ink">{accountId}</span>, and nowhere else. You have {balance} here; you can move {canMove} now.
+        Goes to your own wallet, <span className="num text-ink">{label}</span>, and nowhere else. You have {balance} here; you can move {canMove} now.
+        {exchanged && " It arrives as USDC on Sui; exchange and network fees come off what arrives."}
       </p>
       {limitedBy && <p className="text-sm text-hold">{limitedBy}</p>}
       <form
