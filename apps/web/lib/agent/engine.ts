@@ -6,7 +6,7 @@ import { closeFinishedPlans, payItem, refreshPayments } from "../pay";
 import { getPlan, prepareAgentRun } from "../plans";
 import { quotePayout } from "../quotes";
 import { localDay, paydayOnOrAfter } from "../schedule";
-import { getBusiness } from "../store";
+import { getAccountRecord, getBusiness } from "../store";
 import { chainName } from "../tokens";
 import { say, sayOnce } from "./say";
 import { paydayNeed } from "./view";
@@ -82,6 +82,9 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
   const business = await getBusiness(db);
   if (!business) return { ...EMPTY, note: "No business yet." };
   const rules = business.rules;
+
+  // Setup still under way (no agent wallet yet): nothing to say; the setup steps guide the owner.
+  if (!(await getAccountRecord(db))) return { ...EMPTY, note: "No agent wallet yet." };
 
   let account;
   try {
