@@ -35,16 +35,14 @@ State: `owner`, `agent`, `token`, `per_payment_cap`, `weekly_cap`, `frozen`, `wi
 | Function | Who | What |
 |---|---|---|
 | `__constructor(owner, agent, token, per_payment_cap, weekly_cap)` | deployer | sets everything, not frozen |
-| `add_payee(addr)` / `remove_payee(addr)` | owner | changes the approved list |
-| `set_limits(per, weekly)` | owner | changes the caps |
-| `freeze()` / `unfreeze()` | owner | emergency stop |
+| `update(per, weekly, frozen, add, remove)` | owner | caps, emergency stop and approved-list changes in one signature |
 | `withdraw(to, amount)` | owner | takes money out (works while frozen) |
 | `set_agent(addr)` | owner | replaces a lost agent key |
 | `pay(key: BytesN<32>, payee, amount) -> i128` | agent | pays one approved payee |
 | `status()` | anyone | owner, agent, token, caps, frozen, spent, window start, balance |
 | `is_payee(addr)`, `paid(key)` | anyone | reads |
 
-`pay` refuses with a typed contract error, checked in this order: `Frozen`, `NotPayee`, `OverPaymentCap`, `OverWeeklyCap`, `AlreadyPaid`, `BadAmount` (≤ 0). The week is a 7-day window: when `now ≥ window_start + 7 days` the window restarts at `now` and `spent` resets. A successful `pay` transfers the token from the vault to the payee and emits a `paid` event (key, payee, amount). The agent never changes payees or limits (AGENTS.md rules 3 and 4).
+`pay` refuses with a typed contract error, checked in this order: `BadAmount` (≤ 0), `AlreadyPaid` (so a retry of a finished payment never reads as a refusal), `Frozen`, `NotPayee`, `OverPaymentCap`, `OverWeeklyCap`, `LowBalance`. Owner changes go through one `update(per, weekly, frozen, add, remove)` call, because a Soroban transaction holds one contract call and the owner should sign once. The week is a 7-day window: when `now ≥ window_start + 7 days` the window restarts at `now` and `spent` resets. A successful `pay` transfers the token from the vault to the payee and emits a `paid` event (key, payee, amount). The agent never changes payees or limits (AGENTS.md rules 3 and 4).
 
 Tests: one Rust test per rule, plus withdraw-while-frozen, window reset and non-owner/non-agent auth failures.
 
