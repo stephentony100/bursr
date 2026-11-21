@@ -71,3 +71,25 @@ describe("paymentKey and vaultErrorCode", () => {
     expect(vaultErrorCode("timeout")).toBeNull();
   });
 });
+
+describe("test USDC with the wallet's own test XLM", async () => {
+  const { planTestUsdc, spendableXlm } = await import("./stellar-vault");
+  const X = 10_000_000n;
+  it("keeps the network's minimum balance and 1 XLM for fees", () => {
+    // 19.49 XLM, 1 trustline already: reserve (2+1)×0.5 = 1.5, fee room 1 → 16.99 spendable.
+    expect(spendableXlm(194_943_823n, 1, false)).toBe(169_943_823n);
+    expect(spendableXlm(10_000n * X, 0, true)).toBe(10_000n * X - 15n * X / 10n - X);
+    expect(spendableXlm(2n * X, 3, false)).toBe(0n);
+  });
+  it("buys the full amount when the wallet can afford it", () => {
+    expect(planTestUsdc({ spendable: 9_000n * X, wanted: 50n * X, xlmForWanted: 70n * X, usdcForSpendable: null })).toEqual({ mode: "receive", usdc: 50n * X, xlmMax: 77n * X });
+  });
+  it("buys what the wallet can afford otherwise (a wallet with ~17 spendable XLM)", () => {
+    const p = planTestUsdc({ spendable: 169_943_823n, wanted: 50n * X, xlmForWanted: 70n * X, usdcForSpendable: 12n * X });
+    expect(p).toEqual({ mode: "send", xlm: 169_943_823n, usdcMin: 114_000_000n, usdcExpected: 12n * X });
+  });
+  it("says so plainly when it can't", () => {
+    expect(planTestUsdc({ spendable: X / 2n, wanted: 50n * X, xlmForWanted: 70n * X, usdcForSpendable: null }).mode).toBe("none");
+    expect(planTestUsdc({ spendable: 10n * X, wanted: 50n * X, xlmForWanted: null, usdcForSpendable: null }).mode).toBe("none");
+  });
+});

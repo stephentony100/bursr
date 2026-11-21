@@ -78,6 +78,7 @@ const EnvSchema = z.object({
   STELLAR_RPC_URL: z.string().default("https://soroban-testnet.stellar.org"),
   STELLAR_NETWORK_PASSPHRASE: z.string().default("Test SDF Network ; September 2015"),
   STELLAR_FRIENDBOT_URL: z.string().default("https://friendbot.stellar.org"),
+  STELLAR_HORIZON_URL: z.string().default("https://horizon-testnet.stellar.org"),
   // The uploaded vault wasm (public, not a secret). Each business deploys its own vault from it.
   STELLAR_VAULT_WASM_HASH: z.string().default("a1dbd97449bb74d788e61a4c44d1e135d3ca96c9d33883332c800a9803b0452a"),
 });

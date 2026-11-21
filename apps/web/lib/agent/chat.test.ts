@@ -4,7 +4,7 @@ import { demoOwner, issueSessionCookie, sessionFromCookie, type OwnerSession } f
 import { createTestDb } from "../test-db";
 import type { quotePayout } from "../quotes";
 import { amountOutFor } from "../quotes";
-import { chat, confirmCard, ownerWroteAmount } from "./chat";
+import { chat, confirmCard, ownerWords, ownerWroteAmount } from "./chat";
 
 const fakeQuote: typeof quotePayout = async (_t, payout, amountUsd) => {
   const out = amountOutFor(amountUsd, payout.token);
@@ -29,6 +29,22 @@ describe("chat with the agent", () => {
     expect(ownerWroteAmount("pay her 1,250.50 please", "1250.50")).toBe(true);
     expect(ownerWroteAmount("Pay Bisi a bonus", "20")).toBe(false);
     expect(ownerWroteAmount("Pay Bisi $200", "20")).toBe(false);
+  });
+
+  it("counts an amount the owner wrote a message or two earlier in the same conversation", () => {
+    const history = [
+      { role: "user" as const, content: "Pay Temiloluwa his pay today" },
+      { role: "assistant" as const, content: "How much should I pay Temiloluwa?" },
+      { role: "user" as const, content: "5 usdc" },
+      { role: "assistant" as const, content: "I'll propose a payment of 5 USDC." },
+      { role: "user" as const, content: "Alright, go ahead" },
+    ];
+    expect(ownerWroteAmount(ownerWords(history), "5")).toBe(true);
+    // Only the owner's words count: an amount the assistant said is not the owner's.
+    expect(ownerWroteAmount(ownerWords([{ role: "user", content: "pay him" }, { role: "assistant", content: "Shall I pay 50?" }, { role: "user", content: "yes" }]), "50")).toBe(false);
+    // Older messages drop out.
+    const old = [{ role: "user" as const, content: "pay 70" }, ...Array.from({ length: 4 }, () => ({ role: "user" as const, content: "ok" }))];
+    expect(ownerWroteAmount(ownerWords(old), "70")).toBe(false);
   });
 
   it("without a NEAR AI key it answers the built-in questions from real data", async () => {

@@ -32,10 +32,10 @@ async function main() {
   const stranger = Keypair.random();
   console.log("1. Fresh test wallets, funded with test XLM by friendbot");
   await Promise.all([owner, agent, payee, stranger].map((k) => fundWithFriendbot(k.publicKey())));
-  for (const k of [payee, stranger]) await send(await prepareGetTestUsdc(k.publicKey(), USDC(1)), k, "payee wallet can hold USDC");
+  for (const k of [payee, stranger]) await send((await prepareGetTestUsdc(k.publicKey(), USDC(1))).tx, k, "payee wallet can hold USDC");
 
   console.log("2. The owner gets $40 of test USDC");
-  await send(await prepareGetTestUsdc(owner.publicKey(), USDC(40)), owner, "owner bought test USDC with test XLM");
+  await send((await prepareGetTestUsdc(owner.publicKey(), USDC(40))).tx, owner, "owner bought test USDC with test XLM");
 
   console.log("3. The owner creates the vault: $10 per payment, $25 a week, one approved payee");
   const vaultId = String(

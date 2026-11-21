@@ -6,6 +6,7 @@ import { isOwnerSession, type OwnerSession } from "./owner";
 import { ownerAddress, ownerChain } from "./owner-id";
 import { desiredPolicy, NotOwnerError, setFrozen } from "./owner-actions";
 import { readEnv } from "./env";
+import { formatUsd, rescale, USD_DECIMALS } from "./money";
 import { fundWithFriendbot, prepareCall, prepareGetTestUsdc, prepareDeployVault, sc, submit, txFromXdr, usdcBalance, waitForTx, StellarSimulationError } from "./stellar";
 import { payeeDiff, refusalForVaultError, STELLAR_USDC_CONTRACT, vaultLimits } from "./stellar-vault";
 import { getAccountRecord, getBusiness } from "./store";
@@ -121,7 +122,9 @@ export async function prepareStellarOwnerTx(
   if (kind === "test_usdc") {
     const amount = opts.amount ?? 0n;
     if (amount <= 0n || amount > 500_0000000n) throw new Error("Ask for between $1 and $500 of test USDC.");
-    return prepared(kind, await prepareGetTestUsdc(address, amount), record?.agentId ?? "new", address, { ownerId: owner.accountId });
+    const { tx, usdcExpected } = await prepareGetTestUsdc(address, amount);
+    const p = prepared(kind, tx, record?.agentId ?? "new", address, { ownerId: owner.accountId });
+    return { ...p, summary: `Get about ${formatUsd(rescale(usdcExpected, 7, USD_DECIMALS))} of test USDC in your own wallet, paid for with its free test XLM` };
   }
 
   if (!record || record.backend !== "stellar") throw new Error("Set up your Bursr wallet first.");

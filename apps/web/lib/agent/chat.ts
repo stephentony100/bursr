@@ -70,6 +70,19 @@ function card(action: CardAction, owner: OwnerSession): ActionCard {
   return { token, title: action.pause ? "Pause all payments" : "Turn payments back on", detail: action.pause ? "Nothing goes out until you turn payments back on." : "The agent picks up anything that was waiting.", confirm: action.pause ? "Pause" : "Turn on" };
 }
 
+/**
+ * The owner's own words in the last three messages they sent. An amount counts
+ * when the owner typed it in one of these ("Pay Temi" … "5 usdc" … "go ahead"),
+ * never when only the agent said it.
+ */
+export function ownerWords(history: ChatTurn[]): string {
+  return history
+    .filter((h) => h.role === "user")
+    .slice(-3)
+    .map((h) => h.content)
+    .join("\n");
+}
+
 /** True when the owner's message contains this amount ("$20", "20", "1,250.50"), not just a number that starts the same. */
 export function ownerWroteAmount(message: string, amount: string): boolean {
   const said = message.replace(/(\d),(\d)/g, "$1$2");
@@ -107,6 +120,8 @@ interface ToolContext {
   db: PrismaClient;
   owner: OwnerSession;
   lastUserMessage: string;
+  /** The owner's recent messages (ownerWords): where an amount must come from. */
+  ownerWords: string;
   cards: ActionCard[];
   live: boolean;
 }
@@ -176,8 +191,8 @@ async function runTool(name: string, rawArgs: string, ctx: ToolContext): Promise
       const amountText = String(args.amount_usd ?? "").replace(/[$,\s]/g, "");
       if (!/^\d+(\.\d{1,2})?$/.test(amountText)) return { error: "Ask the owner for the exact amount." };
       // Never invent amounts: the number must be in the owner's own words.
-      if (!ownerWroteAmount(ctx.lastUserMessage, amountText)) {
-        return { error: `The owner didn't write ${amountText} in their message. Ask them to confirm the amount; do not guess.` };
+      if (!ownerWroteAmount(ctx.ownerWords, amountText)) {
+        return { error: `The owner didn't write ${amountText} in their recent messages. Ask them to type the amount; do not guess.` };
       }
       const wanted = String(args.payee_name ?? "").toLowerCase().trim();
       const people = await listPayees(db);
@@ -249,7 +264,7 @@ export async function chat(db: PrismaClient, owner: OwnerSession, history: ChatT
   const business = await getBusiness(db);
   if (!business) return { reply: "Set up your business first.", cards: [], ai: false };
   const last = history.filter((h) => h.role === "user").at(-1)?.content.trim() ?? "";
-  const ctx: ToolContext = { db, owner, lastUserMessage: last, cards: [], live: env.BURSAR_MODE === "live" };
+  const ctx: ToolContext = { db, owner, lastUserMessage: last, ownerWords: ownerWords(history), cards: [], live: env.BURSAR_MODE === "live" };
 
   if (!env.NEAR_AI_API_KEY) {
     const quick = QUICK[last];

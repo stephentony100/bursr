@@ -100,3 +100,35 @@ export function vaultErrorCode(message: string): number | null {
 
 export const stellarExpertTx = (hash: string) => `https://stellar.expert/explorer/testnet/tx/${hash}`;
 export const stellarExpertContract = (id: string) => `https://stellar.expert/explorer/testnet/contract/${id}`;
+
+/** XLM and USDC both have 7 decimals on Stellar; amounts here are in those units. */
+export type TestUsdcPlan =
+  | { mode: "receive"; usdc: bigint; xlmMax: bigint }
+  | { mode: "send"; xlm: bigint; usdcMin: bigint; usdcExpected: bigint }
+  | { mode: "none"; reason: string };
+
+const XLM = 10_000_000n;
+
+/** The XLM a wallet can spend: its balance less the network's minimum balance ((2 + entries) × 0.5 XLM) and 1 XLM kept for fees. */
+export function spendableXlm(balance: bigint, subentries: number, addsTrustline: boolean): bigint {
+  const reserve = (BigInt(2 + subentries + (addsTrustline ? 1 : 0)) * XLM) / 2n;
+  const left = balance - reserve - XLM;
+  return left > 0n ? left : 0n;
+}
+
+/**
+ * How to get test USDC with the wallet's test XLM: the full amount when it can
+ * afford it (10% price headroom), otherwise whatever its spendable XLM buys.
+ * `xlmForWanted`: the exchange's price in XLM for the wanted USDC; `usdcForSpendable`: what all the spendable XLM would buy.
+ */
+export function planTestUsdc(p: { spendable: bigint; wanted: bigint; xlmForWanted: bigint | null; usdcForSpendable: bigint | null }): TestUsdcPlan {
+  if (p.spendable < XLM) return { mode: "none", reason: "Your wallet has too little test XLM to buy test USDC. Get test USDC from Circle's faucet instead." };
+  if (p.xlmForWanted !== null) {
+    const max = (p.xlmForWanted * 11n) / 10n;
+    if (max <= p.spendable) return { mode: "receive", usdc: p.wanted, xlmMax: max };
+  }
+  if (p.usdcForSpendable === null || p.usdcForSpendable < XLM / 2n) {
+    return { mode: "none", reason: "The test exchange can't sell test USDC for your test XLM right now. Get test USDC from Circle's faucet instead." };
+  }
+  return { mode: "send", xlm: p.spendable, usdcMin: (p.usdcForSpendable * 95n) / 100n, usdcExpected: p.usdcForSpendable };
+}

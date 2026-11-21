@@ -15,7 +15,9 @@ import {
 } from "@stellar/stellar-sdk";
 import { randomBytes } from "node:crypto";
 import { readEnv } from "./env";
-import { STELLAR_USDC_CONTRACT, STELLAR_USDC_ISSUER, vaultErrorCode } from "./stellar-vault";
+import { planTestUsdc, spendableXlm, STELLAR_USDC_CONTRACT, STELLAR_USDC_ISSUER, vaultErrorCode } from "./stellar-vault";
+import { fetchJson } from "./http";
+import { z } from "zod";
 
 // The one module that talks to the Stellar network (Soroban RPC and friendbot).
 // It builds, simulates and submits transactions; it never decides anything.
@@ -179,18 +181,50 @@ export async function signAndSend(tx: Transaction, signer: Keypair): Promise<str
 
 /**
  * Testnet only: one transaction, signed by the owner's wallet, that lets their
- * wallet hold USDC (a trustline, if missing) and buys `usdc` (7-decimal units)
- * with free test XLM on the testnet exchange. Pays at most 5 XLM per USDC.
+ * wallet hold USDC (a trustline, if missing) and buys test USDC with its own
+ * test XLM on the testnet exchange: `usdc` (7-decimal units) when the wallet
+ * can afford it, otherwise as much as its spendable XLM buys (planTestUsdc).
+ * Returns the transaction and the USDC the owner should expect.
  */
-export async function prepareGetTestUsdc(owner: string, usdc: bigint): Promise<Transaction> {
+export async function prepareGetTestUsdc(owner: string, usdc: bigint): Promise<{ tx: Transaction; usdcExpected: bigint }> {
+  const horizon = readEnv().STELLAR_HORIZON_URL;
+  const usdcParam = `USDC:${STELLAR_USDC_ISSUER}`;
+  const account = await fetchJson(`${horizon}/accounts/${owner}`, HorizonAccount);
+  const native = account.balances.find((b) => b.asset_type === "native");
+  const addsTrustline = !(await hasUsdcTrustline(owner));
+  const spendable = spendableXlm(parseStroops(native?.balance ?? "0"), account.subentry_count, addsTrustline);
+
+  const receive = await fetchJson(`${horizon}/paths/strict-receive?source_assets=native&destination_asset_type=credit_alphanum4&destination_asset_code=USDC&destination_asset_issuer=${STELLAR_USDC_ISSUER}&destination_amount=${formatStroops(usdc)}`, HorizonPaths).catch(() => null);
+  const xlmForWanted = receive?._embedded.records.length ? minBig(receive._embedded.records.map((r) => parseStroops(r.source_amount))) : null;
+  let usdcForSpendable: bigint | null = null;
+  if (spendable > 0n && (xlmForWanted === null || (xlmForWanted * 11n) / 10n > spendable)) {
+    const send = await fetchJson(`${horizon}/paths/strict-send?source_asset_type=native&source_amount=${formatStroops(spendable)}&destination_assets=${usdcParam}`, HorizonPaths).catch(() => null);
+    usdcForSpendable = send?._embedded.records.length ? maxBig(send._embedded.records.map((r) => parseStroops(r.destination_amount))) : null;
+  }
+  const plan = planTestUsdc({ spendable, wanted: usdc, xlmForWanted, usdcForSpendable });
+  if (plan.mode === "none") throw new Error(plan.reason);
+
   const b = await builder(owner);
-  if (!(await hasUsdcTrustline(owner))) b.addOperation(Operation.changeTrust({ asset: USDC_ASSET() }));
-  const amount = formatStroops(usdc);
-  b.addOperation(Operation.pathPaymentStrictReceive({ sendAsset: Asset.native(), sendMax: formatStroops(usdc * 5n), destination: owner, destAsset: USDC_ASSET(), destAmount: amount, path: [] }));
-  return b.build();
+  if (addsTrustline) b.addOperation(Operation.changeTrust({ asset: USDC_ASSET() }));
+  if (plan.mode === "receive") {
+    b.addOperation(Operation.pathPaymentStrictReceive({ sendAsset: Asset.native(), sendMax: formatStroops(plan.xlmMax), destination: owner, destAsset: USDC_ASSET(), destAmount: formatStroops(plan.usdc), path: [] }));
+    return { tx: b.build(), usdcExpected: plan.usdc };
+  }
+  b.addOperation(Operation.pathPaymentStrictSend({ sendAsset: Asset.native(), sendAmount: formatStroops(plan.xlm), destination: owner, destAsset: USDC_ASSET(), destMin: formatStroops(plan.usdcMin), path: [] }));
+  return { tx: b.build(), usdcExpected: plan.usdcExpected };
 }
 
-/** 7-decimal units as the classic operations' decimal string ("12.5000000"). */
+const HorizonAccount = z.object({ subentry_count: z.number(), balances: z.array(z.object({ asset_type: z.string(), balance: z.string() })) });
+const HorizonPaths = z.object({ _embedded: z.object({ records: z.array(z.object({ source_amount: z.string(), destination_amount: z.string() })) }) });
+const minBig = (xs: bigint[]) => xs.reduce((a, b) => (b < a ? b : a));
+const maxBig = (xs: bigint[]) => xs.reduce((a, b) => (b > a ? b : a));
+
+/** "12.5000000" (7 decimals, as Horizon and classic operations write amounts) ⇄ 7-decimal units. */
+function parseStroops(s: string): bigint {
+  const [whole, frac = ""] = s.split(".");
+  return BigInt(whole) * 10_000_000n + BigInt((frac + "0000000").slice(0, 7));
+}
+
 function formatStroops(v: bigint): string {
   const s = v.toString().padStart(8, "0");
   return `${s.slice(0, -7)}.${s.slice(-7)}`;

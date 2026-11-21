@@ -52,7 +52,7 @@ function Result({ msg }: { msg: { ok: boolean; text: string; tx?: string } | nul
 export function StellarAddMoney({ suggestedUsd, vaultId }: { suggestedUsd: string | null; vaultId: string | null }) {
   const [amount, setAmount] = useState(suggestedUsd ?? "");
   const { busy, msg, run } = useMoney("fund", "Added. Your agent can pay from it now.");
-  const test = useMoney("test_usdc", "Done: $50 of test USDC is in your own wallet. Now add it to your Bursr wallet above.");
+  const test = useMoney("test_usdc", "Done: the test USDC is in your own wallet. Now add it to your Bursr wallet above.");
   return (
     <section className="rounded-2xl border border-line bg-card p-5">
       <h2 className="text-base font-bold">Add USDC from my Stellar wallet</h2>
