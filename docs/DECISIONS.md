@@ -149,6 +149,17 @@ Record each decision with date, reason and the doc line relied on.
 - SDK 0.7.3 rejected non-`naa_` keys at construction. Upgraded to `@near-intents-agent-api/sdk` 0.8.0, whose changelog says: "`AgentApi` no longer checks the shape of `apiKey`; it accepts any non-empty string … Keys created before the partner portal are retired." The other 0.8.0 breaking changes (`getPartnerQuota` drops `api_keys`, `verifyOperationProof` needs a trusted checkpoint) don't touch Bursr's code.
 - The new key belongs to the same tenant (`whoami` tenant unchanged), so the existing agent, its policy (revision 2) and the grant token kept working; no new agent was needed.
 
+## Stellar vault contract (21 Nov 2026)
+
+- `contracts/bursr-stellar-vault`, soroban-sdk 29.0.1, built with Stellar CLI 28.1.0 (`stellar contract build` -> `target/wasm32v1-none/release/bursr_stellar_vault.wasm`, 7239 bytes, already optimized by the build). 26 Rust tests pass.
+- Constructor takes the starting payee list too (`__constructor(owner, agent, token, per_payment_cap, weekly_cap, payees)`), so the owner signs once at setup.
+- Paid event uses `#[contractevent(topics = ["paid"], data_format = "vec")]` (docs.rs soroban-sdk 29 `contractevent`: "`vec` - fields become vector elements"), giving topics `("paid", payee)` and data `[key, amount]`.
+- `status()` reports `spent = 0` once the 7-day window has run out; `window_start` stays the stored start until the next payment opens a new window (0 before the first payment).
+- `update` and `withdraw` return typed errors (`BadLimits`, `BadAmount`, `LowBalance`); the constructor panics with `BadLimits`. Either way the caller sees `Error(Contract, #n)`.
+- TTL: instance and persistent entries are extended to 30 days (518400 ledgers) whenever fewer than 29 days remain; instance on every call, persistent entries on write.
+- Testnet wasm hash (public): `a1dbd97449bb74d788e61a4c44d1e135d3ca96c9d33883332c800a9803b0452a` (upload tx `f3fca9262256cd12ae80e318343c6f5d2b5fc2d2064427c25c08965d4556c09e`, CLI key `bursr-deployer`).
+- Testnet smoke (CLI keys `bursr-owner-test`, `bursr-agent-test`): vault `CANNAVWQXDPFQCCCIN35N2WTCE4PY6AHDCT6FQ2ITDDFZXBTCNPH4TUS` with USDC SAC, caps $10/$50, agent address as constructor payee. `status` returned the limits; owner `update` adding a payee succeeded (tx `606ab04f2bf883059d9d8ed558365effa7e216c4d6cfeee26ba0d3b1cae38600`); the same `update` from the agent key could not be authorized (owner signature missing); agent `pay` on the empty vault simulated to `Error(Contract, #7)` (LowBalance).
+
 ## Still open
 
 - [x] Human: Agent API demo key in `.env` (checked 5 Nov: quota 100 agents/day); OK to create one unfunded mainnet agent owned by `stephentony.near` (HOT Wallet) for the M1 rule-rejection test

@@ -1,0 +1,33 @@
+[package]
+name = "bursr-stellar-vault"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Bursr vault on Stellar: holds a business's USDC and lets its agent pay only approved payees within the owner's limits."
+license = "MIT"
+
+[lib]
+crate-type = ["lib", "cdylib"]
+doctest = false
+
+[dependencies]
+soroban-sdk = "29.0.1"
+
+[dev-dependencies]
+soroban-sdk = { version = "29.0.1", features = ["testutils"] }
+
+# Soroban's recommended release profile.
+[profile.release]
+opt-level = "z"
+overflow-checks = true
+debug = 0
+strip = "symbols"
+debug-assertions = false
+panic = "abort"
+codegen-units = 1
+lto = true
+
+# Tests only: no debug info and no incremental cache, to keep the target dir small.
+[profile.dev]
+debug = 0
+incremental = false
