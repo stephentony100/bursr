@@ -43,7 +43,7 @@ export function ConnectWallet({ next = "/welcome" }: { next?: string }) {
   useEffect(() => {
     if (!chain) return;
     if (chain === "sui") return watchSuiWallets(setWallets);
-    if (chain === "stellar") return setWallets(STELLAR_WALLETS);
+    if (chain === "stellar") return; // a fixed list (below)
     let live = true;
     nearWallets()
       .then((list) => live && setWallets(list))
@@ -74,6 +74,7 @@ export function ConnectWallet({ next = "/welcome" }: { next?: string }) {
   }
 
   const name = CHAINS.find((c) => c.id === chain)?.name;
+  const shown = chain === "stellar" ? STELLAR_WALLETS : wallets;
 
   return (
     <div className="max-w-md">
@@ -107,13 +108,13 @@ export function ConnectWallet({ next = "/welcome" }: { next?: string }) {
             )}
             <h2 className="font-semibold">Connect to {name}</h2>
           </div>
-          {wallets === null ? (
+          {shown === null ? (
             <p className="mt-4 text-sm text-muted">Looking for wallets…</p>
-          ) : wallets.length === 0 ? (
+          ) : shown.length === 0 ? (
             <p className="mt-4 text-sm text-muted">{NO_WALLET[chain]}</p>
           ) : (
             <ul className="mt-3 max-h-[22rem] space-y-0.5 overflow-y-auto pr-1">
-              {wallets.map((w) => (
+              {shown.map((w) => (
                 <li key={w.id}>
                   <button onClick={() => pick(w)} disabled={busy !== null} className={row}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
