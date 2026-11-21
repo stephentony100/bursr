@@ -4,6 +4,7 @@ import { ArrowRight } from "@phosphor-icons/react/dist/ssr";
 import { Logo } from "@/components/logo";
 import { Payday } from "./payday";
 import { RotatingWord } from "./rotating-word";
+import { STELLAR_EDITION } from "@/lib/edition";
 
 const NAV = [
   { href: "#features", label: "Features" },
@@ -68,7 +69,7 @@ export function Hero() {
       <div className="relative mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)] items-center gap-6 px-5 pb-16 pt-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:pt-16">
         <div>
           <p className="inline-flex items-center gap-2 rounded-full border border-line bg-card px-3 py-1 text-xs font-semibold text-muted">
-            <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-ok" /> Your AI payroll agent · built on NEAR
+            <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-ok" /> Your AI payroll agent · built on {STELLAR_EDITION ? "Stellar" : "NEAR"}
           </p>
           <h1 className="display mt-6 text-[clamp(2.5rem,4.6vw,3.9rem)] font-extrabold leading-[1.02] tracking-[-0.045em]">
             <span className="sr-only">Pay your staff and suppliers. Never the wrong person.</span>

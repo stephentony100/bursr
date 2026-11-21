@@ -25,8 +25,10 @@ export default async function SignIn() {
           <ConnectWallet />
         </div>
         <p className="mt-6 text-sm text-muted">
-          Only you can see your business, your people and your payments. Connecting is free and moves no money. No wallet yet? Install HOT Wallet (NEAR) or Slush
-          (Sui), create an account, then come back here.
+          Only you can see your business, your people and your payments. Connecting is free and moves no money.{" "}
+          {readEnv().BURSR_CHAIN === "stellar"
+            ? "No Stellar wallet yet? Install Freighter (freighter.app), or choose Albedo, which needs no install. Bursr runs on the Stellar test network."
+            : "No wallet yet? Install HOT Wallet (NEAR) or Slush (Sui), create an account, then come back here."}
         </p>
       </main>
     </div>

@@ -171,7 +171,7 @@ export async function sendUsdcFromSui(p: { amount: bigint; decimals: number; coi
 // --- Stellar (the Stellar edition, on testnet): Freighter's extension, or Albedo in any browser ---
 
 /** True when this build is the Stellar edition (BURSR_CHAIN=stellar, passed to the browser by next.config). */
-export const STELLAR_EDITION = process.env.NEXT_PUBLIC_BURSR_CHAIN === "stellar";
+export { STELLAR_EDITION } from "@/lib/edition";
 export const STELLAR_TESTNET_PASSPHRASE = "Test SDF Network ; September 2015";
 
 export const STELLAR_WALLETS: WalletChoice[] = [

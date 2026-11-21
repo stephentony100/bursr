@@ -4,6 +4,7 @@ import { CheckCircle, ShieldWarning } from "@phosphor-icons/react";
 import Image from "next/image";
 import { useRef } from "react";
 import { gsap, prefersReducedMotion, useGSAP } from "./gsap";
+import { STELLAR_EDITION } from "@/lib/edition";
 
 // The hero's signature: payday playing out live. A phone runs Bursr's Home
 // screen; as each row turns from "Paying" to "Paid", that person's
@@ -49,7 +50,7 @@ function Face({ p, size = 36 }: { p: Person; size?: number }) {
 /** Where each "received" card sits around the phone (desktop). */
 const SPOTS = ["left-0 top-[1%]", "right-0 top-[16%]", "left-[2%] bottom-[22%]", "right-[1%] bottom-[10%]"];
 
-export function Payday({ people = PEOPLE }: { people?: Person[] }) {
+export function Payday({ people = STELLAR_EDITION ? PEOPLE.map((p) => ({ ...p, network: "Stellar", token: "USDC" })) : PEOPLE }: { people?: Person[] }) {
   const root = useRef<HTMLDivElement>(null);
 
   useGSAP(

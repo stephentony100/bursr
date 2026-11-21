@@ -5,6 +5,7 @@ import { readEnv } from "@/lib/env";
 import { Badge } from "@/components/ui/badge";
 import { StartButton } from "./hero";
 import { CountUp } from "./count-up";
+import { STELLAR_EDITION } from "@/lib/edition";
 
 // The quieter sections of the home page: privacy, the problem in numbers,
 // pricing and the closing call. Plain layouts in the shared product style.
@@ -171,7 +172,7 @@ export function Closing() {
             <a href="#pricing" className="hover:text-white">Pricing</a>
             <Link href={live ? "/signin" : "/this-week"} className="text-white underline decoration-white/40 hover:decoration-white">{live ? "Sign in" : "Open the app"}</Link>
           </nav>
-          <span>Payments run on NEAR. Invoices are read privately with NEAR AI.</span>
+          <span>{STELLAR_EDITION ? "Payments run on Stellar (test network); your limits live in a Soroban contract. Invoices are read privately with NEAR AI." : "Payments run on NEAR. Invoices are read privately with NEAR AI."}</span>
         </div>
       </footer>
     </section>

@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { gsap, prefersReducedMotion, useGSAP } from "./gsap";
+import { STELLAR_EDITION } from "@/lib/edition";
 
 // "Pays out on": the networks people can be paid on, as their logos, sliding
 // past in a loop. Logos from web3icons (MIT), saved in public/networks.
@@ -30,6 +31,19 @@ export function NetworkStrip() {
     { scope: track },
   );
   const row = [...NETWORKS, ...NETWORKS];
+  if (STELLAR_EDITION) {
+    return (
+      <section aria-label="Where people are paid" className="border-y border-line bg-card py-6">
+        <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center gap-x-6 gap-y-3 px-5">
+          <p className="shrink-0 text-sm font-semibold text-muted">Pays out on</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/networks/stellar.svg" alt="" width={40} height={40} className="h-10 w-10 shrink-0" />
+          <p className="font-semibold">USDC on Stellar</p>
+          <p className="text-sm text-muted">Settles in seconds for a fraction of a cent. Cash out to naira through Stellar anchors: coming next.</p>
+        </div>
+      </section>
+    );
+  }
   return (
     <section aria-label="Networks people can be paid on" className="border-y border-line bg-card py-6">
       <div className="mx-auto flex w-full max-w-7xl items-center gap-6 px-5">

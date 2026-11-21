@@ -3,6 +3,7 @@
 import { ArrowsClockwise, ChatCircleDots, CheckCircle, DownloadSimple, FileCsv, LockSimple, PaperPlaneTilt, ShieldCheck, UsersThree } from "@phosphor-icons/react";
 import { useRef } from "react";
 import { gsap, prefersReducedMotion, useGSAP } from "./gsap";
+import { STELLAR_EDITION } from "@/lib/edition";
 
 // What Bursr's agent does, one card per job, each with a small piece of the
 // real product so the claim is shown, not just said.
@@ -97,9 +98,12 @@ export function Features() {
             </ul>
           </Card>
 
-          <Card title="Any network, full pay" body="USDC or USDT on the network each person uses. You cover the network fee, so they get every cent.">
+          <Card
+            title={STELLAR_EDITION ? "USDC on Stellar, full pay" : "Any network, full pay"}
+            body={STELLAR_EDITION ? "Everyone is paid in USDC on Stellar. A payment settles in seconds and costs a fraction of a cent, so they get every cent." : "USDC or USDT on the network each person uses. You cover the network fee, so they get every cent."}
+          >
             <div className="flex w-full flex-wrap gap-3">
-              {[
+              {(STELLAR_EDITION ? [["stellar", "Stellar"]] : [
                 ["near", "NEAR"],
                 ["base", "Base"],
                 ["solana", "Solana"],
@@ -108,7 +112,7 @@ export function Features() {
                 ["arbitrum", "Arbitrum"],
                 ["polygon", "Polygon"],
                 ["optimism", "Optimism"],
-              ].map(([n, name]) => (
+              ]).map(([n, name]) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img key={n} src={`/networks/${n}.svg`} alt={name} title={name} width={40} height={40} className="h-10 w-10 rounded-full bg-paper p-1.5" />
               ))}
