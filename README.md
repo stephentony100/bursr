@@ -16,6 +16,29 @@ Fake payment instructions are one of the costliest frauds a business faces. Busi
 
 Done: owner rules and payees, the agent account (live on NEAR mainnet, with real payments, see "Live run"), invoice reading and checks, the agent (autopilot, payment schedules, self-repair, live activity feed, chat, Telegram), adding money (one tap from a NEAR wallet, or a deposit address with QR from other chains), records and the CSV export, the NEAR AI "Verified" panel, the monthly plain-English summary and Bursr's fee (0.5% per payment run, on the owner's signed list). The whole demo below runs in practice mode. Not done: card or bank top-up (researched, see Limitations).
 
+## Bursr on Stellar (testnet)
+
+**Try it: https://test.bursr.xyz** (Stellar test network; test money only). This edition runs with `BURSAR_MODE=live` and `BURSR_CHAIN=stellar`. Each business gets its own Soroban vault contract (`contracts/bursr-stellar-vault`) that holds its USDC (Circle's testnet USDC) and enforces the owner's rules: a per-payment limit, a weekly limit, the list of people who may be paid, and a pause. The AI agent holds a key that can only call the vault's `pay`; only the owner's Stellar wallet can change the rules, add people, pause, or take money out.
+
+1. Open https://test.bursr.xyz/signin → you see "Connect to Stellar" with Freighter and Albedo. Albedo works in any browser with nothing to install.
+2. Pick a wallet and sign the sign-in text → you land on business setup. A new wallet is given test XLM by friendbot for network fees.
+3. Name your business, keep the starter limits ($20 per payment, $50 a week) and add the people you pay (Stellar G-addresses).
+4. Press "Set up my Bursr wallet with these limits…", then confirm in your wallet → one transaction creates your vault with your limits and people written into it. The Wallet page links to it on stellar.expert.
+5. On Wallet, press "Get $50 of test USDC" and confirm → your own wallet now holds test USDC, bought with test XLM on the testnet exchange. Then "Add money" moves it into the vault.
+6. When a payment is due and approved (Payments), the agent pays it from the vault. Each payment on Records links to its transaction on stellar.expert. A person must have USDC added to their Stellar wallet (a trustline) before they can be paid; Bursr tells you if not.
+7. "Pause all payments…" on Limits → the vault refuses every payment until you turn them back on. "Move money back to my wallet" still works while paused.
+
+Check the contract and the money path without a browser:
+
+```
+cd contracts/bursr-stellar-vault && cargo test     # 26 tests: every rule, its order, and who may call what
+npm run stellar:e2e                                 # testnet, throwaway keys: create a vault, fund it, pay, and see each refusal
+```
+
+`npm run stellar:e2e` prints each step with a stellar.expert link. It ends with "All checks passed on Stellar testnet."
+
+Coming next: naira in and out through Stellar anchors (SEP-24), so an owner can top up by bank transfer and people can cash out to their bank.
+
 ## Try it (practice mode: no keys, no funds)
 
 Requirements: Node.js 24 or newer (needed by the Agent API SDK), npm 11 or newer.
@@ -145,7 +168,7 @@ Details and the doc lines relied on: `docs/DECISIONS.md`.
 
 ## Built with
 
-Next.js, React, Tailwind CSS, TypeScript, Prisma (SQLite via better-sqlite3), zod, dotenv, Vitest, tsx, the OpenAI SDK (pointed at NEAR AI Cloud), `@near-intents-agent-api/sdk`, near-api-js (NEP-413 sign-in check), `@hot-labs/near-connect` (wallet sign-in and signing), `@simplewebauthn/browser` and `@simplewebauthn/server` (passkeys that own agent wallets, MIT), `@mysten/dapp-kit-core` and `@mysten/sui` (Sui wallet sign-in, Apache-2.0), `@phala/dcap-qvl` (Intel TDX quote verification), grammY (Telegram bot), sharp, qrcode (deposit QR codes, MIT). Animation: GSAP 3.15 with ScrollTrigger, SplitText and CustomEase, and `@gsap/react` (GSAP Standard no-charge license). Icons: Phosphor (`@phosphor-icons/react`). Fonts: Plus Jakarta Sans and Inter (SIL Open Font License, Google Fonts via `next/font`). Scaffolded with `create-next-app`. Written with Claude Code (Anthropic); NEAR agent skills from `near/agent-skills`. For the home page design, two public sites (myrefactory.com and showcase.8am.com) were captured locally with Deja-View (github.com/Nuel-osas/Deja-View, Playwright) and used only as visual reference; no code or assets from them are in this repo. The current UI follows the frontend-ui-engineering skill (addyosmani/agent-skills) for Claude Code. Home page patterns were studied in Deja-View captures and rebuilt with GSAP using the same settings: the pinned split-screen steps and blur text reveal from hear.ai, the pinned services accordion from newengen.com, and the auto-advancing feature tabs from Stax.ai (griflan-stax.netlify.app); none of their code or assets are in this repo.
+Stellar edition: soroban-sdk (Rust, Apache-2.0), Stellar CLI, `@stellar/stellar-sdk` (Apache-2.0), `@stellar/freighter-api` (Apache-2.0), `@albedo-link/intent` (MIT). Next.js, React, Tailwind CSS, TypeScript, Prisma (SQLite via better-sqlite3), zod, dotenv, Vitest, tsx, the OpenAI SDK (pointed at NEAR AI Cloud), `@near-intents-agent-api/sdk`, near-api-js (NEP-413 sign-in check), `@hot-labs/near-connect` (wallet sign-in and signing), `@simplewebauthn/browser` and `@simplewebauthn/server` (passkeys that own agent wallets, MIT), `@mysten/dapp-kit-core` and `@mysten/sui` (Sui wallet sign-in, Apache-2.0), `@phala/dcap-qvl` (Intel TDX quote verification), grammY (Telegram bot), sharp, qrcode (deposit QR codes, MIT). Animation: GSAP 3.15 with ScrollTrigger, SplitText and CustomEase, and `@gsap/react` (GSAP Standard no-charge license). Icons: Phosphor (`@phosphor-icons/react`). Fonts: Plus Jakarta Sans and Inter (SIL Open Font License, Google Fonts via `next/font`). Scaffolded with `create-next-app`. Written with Claude Code (Anthropic); NEAR agent skills from `near/agent-skills`. For the home page design, two public sites (myrefactory.com and showcase.8am.com) were captured locally with Deja-View (github.com/Nuel-osas/Deja-View, Playwright) and used only as visual reference; no code or assets from them are in this repo. The current UI follows the frontend-ui-engineering skill (addyosmani/agent-skills) for Claude Code. Home page patterns were studied in Deja-View captures and rebuilt with GSAP using the same settings: the pinned split-screen steps and blur text reveal from hear.ai, the pinned services accordion from newengen.com, and the auto-advancing feature tabs from Stax.ai (griflan-stax.netlify.app); none of their code or assets are in this repo.
 
 Launch film (`video/`, render with `cd video && npm install --no-workspaces && npm run render`): Remotion (free for individuals; remotion.dev/license), using the same photos, network logos and brand as the app. Music: "Infinity" by Arulo, Mixkit Stock Music Free License (commercial use, no attribution required).
 
@@ -162,7 +185,7 @@ Photos on the home page (free licences, `apps/web/public/photos/`):
 - Tomato and pepper seller, Bodija Market, Ibadan: Tunde Buremo, [Unsplash](https://unsplash.com/photos/a-group-of-people-standing-around-a-table-filled-with-tomatoes-cnVn4Gg4b00) (Unsplash License)
 - Fruit seller with her phone: Ali Mkumbwa, [Unsplash](https://unsplash.com/photos/a-woman-standing-in-front-of-a-fruit-stand-holding-a-cell-phone-5dFuO02OHh0) (Unsplash License)
 
-Bursr logo: designed for this project by its builder (`apps/web/public/brand/`). Plus Jakarta Sans font files for the share image: Fontsource (SIL OFL, `apps/web/assets/fonts/`). Network logos (NEAR, Base, Solana, Tron, Ethereum, Arbitrum, Polygon, BNB Chain, Optimism, Avalanche, Sui): web3icons (MIT, notice kept in `apps/web/public/networks/LICENSE-web3icons.txt` and `video/public/networks/`), saved in `apps/web/public/networks/`. The phone mockup and cards are drawn in code from the app's own screens.
+Bursr logo: designed for this project by its builder (`apps/web/public/brand/`). Plus Jakarta Sans font files for the share image: Fontsource (SIL OFL, `apps/web/assets/fonts/`). Network logos (NEAR, Base, Solana, Tron, Ethereum, Arbitrum, Polygon, BNB Chain, Optimism, Avalanche, Sui): web3icons (MIT, notice kept in `apps/web/public/networks/LICENSE-web3icons.txt` and `video/public/networks/`), saved in `apps/web/public/networks/`. The Stellar mark (`networks/stellar.svg`) and the Freighter and Albedo wallet icons (`public/wallets/`) are simple marks drawn for this project. The phone mockup and cards are drawn in code from the app's own screens.
 
 ## License
 
