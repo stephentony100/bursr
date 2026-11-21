@@ -71,6 +71,15 @@ const EnvSchema = z.object({
   NEAR_AI_CHAT_MODEL: optional,
 
   TELEGRAM_BOT_TOKEN: optional,
+
+  // Which chain live mode runs on. "stellar": the Stellar edition (testnet): owners sign in with a Stellar
+  // wallet and each business's Soroban vault (contracts/bursr-stellar-vault) holds its USDC and enforces the rules.
+  BURSR_CHAIN: z.enum(["near", "stellar"]).default("near"),
+  STELLAR_RPC_URL: z.string().default("https://soroban-testnet.stellar.org"),
+  STELLAR_NETWORK_PASSPHRASE: z.string().default("Test SDF Network ; September 2015"),
+  STELLAR_FRIENDBOT_URL: z.string().default("https://friendbot.stellar.org"),
+  // The uploaded vault wasm (public, not a secret). Each business deploys its own vault from it.
+  STELLAR_VAULT_WASM_HASH: z.string().default("a1dbd97449bb74d788e61a4c44d1e135d3ca96c9d33883332c800a9803b0452a"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

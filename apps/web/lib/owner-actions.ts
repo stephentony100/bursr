@@ -1,3 +1,4 @@
+import { isLiveBackend } from "./agent-account/types";
 import type { Policy } from "@near-intents-agent-api/sdk";
 import { randomUUID } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";
@@ -263,7 +264,7 @@ export async function changePayout(db: PrismaClient, owner: OwnerSession, id: st
     }
     // Live: the new address isn't payable until the owner's wallet confirms it, so the agent waits for that
     // (confirming trusts them again: lib/trust.ts) instead of being refused by the account.
-    if ((await getAccountRecord(db))?.backend === "agent-api") await db.payee.update({ where: { id }, data: { trustedAt: null } });
+    if (isLiveBackend((await getAccountRecord(db))?.backend)) await db.payee.update({ where: { id }, data: { trustedAt: null } });
   }
   await audit(
     db,
@@ -443,7 +444,7 @@ export async function requestOneOffPayment(db: PrismaClient, owner: OwnerSession
   });
   // Practice mode: the owner's request is the approval. Live: the owner's wallet must have signed them in first
   // (the agent waits for that, and confirming in the wallet trusts them: lib/trust.ts).
-  if ((await getAccountRecord(db))?.backend !== "agent-api") await trust(db, [payee.id]);
+  if (!isLiveBackend((await getAccountRecord(db))?.backend)) await trust(db, [payee.id]);
   await audit(db, owner, "plan_item_approved", `You asked the agent to pay ${payee.name} ${formatUsd(input.amountUsd)} (${forWhat})`, { planId: plan.id });
   return plan.id;
 }

@@ -1,12 +1,14 @@
 import type { PayoutToken, Rules } from "./domain";
 import { ownerChain } from "./owner-id";
 import { findPayoutToken, payoutTokens } from "./tokens";
+import { STELLAR_USDC } from "./stellar-vault";
 
 // "Home": the owner's own wallet, where "Move money back to my wallet" sends
 // money. It is always worked out from the owner's sign-in ID (never from
 // anything the agent says) and sits on the destination list the owner signs.
 // - NEAR owner: their NEAR account, in the treasury token.
 // - Sui owner: their Sui address, in USDC on Sui (the agent exchanges, then sends).
+// - Stellar owner: their G-address, in USDC on Stellar (the owner withdraws from the vault).
 
 export interface OwnerHome {
   chain: string;
@@ -18,6 +20,7 @@ export interface OwnerHome {
 export function homeFor(rules: Rules, ownerAccountId: string, suiUsdc: PayoutToken | null): OwnerHome | null {
   const chain = ownerChain(ownerAccountId);
   if (chain === "near") return { chain: rules.treasury.chain, address: ownerAccountId, token: rules.treasury };
+  if (chain === "stellar") return { chain: "stellar", address: ownerAccountId.slice("stellar:".length), token: STELLAR_USDC };
   if (chain === "sui" && suiUsdc) return { chain: "sui", address: ownerAccountId.slice("sui:".length), token: suiUsdc };
   return null;
 }

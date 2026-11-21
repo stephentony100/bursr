@@ -15,6 +15,8 @@ import { grantState } from "@/lib/grant-store";
 import { listInvites } from "@/lib/invites";
 import { ownerLabel } from "@/lib/owner-id";
 import { getOwnerPasskey } from "@/lib/passkey";
+import { StellarAddMoney } from "@/components/stellar-money";
+import { isStellarEdition } from "@/lib/stellar-owner";
 import { formatUsd } from "@/lib/money";
 import { onboardingState, STEP_TITLES, STEPS, type Step } from "@/lib/onboarding";
 import { policyNeedsSigning } from "@/lib/owner-actions";
@@ -113,6 +115,7 @@ export default async function Welcome({ searchParams }: { searchParams: Promise<
 }
 
 async function StepBody({ step, live, businessName, signedInAs }: { step: Step; live: boolean; businessName: string | null; signedInAs: string | null }) {
+  const stellar = isStellarEdition();
   const business = await getBusiness((await appDb()));
   switch (step) {
     case "wallet":
@@ -122,7 +125,9 @@ async function StepBody({ step, live, businessName, signedInAs }: { step: Step; 
             Your wallet is how Bursr knows it&apos;s you. Only your wallet can change your limits or who gets paid; your agent never can. Connecting is free and moves no money.
           </p>
           <p className="text-sm">
-            No wallet yet? Install HOT Wallet (NEAR) or Slush (Sui), create an account, then come back here.
+            {stellar
+              ? "No Stellar wallet yet? Install Freighter (freighter.app), or choose Albedo, which works in your browser with nothing to install. Bursr runs on the Stellar test network."
+              : "No wallet yet? Install HOT Wallet (NEAR) or Slush (Sui), create an account, then come back here."}
           </p>
           {signedInAs ? (
             <>
@@ -238,8 +243,9 @@ async function StepBody({ step, live, businessName, signedInAs }: { step: Step; 
       return (
         <div className="space-y-4">
           <p className="text-muted">
-            Your agent gets its own wallet, separate from yours, with your limits and the people you pay locked into it. You create a passkey that controls it, then confirm
-            twice with Face ID, fingerprint or PIN. All free; no money moves.
+            {stellar
+              ? "Your agent gets its own wallet on Stellar, separate from yours: a contract that holds your USDC, with your limits and the people you pay written into it. Your Stellar wallet confirms it once. No money moves."
+              : "Your agent gets its own wallet, separate from yours, with your limits and the people you pay locked into it. You create a passkey that controls it, then confirm twice with Face ID, fingerprint or PIN. All free; no money moves."}
           </p>
           <WalletPanel
             onboarding
@@ -261,8 +267,10 @@ async function StepBody({ step, live, businessName, signedInAs }: { step: Step; 
       return (
         <div className="space-y-5">
           <p className="text-muted">Your agent pays from its own wallet, never from yours. Put in enough for the first payday; it tells you when the money arrives and when it&apos;s running low.</p>
-          {live ? (
-            <AddMoney suggestedUsd={null} from={(await getOwner())?.chain ?? "near"} />
+          {stellar ? (
+            <StellarAddMoney suggestedUsd={null} vaultId={(await getAccountRecord(await appDb()))?.agentId ?? null} />
+          ) : live ? (
+            <AddMoney suggestedUsd={null} from={(await getOwner())?.chain === "sui" ? "sui" : "near"} />
           ) : (
             <ActionForm action={practiceMoneyAction} submit="Add $500 of practice money">
               <input type="hidden" name="amount" value="500" />

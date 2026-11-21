@@ -1,3 +1,4 @@
+import { isLiveBackend } from "../agent-account/types";
 import type { Payout } from "../domain";
 import type { PrismaClient } from "../generated/prisma/client";
 import { listInvoices } from "../invoices";
@@ -92,7 +93,7 @@ export async function needsYou(db: PrismaClient): Promise<NeedsYou[]> {
     reason: "Sent how they want to be paid. Check it with them, then approve on People.",
   }));
   // Live: payments to people the owner's wallet hasn't confirmed yet wait for that confirmation (which also approves them).
-  const live = (await getAccountRecord(db))?.backend === "agent-api";
+  const live = isLiveBackend((await getAccountRecord(db))?.backend);
   const unconfirmed = live ? new Set((await db.payee.findMany({ where: { trustedAt: null, removedAt: null }, select: { id: true } })).map((p) => p.id)) : new Set<string>();
   const forWallet = live
     ? await db.planItem.findMany({

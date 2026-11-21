@@ -31,7 +31,7 @@ export function HeaderWallet({ accountId, tone = "light" }: { accountId: string 
     return (
       <span className="flex min-w-0 items-center gap-2 text-sm">
         <span aria-hidden className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-ledger-soft font-bold uppercase text-ledger">
-          {ownerChain(accountId) === "sui" ? "S" : accountId.slice(0, 1)}
+          {ownerChain(accountId) === "sui" ? "S" : ownerChain(accountId) === "stellar" ? "G" : accountId.slice(0, 1)}
         </span>
         <span className={`hidden max-w-40 truncate font-medium sm:inline ${dark ? "text-ink" : "text-cream/80"}`} title="You're signed in as the owner">
           {ownerLabel(accountId)}

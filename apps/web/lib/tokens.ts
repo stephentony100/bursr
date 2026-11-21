@@ -1,6 +1,8 @@
 import snapshot from "../../../fixtures/tokens.snapshot.json";
 import type { PayoutToken } from "./domain";
 import { getTokens, type Token } from "./oneclick";
+import { readEnv } from "./env";
+import { STELLAR_USDC } from "./stellar-vault";
 
 // Payout tokens come from 1Click's GET /v0/tokens. If it cannot be reached,
 // dry-run falls back to fixtures/tokens.snapshot.json (saved from the same
@@ -23,6 +25,8 @@ export function stablecoinsFrom(tokens: Token[]): PayoutToken[] {
 let cache: { at: number; tokens: PayoutToken[] } | null = null;
 
 export async function payoutTokens(): Promise<PayoutToken[]> {
+  // The Stellar edition pays in one token: Circle's USDC on Stellar.
+  if (readEnv().BURSAR_MODE === "live" && readEnv().BURSR_CHAIN === "stellar") return [STELLAR_USDC];
   if (cache && Date.now() - cache.at < 10 * 60 * 1000) return cache.tokens;
   let tokens: PayoutToken[];
   try {

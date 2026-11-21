@@ -6,6 +6,23 @@ import { statementLines } from "@/lib/statement";
 import { monthFacts, plainSummary } from "@/lib/summary";
 import { aiSummaryAction } from "@/app/actions";
 import { AiSummaryButton } from "@/components/ai-summary";
+import { isStellarEdition } from "@/lib/stellar-owner";
+import { stellarExpertTx } from "@/lib/stellar-vault";
+
+/** Stellar edition: each payment's transaction, linked to the public explorer. */
+function StellarProof({ references }: { references: string }) {
+  const hashes = [...new Set(references.split(" ").map((r) => r.replace(/^tx:/, "")).filter((r) => /^[0-9a-f]{64}$/.test(r)))];
+  if (hashes.length === 0) return null;
+  return (
+    <p className="mt-1 text-xs">
+      {hashes.map((h) => (
+        <a key={h} href={stellarExpertTx(h)} target="_blank" rel="noreferrer" className="text-indigo underline">
+          See it on Stellar
+        </a>
+      ))}
+    </p>
+  );
+}
 
 /** The statement's fee (a decimal in the payee's token, any decimals) in USD micros; stablecoins only. */
 const feeMicros = (fee: string) => (fee ? rescale(parseUnits(fee, 18), 18, 6) : 0n);
@@ -17,6 +34,7 @@ export default async function StatementPage() {
   const lines = await statementLines((await appDb()));
   const total = lines.filter((l) => l.status !== "Not paid").reduce((a, l) => a + l.amountUsd, 0n);
   const facts = await monthFacts((await appDb()));
+  const stellar = isStellarEdition();
 
   return (
     <div className="space-y-8">
@@ -66,7 +84,11 @@ export default async function StatementPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className="num text-xs break-all">{l.receivedAs}</span>
-                    {l.references && <p className="num mt-1 text-xs text-muted">proof: {l.references}</p>}
+                    {l.references && stellar ? (
+                      <StellarProof references={l.references} />
+                    ) : (
+                      l.references && <p className="num mt-1 text-xs text-muted">proof: {l.references}</p>
+                    )}
                   </td>
                   <td className={`px-4 py-3 ${l.status === "Not paid" ? "text-refuse" : l.status === "Paid" ? "text-ok" : ""}`}>
                     {l.status}

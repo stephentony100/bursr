@@ -4,21 +4,25 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { friendlyError } from "@/lib/errors";
-import { nearWallets, signInWithNear, signInWithSui, watchSuiWallets, type WalletChoice } from "./wallet";
+import { nearWallets, signInWithNear, signInWithStellar, signInWithSui, STELLAR_EDITION, STELLAR_WALLETS, watchSuiWallets, type WalletChoice } from "./wallet";
 
 // Live mode sign-in: choose a chain, then a wallet on that chain. A new chain
-// is one more entry in CHAINS with its own wallet list and sign-in.
+// is one more entry in CHAINS with its own wallet list and sign-in. The Stellar
+// edition offers Stellar only, so it opens straight on the Stellar wallets.
 
-type Chain = "near" | "sui";
+type Chain = "near" | "sui" | "stellar";
 
-const CHAINS: { id: Chain; name: string; beta?: boolean }[] = [
-  { id: "near", name: "NEAR" },
-  { id: "sui", name: "Sui", beta: true },
-];
+const CHAINS: { id: Chain; name: string; beta?: boolean }[] = STELLAR_EDITION
+  ? [{ id: "stellar", name: "Stellar" }]
+  : [
+      { id: "near", name: "NEAR" },
+      { id: "sui", name: "Sui", beta: true },
+    ];
 
 const NO_WALLET: Record<Chain, string> = {
   near: "No NEAR wallet found. Install HOT Wallet, create an account, then come back.",
   sui: "No Sui wallet found in this browser. Install Slush (slush.app), then come back.",
+  stellar: "Install Freighter (freighter.app), or use Albedo, which needs no install.",
 };
 
 const row = "flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left hover:bg-paper disabled:opacity-60";
@@ -31,7 +35,7 @@ function ChainLogo({ id, size = 32 }: { id: Chain; size?: number }) {
 /** `next`: where to go once signed in (the first open setup step, or the owner's business). */
 export function ConnectWallet({ next = "/welcome" }: { next?: string }) {
   const router = useRouter();
-  const [chain, setChain] = useState<Chain | null>(null);
+  const [chain, setChain] = useState<Chain | null>(CHAINS.length === 1 ? CHAINS[0].id : null);
   const [wallets, setWallets] = useState<WalletChoice[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +43,7 @@ export function ConnectWallet({ next = "/welcome" }: { next?: string }) {
   useEffect(() => {
     if (!chain) return;
     if (chain === "sui") return watchSuiWallets(setWallets);
+    if (chain === "stellar") return setWallets(STELLAR_WALLETS);
     let live = true;
     nearWallets()
       .then((list) => live && setWallets(list))
@@ -58,7 +63,7 @@ export function ConnectWallet({ next = "/welcome" }: { next?: string }) {
     setBusy(w.id);
     setError(null);
     try {
-      await (chain === "sui" ? signInWithSui(w.id) : signInWithNear(w.id));
+      await (chain === "stellar" ? signInWithStellar(w.id) : chain === "sui" ? signInWithSui(w.id) : signInWithNear(w.id));
       router.replace(next);
       router.refresh();
     } catch (e) {
@@ -90,6 +95,7 @@ export function ConnectWallet({ next = "/welcome" }: { next?: string }) {
       ) : (
         <>
           <div className="flex items-center gap-3">
+            {CHAINS.length > 1 && (
             <button
               onClick={() => choose(null)}
               disabled={busy !== null}
@@ -98,6 +104,7 @@ export function ConnectWallet({ next = "/welcome" }: { next?: string }) {
             >
               <ArrowLeft size={16} aria-hidden />
             </button>
+            )}
             <h2 className="font-semibold">Connect to {name}</h2>
           </div>
           {wallets === null ? (

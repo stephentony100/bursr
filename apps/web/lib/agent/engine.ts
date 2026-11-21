@@ -1,3 +1,4 @@
+import { isLiveBackend } from "../agent-account/types";
 import { agentAccount } from "../agent-account";
 import { PayoutSchema } from "../domain";
 import type { PrismaClient } from "../generated/prisma/client";
@@ -232,7 +233,7 @@ async function agentRun(db: PrismaClient, options: AgentRunOptions): Promise<Age
       continue;
     }
     // Live: someone the owner's wallet hasn't confirmed yet can't be paid; wait for that rather than be refused.
-    if (account.backend === "agent-api" && row.payeeId) {
+    if (isLiveBackend(account.backend) && row.payeeId) {
       const payee = await db.payee.findFirst({ where: { id: row.payeeId }, select: { trustedAt: true } });
       if (payee && !payee.trustedAt) {
         report.needsOwner++;

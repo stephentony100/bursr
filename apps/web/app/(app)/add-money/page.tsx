@@ -2,6 +2,8 @@ import { connection } from "next/server";
 import { practiceMoneyAction } from "@/app/actions";
 import { AddMoney } from "@/components/add-money";
 import { MoveHome } from "@/components/move-home";
+import { StellarAddMoney, StellarMoveHome } from "@/components/stellar-money";
+import { isStellarEdition } from "@/lib/stellar-owner";
 import { homeView, type HomeView } from "@/lib/move-home";
 import { ActionForm } from "@/components/forms";
 import { agentAccount } from "@/lib/agent-account";
@@ -9,7 +11,7 @@ import { nextPayday, paydayNeed } from "@/lib/agent/view";
 import { getOwner, guardPage, appDb } from "@/lib/session";
 import { readEnv } from "@/lib/env";
 import { formatUnits, formatUsd, rescale, USD_DECIMALS } from "@/lib/money";
-import { getBusiness } from "@/lib/store";
+import { getAccountRecord, getBusiness } from "@/lib/store";
 
 export default async function AddMoneyPage() {
   await guardPage();
@@ -17,6 +19,8 @@ export default async function AddMoneyPage() {
   const business = await getBusiness((await appDb()));
   if (!business) return <p className="text-muted">Set up your business first.</p>;
   const dryRun = readEnv().BURSAR_MODE === "dry-run";
+  const stellar = isStellarEdition();
+  const vaultId = stellar ? ((await getAccountRecord(await appDb()))?.agentId ?? null) : null;
   const t = business.rules.treasury;
   let balance: bigint | null = null;
   let home: HomeView | null = null;
@@ -24,7 +28,7 @@ export default async function AddMoneyPage() {
     const account = await agentAccount(await appDb());
     const s = await account.status();
     balance = rescale(s.balances[t.assetId] ?? 0n, t.decimals, USD_DECIMALS);
-    home = await homeView(await appDb(), account);
+    if (!stellar) home = await homeView(await appDb(), account);
   } catch {
     balance = null;
   }
@@ -53,7 +57,9 @@ export default async function AddMoneyPage() {
         </div>
       </section>
 
-      {dryRun ? (
+      {stellar ? (
+        <StellarAddMoney suggestedUsd={short > 0n ? formatUnits(short, USD_DECIMALS).replace(/.?0+$/, "") : null} vaultId={vaultId} />
+      ) : dryRun ? (
         <section className="rounded-2xl border border-line bg-card p-5">
           <h2 className="text-base font-bold">Practice money</h2>
           <p className="mt-1 text-sm text-muted">In practice mode, add pretend dollars with one tap. In live mode this page tops up from your own wallet.</p>
@@ -62,8 +68,10 @@ export default async function AddMoneyPage() {
           </ActionForm>
         </section>
       ) : (
-        <AddMoney suggestedUsd={short > 0n ? formatUnits(short, USD_DECIMALS).replace(/\.?0+$/, "") : null} from={(await getOwner())?.chain ?? "near"} />
+        <AddMoney suggestedUsd={short > 0n ? formatUnits(short, USD_DECIMALS).replace(/\.?0+$/, "") : null} from={(await getOwner())?.chain === "sui" ? "sui" : "near"} />
       )}
+
+      {stellar && vaultId && <StellarMoveHome balance={balance === null ? "…" : formatUsd(balance)} />}
 
       {home && (
         <section className="rounded-2xl border border-line bg-card p-5">
@@ -74,12 +82,19 @@ export default async function AddMoneyPage() {
         </section>
       )}
 
+      {stellar ? (
+        <section className="rounded-2xl border border-dashed border-line p-5">
+          <h2 className="text-base font-bold">With naira, through a Stellar anchor</h2>
+          <p className="mt-1 text-sm text-muted">Coming next: pay in naira by bank transfer and a Stellar anchor turns it into USDC in your Bursr wallet. Your people cash out to naira the same way.</p>
+        </section>
+      ) : (
       <section className="rounded-2xl border border-dashed border-line p-5">
         <h2 className="text-base font-bold">With a card or bank transfer</h2>
         <p className="mt-1 text-sm text-muted">
           Coming soon: pay by card or bank transfer (including naira) and the dollars land straight in your Bursr wallet. No crypto app needed.
         </p>
       </section>
+      )}
     </div>
   );
 }

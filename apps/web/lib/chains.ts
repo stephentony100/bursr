@@ -12,6 +12,7 @@ export const CHAIN_NAMES: Record<string, string> = {
   op: "Optimism",
   avax: "Avalanche",
   sui: "Sui",
+  stellar: "Stellar",
 };
 
 export const chainName = (id: string) => CHAIN_NAMES[id] ?? id.toUpperCase();

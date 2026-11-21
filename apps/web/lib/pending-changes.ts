@@ -1,3 +1,4 @@
+import { isLiveBackend } from "./agent-account/types";
 import { isDeepStrictEqual } from "node:util";
 import { chainName } from "./chains";
 import { normaliseAddress, PayoutSchema } from "./domain";
@@ -24,7 +25,7 @@ const short = (a: string) => (a.length > 16 ? `${a.slice(0, 6)}…${a.slice(-4)}
 
 export async function pendingChanges(db: PrismaClient): Promise<PendingChanges | null> {
   const [business, record] = await Promise.all([getBusiness(db), getAccountRecord(db)]);
-  if (!business || !record || record.backend !== "agent-api") return null;
+  if (!business || !record || !isLiveBackend(record.backend)) return null;
   const payees = await listPayees(db);
   const home = await ownerHome(business.rules, business.ownerAccountId);
   const want = buildPolicy(business.rules, payees, home);

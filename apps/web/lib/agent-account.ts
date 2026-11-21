@@ -1,5 +1,6 @@
 import { AgentApiAccount } from "./agent-account/agent-api";
 import { SimulatedAccount } from "./agent-account/simulated";
+import { StellarVaultAccount } from "./agent-account/stellar";
 import type { AgentAccount } from "./agent-account/types";
 import { readEnv } from "./env";
 import { readGrant } from "./grant-store";
@@ -8,7 +9,8 @@ import { getAccountRecord, getBusiness } from "./store";
 
 // ALL payment code goes through here (AGENTS.md rule 3). Dry-run: the local
 // simulator of the Agent API policy. Live: the Agent API on mainnet, acting
-// with the agent's grant token only.
+// with the agent's grant token only; or, with BURSR_CHAIN=stellar, the business's
+// Soroban vault on Stellar testnet, acting with the agent's own key only.
 
 export type { AccountStatus, ActionOutcome, ActionRequest, AgentAccount } from "./agent-account/types";
 
@@ -20,6 +22,12 @@ export async function agentAccount(db: PrismaClient): Promise<AgentAccount> {
   if (env.BURSAR_MODE === "dry-run") {
     const tokens = [business.rules.treasury, ...business.rules.payoutTokens];
     return new SimulatedAccount(db, Object.fromEntries(tokens.map((t) => [t.assetId, t.decimals])));
+  }
+
+  if (env.BURSR_CHAIN === "stellar") {
+    const record = await getAccountRecord(db);
+    if (!record || record.backend !== "stellar") throw new Error("Set up your Bursr wallet first (Limits page).");
+    return new StellarVaultAccount({ vaultId: record.agentId, agentSecret: readGrant(record), policy: record.policy, policyRevision: record.policyRevision });
   }
 
   return new AgentApiAccount(await liveAgentConfig(db));

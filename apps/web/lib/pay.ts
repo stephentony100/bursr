@@ -1,3 +1,5 @@
+import { isLiveBackend } from "./agent-account/types";
+import { hasUsdcTrustline } from "./stellar";
 import { agentAccount, type ActionOutcome, type AgentAccount } from "./agent-account";
 import { readEnv } from "./env";
 import { isOnPayoutHold, normaliseAddress, type Payout } from "./domain";
@@ -117,7 +119,7 @@ export async function payItem(
 
   // Each step of a payment shows in the owner's feed as it happens (only the live account has real steps).
   const step = async (kind: string, message: string) => {
-    if (account.backend !== "agent-api") return;
+    if (!isLiveBackend(account.backend)) return;
     await db.auditEvent.create({ data: { kind, actor: "agent", message, data: JSON.stringify({ itemId: item.id }) } });
   };
 
@@ -177,6 +179,11 @@ export async function payItem(
     if (account.backend === "agent-api" && planned.token.chain === "near") {
       const ok = await canReceiveOnNear(planned.token.assetId, planned.address);
       if (ok === false) return stop({ kind: "payee", message: `${notRegisteredText(planned.address, planned.token.symbol)} I'll check again every day.` });
+    }
+
+    // A Stellar wallet must hold a USDC trustline before it can receive USDC.
+    if (account.backend === "stellar" && planned.token.chain === "stellar" && !(await hasUsdcTrustline(planned.address))) {
+      return stop({ kind: "payee", message: `${item.payeeName}'s Stellar wallet can't receive USDC yet. Ask them to add USDC to it (in Freighter: Manage assets, then add USDC by Circle). I'll check again every day.` });
     }
 
     await db.planItem.update({ where: { id: item.id }, data: { payStatus: "paying" } });

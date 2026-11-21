@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ConnectWallet } from "./connect-wallet";
-import { createPasskey, prepareIntent, signAndSubmitIntent, signOut as walletSignOut, type OwnerIntentKind, type PreparedIntent } from "./wallet";
+import { createPasskey, prepareIntent, signAndSubmitIntent, STELLAR_EDITION, signOut as walletSignOut, type OwnerIntentKind, type PreparedIntent } from "./wallet";
 import { friendlyError } from "@/lib/errors";
 import { ownerLabel } from "@/lib/owner-id";
 
@@ -11,6 +11,8 @@ import { ownerLabel } from "@/lib/owner-id";
 // agent's wallet (new businesses), or with their NEAR wallet (agent wallets
 // created before passkeys). Bursr's server never sees the owner's key. Before
 // any signature the owner sees exactly what the Agent API prepared.
+// Stellar edition: the owner's Stellar wallet signs every change to their vault
+// contract; there is no passkey, and the agent's key comes with the vault.
 
 type Kind = OwnerIntentKind;
 type Prepared = PreparedIntent;
@@ -86,8 +88,8 @@ export function WalletPanel(props: {
     });
 
   // Passkey owners confirm with the device's Face ID, fingerprint or PIN; older agent wallets with the NEAR wallet app.
-  const withPasskey = Boolean(props.passkey) || !props.agentId;
-  const needsPasskey = !props.agentId && !props.passkey;
+  const withPasskey = !STELLAR_EDITION && (Boolean(props.passkey) || !props.agentId);
+  const needsPasskey = !STELLAR_EDITION && !props.agentId && !props.passkey;
   const next: Kind | null = !props.agentId
     ? "agent_create"
     : props.needsSigning
@@ -127,7 +129,7 @@ export function WalletPanel(props: {
 
           {props.onboarding && next && (
             <p className="font-medium">
-              Step {needsPasskey ? 1 : next === "grant_issue" ? 3 : 2} of 3:{" "}
+              {STELLAR_EDITION ? "Last step: " : `Step ${needsPasskey ? 1 : next === "grant_issue" ? 3 : 2} of 3: `}
               {needsPasskey ? "create your passkey." : next === "grant_issue" ? "let your agent pay inside your limits." : "create your agent's wallet with your limits and the people you pay."}
             </p>
           )}
@@ -141,7 +143,9 @@ export function WalletPanel(props: {
                     : "Your wallet is set up. One more step lets Bursr make payments."
                   : needsPasskey
                     ? "Your passkey is the key to your agent's wallet. Save it to iCloud Keychain or Google Password Manager so you never lose it. If it's lost, nobody, not even Bursr, can change your limits."
-                    : "Next: set up your Bursr wallet. It's free; your passkey just confirms it."}
+                    : STELLAR_EDITION
+                      ? "Next: create your Bursr wallet on Stellar. Your wallet signs once, and your limits and the people you pay are written into it. Only your wallet can change them."
+                      : "Next: set up your Bursr wallet. It's free; your passkey just confirms it."}
               </p>
               {props.passkey && (
                 <p className={props.passkey.backedUp ? "text-muted" : "text-hold"}>
@@ -190,7 +194,7 @@ export function WalletPanel(props: {
                 )}
               </details>
               <p className="mt-2 text-muted">
-                {withPasskey ? "Your device will ask for your Face ID, fingerprint or PIN." : "Your wallet app will ask you to confirm."} It costs you nothing. Please confirm before{" "}
+                {withPasskey ? "Your device will ask for your Face ID, fingerprint or PIN." : "Your wallet app will ask you to confirm."} {STELLAR_EDITION ? "The network fee is a fraction of a cent in test XLM." : "It costs you nothing."} Please confirm before{" "}
                 {new Date(prepared.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.
               </p>
               <div className="mt-3 flex gap-2">

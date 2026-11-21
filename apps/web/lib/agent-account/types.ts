@@ -4,7 +4,7 @@ import type { ActionRequest, Refusal } from "./evaluate";
 export type { ActionRequest, Refusal };
 
 export interface AccountStatus {
-  backend: "simulated" | "agent-api";
+  backend: "simulated" | "agent-api" | "stellar";
   agentId: string;
   frozen: boolean;
   policy: Policy;
@@ -36,7 +36,7 @@ export interface Outcome {
  * they live in lib/owner-actions.ts and need the owner's session/signature.
  */
 export interface AgentAccount {
-  readonly backend: "simulated" | "agent-api";
+  readonly backend: "simulated" | "agent-api" | "stellar";
   status(): Promise<AccountStatus>;
   /** Asks the account to act. Same idempotency key → same outcome, never a second payment. */
   execute(req: ActionRequest, idempotencyKey: string): Promise<ActionOutcome>;
@@ -46,4 +46,9 @@ export interface AgentAccount {
   outcome(correlationId: string): Promise<Outcome>;
   /** Live only: moves money that arrived in the legacy public pool into the balance payments spend from. */
   shieldArrivals?(): Promise<{ asset: string; amount: bigint }[]>;
+}
+
+/** A real account (Agent API on NEAR, or the Stellar vault), as opposed to practice mode's simulator. */
+export function isLiveBackend(backend: string | null | undefined): boolean {
+  return backend === "agent-api" || backend === "stellar";
 }

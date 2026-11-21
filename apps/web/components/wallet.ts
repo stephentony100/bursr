@@ -168,6 +168,97 @@ export async function sendUsdcFromSui(p: { amount: bigint; decimals: number; coi
   return { digest: r.Transaction.digest };
 }
 
+// --- Stellar (the Stellar edition, on testnet): Freighter's extension, or Albedo in any browser ---
+
+/** True when this build is the Stellar edition (BURSR_CHAIN=stellar, passed to the browser by next.config). */
+export const STELLAR_EDITION = process.env.NEXT_PUBLIC_BURSR_CHAIN === "stellar";
+export const STELLAR_TESTNET_PASSPHRASE = "Test SDF Network ; September 2015";
+
+export const STELLAR_WALLETS: WalletChoice[] = [
+  { id: "freighter", name: "Freighter", icon: "/wallets/freighter.svg" },
+  { id: "albedo", name: "Albedo (no install)", icon: "/wallets/albedo.svg" },
+];
+
+const STELLAR_WALLET_KEY = "bursr:stellar-wallet";
+
+function rememberStellarWallet(id: string) {
+  try {
+    localStorage.setItem(STELLAR_WALLET_KEY, id);
+  } catch {
+    /* storage blocked: Freighter is tried first next time */
+  }
+}
+
+function stellarWalletId(): string {
+  try {
+    return localStorage.getItem(STELLAR_WALLET_KEY) ?? "freighter";
+  } catch {
+    return "freighter";
+  }
+}
+
+async function freighter() {
+  const api = await import("@stellar/freighter-api");
+  const c = await api.isConnected();
+  if (!c.isConnected) throw new Error("Freighter isn't installed in this browser. Install it from freighter.app, or choose Albedo.");
+  return api;
+}
+
+function base64(sig: string | Uint8Array): string {
+  return typeof sig === "string" ? sig : btoa(String.fromCharCode(...sig));
+}
+
+/** Connects the Stellar wallet the owner picked and signs Bursr's sign-in text; the server checks it and sets the owner session. */
+export async function signInWithStellar(walletId: string) {
+  const c = await (await fetch("/api/auth/challenge")).json();
+  if (walletId === "albedo") {
+    const { default: albedo } = await import("@albedo-link/intent");
+    const r = await albedo.signMessage({ message: c.stellarMessage });
+    await post("/api/auth/verify", { chain: "stellar", token: c.token, address: r.pubkey, signature: r.message_signature, signedMessage: r.signed_message });
+  } else {
+    const api = await freighter();
+    const access = await api.requestAccess();
+    if (access.error || !access.address) throw new Error("Freighter didn't share an account. Open it, unlock it, and try again.");
+    const signed = await api.signMessage(c.stellarMessage, { address: access.address, networkPassphrase: STELLAR_TESTNET_PASSPHRASE });
+    if (signed.error || !signed.signedMessage) throw new Error("Freighter didn't sign. Please try again.");
+    await post("/api/auth/verify", { chain: "stellar", token: c.token, address: access.address, signature: base64(signed.signedMessage as string | Uint8Array) });
+  }
+  rememberStellarWallet(walletId);
+}
+
+/** The owner's Stellar wallet signs a transaction Bursr prepared. Returns the signed XDR. */
+export async function signStellarXdr(xdr: string, address: string, networkPassphrase: string): Promise<string> {
+  if (stellarWalletId() === "albedo") {
+    const { default: albedo } = await import("@albedo-link/intent");
+    const r = await albedo.tx({ xdr, pubkey: address, network: networkPassphrase === STELLAR_TESTNET_PASSPHRASE ? "testnet" : networkPassphrase });
+    return r.signed_envelope_xdr;
+  }
+  const api = await freighter();
+  const r = await api.signTransaction(xdr, { networkPassphrase, address });
+  if (r.error || !r.signedTxXdr) {
+    throw new Error(`Freighter didn't sign, so nothing changed. Check it is on Testnet and on the account you signed in with (${address.slice(0, 4)}…${address.slice(-4)}).`);
+  }
+  return r.signedTxXdr;
+}
+
+/** Adds USDC to the Bursr wallet, or moves it back to the owner's wallet: prepared by Bursr, signed in the owner's wallet. Amount in USDC's smallest units. */
+export async function stellarMoney(kind: "fund" | "withdraw" | "test_usdc", amount: bigint): Promise<{ txHash?: string }> {
+  const prepared = await post<PreparedIntent>("/api/owner/intent", { step: "prepare", kind, amount: amount.toString() });
+  return submitStellar(prepared);
+}
+
+async function submitStellar(prepared: PreparedIntent): Promise<{ txHash?: string }> {
+  const p = prepared.intent.payload as { xdr: string; networkPassphrase: string; address: string };
+  const signedXdr = await signStellarXdr(p.xdr, p.address, p.networkPassphrase);
+  const result = await post<{ status: string; failureCode: string | null; txHash?: string }>("/api/owner/intent", {
+    step: "submit",
+    correlationId: prepared.correlationId,
+    signedData: { signedXdr },
+  });
+  if (result.status !== "SUCCESS") throw new Error(result.failureCode ?? "That didn't go through, so nothing changed. Please try again.");
+  return { txHash: result.txHash };
+}
+
 /** Signs out of Bursr and disconnects the wallet, so the next "Connect" can pick any wallet. */
 export async function signOut() {
   await post("/api/auth/signout", {});
@@ -211,6 +302,10 @@ export function prepareIntent(kind: OwnerIntentKind): Promise<PreparedIntent> {
 /** The owner's wallet signs the prepared change and Bursr submits it. Throws a plain-words error if it isn't applied. */
 export async function signAndSubmitIntent(prepared: PreparedIntent): Promise<void> {
   const { intent } = prepared;
+  if (intent.standard === "stellar-xdr") {
+    await submitStellar(prepared);
+    return;
+  }
   let signedData: Record<string, unknown>;
   if (intent.standard === "webauthn") {
     // Passkey owner: the device signs the Agent API's own prompt, passed through unchanged (SDK README).

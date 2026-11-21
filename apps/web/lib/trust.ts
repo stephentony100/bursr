@@ -1,3 +1,4 @@
+import { isLiveBackend } from "./agent-account/types";
 import type { PrismaClient } from "./generated/prisma/client";
 import { normaliseAddress, type Payee } from "./domain";
 import { destinationFor } from "./policy";
@@ -15,7 +16,7 @@ const key = (d: { chain?: string; address: string; memo?: string | null }) => `$
 export async function trustSignedPayees(db: PrismaClient, now = new Date()): Promise<string[]> {
   const record = await getAccountRecord(db);
   const business = await getBusiness(db);
-  if (!record || record.backend !== "agent-api" || !business) return [];
+  if (!record || !isLiveBackend(record.backend) || !business) return [];
   const signed = new Set(((record.policy.destinations?.list ?? []) as { chain?: string; address: string; memo?: string | null }[]).map(key));
   const newlyTrusted: Payee[] = (await listPayees(db)).filter((p) => !p.trustedAt && signed.has(key(destinationFor(p))));
   if (newlyTrusted.length === 0) return [];
