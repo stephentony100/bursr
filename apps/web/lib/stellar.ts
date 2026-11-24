@@ -290,6 +290,18 @@ export async function prepareFeePaid(op: xdr.Operation): Promise<Transaction> {
 }
 
 /**
+ * Sends a call whose approvals are already signed (the passkey account's
+ * deploy from the kit), paid by the fee account. Simulation then checks the
+ * signatures as they are: recording modes refuse a transaction that already
+ * has approvals ("cannot set authMode … with an auth footprint").
+ */
+export async function sendFeePaid(op: xdr.Operation): Promise<string> {
+  const ready = await prepare((await builder(feeKeypair().publicKey())).addOperation(op).build());
+  ready.sign(feeKeypair());
+  return submit(ready);
+}
+
+/**
  * Swaps in the signed entries Bursr asked for (same invocation, same signer,
  * same nonce: anything else is refused), re-simulates (a passkey signature is
  * larger than the placeholder, and simulation checks it), signs with the fee

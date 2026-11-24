@@ -15,7 +15,7 @@ import { z } from "zod";
 import type { PrismaClient } from "./generated/prisma/client";
 import { openPayload, sealPayload } from "./owner";
 import { passkeyConfig } from "./passkey";
-import { feeKeypair, prepareFeePaid, stellarConfig, submit, waitForTx } from "./stellar";
+import { sendFeePaid, stellarConfig, waitForTx } from "./stellar";
 
 // Stellar edition: an owner signs up with a passkey instead of a wallet.
 // The browser's Smart Account Kit creates the passkey and a passkey account
@@ -122,14 +122,13 @@ export async function completeSignUp(db: PrismaClient, body: SignUpBody, sealed:
     update: {},
   });
 
-  const tx = await prepareFeePaid(
+  const hash = await sendFeePaid(
     Operation.invokeHostFunction({
       func: xdr.HostFunction.fromXdr(body.relayerPayload.func, "base64"),
       auth: body.relayerPayload.auth.map((a) => xdr.SorobanAuthorizationEntry.fromXdr(a, "base64")),
     }),
   );
-  tx.sign(feeKeypair());
-  const r = await waitForTx(await submit(tx), 40);
+  const r = await waitForTx(hash, 40);
   if (r.state !== "done") throw new StellarPasskeyError("Stellar didn't confirm your passkey account yet. Please try again in a minute.");
   await db.stellarPasskey.update({ where: { credentialId: cred.id }, data: { status: "ready", lastUsedAt: new Date() } });
   return `stellar:${body.contractId}`;

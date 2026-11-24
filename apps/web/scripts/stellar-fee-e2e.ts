@@ -6,13 +6,13 @@
 // prepareFeePaid / submitFeePaid) is the same for both. Fresh keys every run,
 // funded by friendbot. Run: npm run stellar:fee-e2e
 import { authorizeEntry, Keypair, xdr } from "@stellar/stellar-sdk";
-import { Contract } from "@stellar/stellar-sdk";
+import { Contract, Operation } from "@stellar/stellar-sdk";
 
 process.env.STELLAR_NETWORK = "testnet";
 const fee = Keypair.random();
 process.env.STELLAR_FEE_SECRET = fee.secret();
 
-const { entriesFor, fundWithFriendbot, prepareDeployVault, prepareFeePaid, readContract, rpcServer, sc, startAccount, stellarConfig, submitFeePaid, waitForTx } = await import("../lib/stellar");
+const { entriesFor, fundWithFriendbot, prepareDeployVault, prepareFeePaid, readContract, rpcServer, sc, sendFeePaid, startAccount, stellarConfig, submitFeePaid, waitForTx } = await import("../lib/stellar");
 const { stellarExpertContract, stellarExpertTx } = await import("../lib/stellar-vault");
 
 const USDC = (dollars: number) => BigInt(Math.round(dollars * 1e7));
@@ -74,6 +74,13 @@ async function main() {
   // 3. The agent's key can't change the rules, even with the fee account paying.
   const bad = await prepareFeePaid(new Contract(vault).call("update", sc.i128(USDC(50)), sc.i128(USDC(50)), sc.bool(false), sc.addresses([agent.publicKey()]), sc.addresses([])));
   check(await refused(submitFeePaid(bad, owner.publicKey(), await sign(entriesFor(bad, owner.publicKey()), agent))), "the agent's key can't approve a rule change");
+
+  // 4. A call that arrives already signed (like the passkey account's deploy from the kit) is sent as is.
+  const pre = await prepareFeePaid(new Contract(vault).call("update", sc.i128(USDC(15)), sc.i128(USDC(50)), sc.bool(false), sc.addresses([]), sc.addresses([])));
+  const signedAuth = (await sign(entriesFor(pre, owner.publicKey()), owner)).map((b) => xdr.SorobanAuthorizationEntry.fromXdr(b, "base64"));
+  const op = pre.operations[0] as unknown as { func: xdr.HostFunction };
+  const preHash = await sendFeePaid(Operation.invokeHostFunction({ func: op.func, auth: signedAuth }));
+  check((await waitForTx(preHash, 40)).state === "done", `an already-signed call is sent and paid by the fee account  ${stellarExpertTx(preHash)}`);
 
   console.log("All fee-paid checks passed.");
 }
