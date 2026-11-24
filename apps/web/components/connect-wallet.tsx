@@ -4,11 +4,13 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { friendlyError } from "@/lib/errors";
+import { PasskeyDoor } from "./passkey-door";
 import { nearWallets, signInWithNear, signInWithStellar, signInWithSui, STELLAR_EDITION, STELLAR_WALLETS, watchSuiWallets, type WalletChoice } from "./wallet";
 
 // Live mode sign-in: choose a chain, then a wallet on that chain. A new chain
 // is one more entry in CHAINS with its own wallet list and sign-in. The Stellar
-// edition offers Stellar only, so it opens straight on the Stellar wallets.
+// edition offers Stellar only: it opens on the passkey (no wallet needed), with
+// the Stellar wallets one tap away.
 
 type Chain = "near" | "sui" | "stellar";
 
@@ -39,6 +41,7 @@ export function ConnectWallet({ next = "/welcome" }: { next?: string }) {
   const [wallets, setWallets] = useState<WalletChoice[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [walletInstead, setWalletInstead] = useState(false);
 
   useEffect(() => {
     if (!chain) return;
@@ -75,6 +78,8 @@ export function ConnectWallet({ next = "/welcome" }: { next?: string }) {
 
   const name = CHAINS.find((c) => c.id === chain)?.name;
   const shown = chain === "stellar" ? STELLAR_WALLETS : wallets;
+
+  if (STELLAR_EDITION && !walletInstead) return <PasskeyDoor next={next} onWallet={() => setWalletInstead(true)} />;
 
   return (
     <div className="max-w-md">
@@ -133,6 +138,12 @@ export function ConnectWallet({ next = "/welcome" }: { next?: string }) {
         <p role="alert" className="mt-3 text-sm text-refuse">
           {error}
         </p>
+      )}
+
+      {STELLAR_EDITION && (
+        <button onClick={() => setWalletInstead(false)} disabled={busy !== null} className="mt-5 text-sm text-muted underline hover:text-ink">
+          Use a passkey instead
+        </button>
       )}
 
       <div className="mt-6 flex items-center gap-2 text-sm text-muted">

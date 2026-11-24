@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { Policy } from "@near-intents-agent-api/sdk";
 import type { PayoutToken } from "./domain";
+import { stellarNetwork } from "./stellar-network";
 import { formatUsd, parseUnits, rescale, USD_DECIMALS } from "./money";
 import type { Refusal } from "./agent-account/evaluate";
 
@@ -9,9 +10,9 @@ import type { Refusal } from "./agent-account/evaluate";
 // the contract's refusals become plain words. No network here.
 // Contract: contracts/bursr-stellar-vault (error numbers are its interface).
 
-/** Circle's USDC on Stellar testnet: its Stellar Asset Contract (developers.circle.com, `stellar contract id asset`). */
-export const STELLAR_USDC_CONTRACT = "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA";
-export const STELLAR_USDC_ISSUER = "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5";
+/** Circle's USDC on this build's Stellar network: its Stellar Asset Contract and issuer (lib/stellar-network.ts). */
+export const STELLAR_USDC_CONTRACT = stellarNetwork().usdcContract;
+export const STELLAR_USDC_ISSUER = stellarNetwork().usdcIssuer;
 
 export const STELLAR_USDC: PayoutToken = {
   assetId: `stellar:${STELLAR_USDC_CONTRACT}`,
@@ -57,7 +58,11 @@ export const VAULT_ERRORS = {
   OverWeeklyCap: 6,
   LowBalance: 7,
   BadLimits: 8,
+  OverMaxBalance: 9,
 } as const;
+
+/** The vault's `MAX_BALANCE`: 500 USDC at 7 decimals, until the contract is reviewed. */
+export const VAULT_MAX_BALANCE = 5_000_000_000n;
 
 /** Plain words for a refusal from the vault, using the same codes and sentences as the NEAR edition. */
 export function refusalForVaultError(code: number, ctx: { perPaymentCap?: bigint; weeklyCap?: bigint; spent?: bigint; decimals?: number } = {}): Refusal {
@@ -82,6 +87,12 @@ export function refusalForVaultError(code: number, ctx: { perPaymentCap?: bigint
     }
     case VAULT_ERRORS.LowBalance:
       return { code: "insufficient_balance", layer: "balance", message: "There isn't enough money in your Bursr wallet for this payment." };
+    case VAULT_ERRORS.OverMaxBalance:
+      return {
+        code: "insufficient_balance",
+        layer: "balance",
+        message: `Your Bursr wallet can hold up to ${usd(VAULT_MAX_BALANCE)} while its safety contract is being reviewed. Add less.`,
+      };
     default:
       return { code: "unsupported_token", layer: "request", message: "Bursr can't make this payment (the amount isn't valid)." };
   }
@@ -98,8 +109,8 @@ export function vaultErrorCode(message: string): number | null {
   return m ? Number(m[1]) : null;
 }
 
-export const stellarExpertTx = (hash: string) => `https://stellar.expert/explorer/testnet/tx/${hash}`;
-export const stellarExpertContract = (id: string) => `https://stellar.expert/explorer/testnet/contract/${id}`;
+export const stellarExpertTx = (hash: string) => `${stellarNetwork().explorer}/tx/${hash}`;
+export const stellarExpertContract = (id: string) => `${stellarNetwork().explorer}/contract/${id}`;
 
 /** XLM and USDC both have 7 decimals on Stellar; amounts here are in those units. */
 export type TestUsdcPlan =

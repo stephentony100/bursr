@@ -262,3 +262,26 @@ model ChatMessage {
 
   @@index([businessId, at])
 }
+
+/// Stellar edition: a passkey that signs in an owner and controls their passkey
+/// account (a smart account contract, `stellar:C…` owner ID). Shared by every
+/// business: sign-in looks a passkey up before any business is known. Public
+/// data only; the private key never leaves the owner's device.
+model StellarPasskey {
+  /// WebAuthn credential ID, base64url.
+  credentialId String   @id
+  /// The owner's smart account (C…).
+  contractId   String
+  /// COSE public key from registration, base64url (for sign-in checks).
+  publicKey    String
+  /// WebAuthn signature counter (0 for most synced passkeys).
+  counter      Int      @default(0)
+  /// Synced to a password manager (iCloud Keychain, Google Password Manager…).
+  backedUp     Boolean
+  /// "pending" until the smart account is on chain, then "ready".
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+  lastUsedAt   DateTime?
+
+  @@index([contractId])
+}

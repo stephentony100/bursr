@@ -26,7 +26,8 @@
     "fund": "npm run fund -w apps/web --",
     "verify:ai": "npm run verify:ai -w apps/web",
     "bot": "npm run bot -w apps/web",
-    "stellar:e2e": "npm run stellar:e2e -w apps/web"
+    "stellar:e2e": "npm run stellar:e2e -w apps/web",
+    "stellar:fee-e2e": "npm run stellar:fee-e2e -w apps/web"
   },
   "allowScripts": {
     "@prisma/engines": true,

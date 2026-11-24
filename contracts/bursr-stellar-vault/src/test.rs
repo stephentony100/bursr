@@ -396,3 +396,160 @@ fn withdraw_and_set_agent_without_auth_fail() {
     assert!(s.vault.try_set_agent(&s.payee).is_err());
     assert_eq!(s.token.balance(&s.agent), 0);
 }
+
+// ---- Balance cap and adding money ----
+
+#[test]
+fn status_reports_max_balance() {
+    let s = setup();
+    assert_eq!(s.vault.status().max_balance, MAX_BALANCE);
+}
+
+#[test]
+fn deposit_moves_money_in() {
+    let s = setup();
+    let from = Address::generate(&s.env);
+    StellarAssetClient::new(&s.env, &s.token.address).mint(&from, &50);
+    s.vault.deposit(&from, &50);
+    assert_eq!(s.token.balance(&from), 0);
+    assert_eq!(s.vault.status().balance, 1_000_000_050);
+}
+
+#[test]
+fn deposit_refuses_over_max_balance() {
+    let s = setup();
+    let from = Address::generate(&s.env);
+    let room = MAX_BALANCE - 1_000_000_000;
+    StellarAssetClient::new(&s.env, &s.token.address).mint(&from, &(room + 1));
+    assert_eq!(s.vault.try_deposit(&from, &(room + 1)), Err(Ok(Error::OverMaxBalance)));
+    s.vault.deposit(&from, &room);
+    assert_eq!(s.vault.status().balance, MAX_BALANCE);
+}
+
+#[test]
+fn deposit_refuses_bad_amount() {
+    let s = setup();
+    let from = Address::generate(&s.env);
+    assert_eq!(s.vault.try_deposit(&from, &0), Err(Ok(Error::BadAmount)));
+}
+
+#[test]
+fn deposit_needs_the_payers_auth() {
+    let s = setup();
+    let from = Address::generate(&s.env);
+    StellarAssetClient::new(&s.env, &s.token.address).mint(&from, &50);
+    s.env.set_auths(&[]);
+    assert!(s.vault.try_deposit(&from, &50).is_err());
+    assert_eq!(s.token.balance(&from), 50);
+}
+
+// ---- Owner batch payments (fresh addresses: cash-out orders, cross-chain deposits) ----
+
+fn payouts(env: &Env, items: &[(u8, &Address, i128)]) -> Vec<Payout> {
+    let mut v = Vec::new(env);
+    for (k, to, amount) in items {
+        v.push_back(Payout { key: key(env, *k), to: (*to).clone(), amount: *amount });
+    }
+    v
+}
+
+#[test]
+fn owner_pay_pays_every_item_and_marks_keys() {
+    let s = setup();
+    let a = Address::generate(&s.env);
+    let b = Address::generate(&s.env);
+    // Not on the approved list and above the per-payment cap: the owner decides.
+    let total = s.vault.owner_pay(&payouts(&s.env, &[(1, &a, 150_000_000), (2, &b, 5)]));
+    assert_eq!(total, 150_000_005);
+    assert_eq!(s.token.balance(&a), 150_000_000);
+    assert_eq!(s.token.balance(&b), 5);
+    assert!(s.vault.paid(&key(&s.env, 1)));
+    assert!(s.vault.paid(&key(&s.env, 2)));
+    assert_eq!(s.vault.status().spent, 0);
+}
+
+#[test]
+fn owner_pay_works_while_frozen() {
+    let s = setup();
+    let none: Vec<Address> = Vec::new(&s.env);
+    s.vault.update(&PER, &WEEKLY, &true, &none, &none);
+    let a = Address::generate(&s.env);
+    s.vault.owner_pay(&payouts(&s.env, &[(1, &a, 10)]));
+    assert_eq!(s.token.balance(&a), 10);
+}
+
+#[test]
+fn owner_pay_refuses_a_used_key_and_pays_nothing() {
+    let s = setup();
+    let a = Address::generate(&s.env);
+    s.vault.pay(&key(&s.env, 1), &s.payee, &10);
+    let r = s.vault.try_owner_pay(&payouts(&s.env, &[(2, &a, 10), (1, &a, 10)]));
+    assert_eq!(r, Err(Ok(Error::AlreadyPaid)));
+    assert_eq!(s.token.balance(&a), 0);
+    assert!(!s.vault.paid(&key(&s.env, 2)));
+}
+
+#[test]
+fn owner_pay_refuses_a_key_twice_in_one_batch() {
+    let s = setup();
+    let a = Address::generate(&s.env);
+    let r = s.vault.try_owner_pay(&payouts(&s.env, &[(1, &a, 10), (1, &a, 10)]));
+    assert_eq!(r, Err(Ok(Error::AlreadyPaid)));
+    assert_eq!(s.token.balance(&a), 0);
+}
+
+#[test]
+fn owner_pay_refuses_bad_amount_empty_batch_and_low_balance() {
+    let s = setup();
+    let a = Address::generate(&s.env);
+    assert_eq!(s.vault.try_owner_pay(&payouts(&s.env, &[(1, &a, 0)])), Err(Ok(Error::BadAmount)));
+    assert_eq!(s.vault.try_owner_pay(&payouts(&s.env, &[])), Err(Ok(Error::BadAmount)));
+    let r = s.vault.try_owner_pay(&payouts(&s.env, &[(1, &a, 600_000_000), (2, &a, 600_000_000)]));
+    assert_eq!(r, Err(Ok(Error::LowBalance)));
+    assert_eq!(s.token.balance(&a), 0);
+}
+
+#[test]
+fn agent_cannot_reuse_an_owner_payment_key() {
+    let s = setup();
+    let a = Address::generate(&s.env);
+    s.vault.owner_pay(&payouts(&s.env, &[(1, &a, 10)]));
+    assert_eq!(pay_err(&s, 1, &s.payee, 10), Error::AlreadyPaid);
+}
+
+#[test]
+fn owner_pay_with_only_agent_auth_fails() {
+    let s = setup();
+    let a = Address::generate(&s.env);
+    let items = payouts(&s.env, &[(1, &a, 10)]);
+    s.env.mock_auths(&[MockAuth {
+        address: &s.agent,
+        invoke: &MockAuthInvoke {
+            contract: &s.vault_id,
+            fn_name: "owner_pay",
+            args: (items.clone(),).into_val(&s.env),
+            sub_invokes: &[],
+        },
+    }]);
+    assert!(s.vault.try_owner_pay(&items).is_err());
+    assert_eq!(s.token.balance(&a), 0);
+}
+
+#[test]
+fn owner_pay_with_owner_auth_works() {
+    let s = setup();
+    let a = Address::generate(&s.env);
+    let items = payouts(&s.env, &[(1, &a, 10)]);
+    s.env.mock_auths(&[MockAuth {
+        address: &s.owner,
+        invoke: &MockAuthInvoke {
+            contract: &s.vault_id,
+            fn_name: "owner_pay",
+            args: (items.clone(),).into_val(&s.env),
+            sub_invokes: &[],
+        },
+    }]);
+    s.vault.owner_pay(&items);
+    assert_eq!(s.token.balance(&a), 10);
+}
+

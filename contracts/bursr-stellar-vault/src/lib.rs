@@ -4,6 +4,10 @@
 //! owner's rules: only approved payees, a per-payment cap, a 7-day cap, an
 //! emergency stop, and no double payment for the same key. The agent key can
 //! only call `pay`; every rule change and withdrawal needs the owner.
+//!
+//! Until the contract is reviewed it holds at most `MAX_BALANCE` (500 USDC)
+//! when money comes in through `deposit`. A Stellar contract can't refuse a
+//! plain token transfer, so Bursr's add-money flow always uses `deposit`.
 #![no_std]
 use soroban_sdk::{
     contract, contracterror, contractevent, contractimpl, contracttype, panic_with_error, token,
@@ -12,6 +16,9 @@ use soroban_sdk::{
 
 /// Length of the spending window, in seconds (7 days).
 pub const WEEK: u64 = 604_800;
+
+/// Most the vault takes in through `deposit`: 500 USDC at USDC's 7 decimals.
+pub const MAX_BALANCE: i128 = 5_000_000_000;
 
 /// About 5 seconds per ledger.
 const DAY_IN_LEDGERS: u32 = 17_280;
@@ -32,6 +39,7 @@ pub enum Error {
     OverWeeklyCap = 6,
     LowBalance = 7,
     BadLimits = 8,
+    OverMaxBalance = 9,
 }
 
 #[contracttype]
@@ -48,6 +56,18 @@ pub struct Status {
     pub spent: i128,
     /// Token balance held by the vault.
     pub balance: i128,
+    /// Most `deposit` lets the vault hold.
+    pub max_balance: i128,
+}
+
+/// One owner-signed payment to an address that is not on the approved list
+/// (a cash-out order or a cross-chain deposit address, fresh each time).
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Payout {
+    pub key: BytesN<32>,
+    pub to: Address,
+    pub amount: i128,
 }
 
 #[contracttype]
@@ -124,6 +144,7 @@ pub struct Vault;
 #[contractimpl]
 impl Vault {
     /// Sets up the vault, not frozen, with the starting approved payees.
+    /// The owner signs it, so the starting rules are theirs whoever pays the fee.
     pub fn __constructor(
         env: Env,
         owner: Address,
@@ -133,6 +154,7 @@ impl Vault {
         weekly_cap: i128,
         payees: Vec<Address>,
     ) {
+        owner.require_auth();
         if !limits_ok(per_payment_cap, weekly_cap) {
             panic_with_error!(&env, Error::BadLimits);
         }
@@ -191,6 +213,56 @@ impl Vault {
         }
         token::Client::new(&env, &cfg.token).transfer(&env.current_contract_address(), &to, &amount);
         Ok(())
+    }
+
+    /// Anyone: adds money from `from` (who signs), up to `MAX_BALANCE`.
+    pub fn deposit(env: Env, from: Address, amount: i128) -> Result<(), Error> {
+        let cfg = load(&env);
+        from.require_auth();
+        if amount <= 0 {
+            return Err(Error::BadAmount);
+        }
+        match balance_of_vault(&env, &cfg).checked_add(amount) {
+            Some(after) if after <= MAX_BALANCE => {}
+            _ => return Err(Error::OverMaxBalance),
+        }
+        token::Client::new(&env, &cfg.token).transfer(&from, &env.current_contract_address(), &amount);
+        Ok(())
+    }
+
+    /// Owner only: pays a batch the owner approved, to any addresses, in one
+    /// signature. Works while frozen and doesn't count toward the agent's
+    /// caps. Keys share the agent's used-key list, so nothing is paid twice;
+    /// any refusal pays nothing. Returns the total paid.
+    pub fn owner_pay(env: Env, items: Vec<Payout>) -> Result<i128, Error> {
+        let cfg = load(&env);
+        cfg.owner.require_auth();
+        if items.is_empty() {
+            return Err(Error::BadAmount);
+        }
+        let mut total: i128 = 0;
+        for (i, item) in items.iter().enumerate() {
+            if item.amount <= 0 {
+                return Err(Error::BadAmount);
+            }
+            if env.storage().persistent().has(&DataKey::Paid(item.key.clone())) {
+                return Err(Error::AlreadyPaid);
+            }
+            if items.iter().skip(i + 1).any(|later| later.key == item.key) {
+                return Err(Error::AlreadyPaid);
+            }
+            total = total.checked_add(item.amount).ok_or(Error::BadAmount)?;
+        }
+        if balance_of_vault(&env, &cfg) < total {
+            return Err(Error::LowBalance);
+        }
+        let token = token::Client::new(&env, &cfg.token);
+        for item in items.iter() {
+            set_persistent(&env, &DataKey::Paid(item.key.clone()));
+            token.transfer(&env.current_contract_address(), &item.to, &item.amount);
+            Paid { payee: item.to, key: item.key, amount: item.amount }.publish(&env);
+        }
+        Ok(total)
     }
 
     /// Owner only: replaces the agent key.
@@ -261,6 +333,7 @@ impl Vault {
             window_start: cfg.window_start,
             spent,
             balance,
+            max_balance: MAX_BALANCE,
         }
     }
 

@@ -4,6 +4,7 @@
 // BURSR_CHAIN=stellar). Testnet only. Run: BURSR_URL=http://localhost:3100 npx tsx scripts/stellar-http-walk.ts
 import { createHash } from "node:crypto";
 import { Keypair, TransactionBuilder } from "@stellar/stellar-sdk";
+import { stellarExpertTx } from "../lib/stellar-vault";
 
 const BASE = process.env.BURSR_URL ?? "http://localhost:3100";
 const PASSPHRASE = "Test SDF Network ; September 2015";
@@ -36,7 +37,7 @@ async function signAndSubmit(owner: Keypair, kind: string, amount?: string) {
   tx.sign(owner);
   const r = await call<{ status: string; failureCode: string | null; txHash?: string }>("/api/owner/intent", { step: "submit", correlationId: p.correlationId, signedData: { signedXdr: tx.toXDR() } });
   if (r.status !== "SUCCESS") throw new Error(`${kind}: ${r.status} ${r.failureCode}`);
-  console.log(`  ✓ ${p.summary}  https://stellar.expert/explorer/testnet/tx/${r.txHash}`);
+  console.log(`  ✓ ${p.summary}  ${stellarExpertTx(r.txHash ?? "")}`);
 }
 
 async function main() {

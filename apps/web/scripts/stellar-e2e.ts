@@ -5,7 +5,7 @@
 // everything outside the rules. Run: npm run stellar:e2e
 import { Keypair, type Transaction } from "@stellar/stellar-sdk";
 import { StellarVaultAccount } from "../lib/agent-account/stellar";
-import { STELLAR_USDC, STELLAR_USDC_CONTRACT, stellarExpertContract, stellarExpertTx } from "../lib/stellar-vault";
+import { STELLAR_USDC, stellarExpertContract, stellarExpertTx } from "../lib/stellar-vault";
 import { fundWithFriendbot, prepareCall, prepareDeployVault, prepareGetTestUsdc, sc, submit, usdcBalance, waitForTx } from "../lib/stellar";
 import type { Policy } from "@near-intents-agent-api/sdk";
 
@@ -44,7 +44,7 @@ async function main() {
   console.log(`  vault ${stellarExpertContract(vaultId)}`);
 
   console.log("4. The owner adds $35");
-  await send(await prepareCall(owner.publicKey(), STELLAR_USDC_CONTRACT, "transfer", [sc.address(owner.publicKey()), sc.address(vaultId), sc.i128(USDC(35))]), owner, "owner added $35");
+  await send(await prepareCall(owner.publicKey(), vaultId, "deposit", [sc.address(owner.publicKey()), sc.i128(USDC(35))]), owner, "owner added $35");
 
   const policy = { frozen: false, destinations: { mode: "only", list: [] }, limits: { per_transaction: {} }, budget: { weekly_usd: "25" } } as unknown as Policy;
   const account = new StellarVaultAccount({ vaultId, agentSecret: agent.secret(), policy, policyRevision: 1 });

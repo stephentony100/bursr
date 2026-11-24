@@ -1,5 +1,5 @@
 import type { Policy } from "@near-intents-agent-api/sdk";
-import { Keypair, type Transaction } from "@stellar/stellar-sdk";
+import { Contract, Keypair, type Transaction, type xdr } from "@stellar/stellar-sdk";
 import type { PrismaClient } from "./generated/prisma/client";
 import { dataKey, sealGrant } from "./grant-store";
 import { isOwnerSession, type OwnerSession } from "./owner";
@@ -7,16 +7,19 @@ import { ownerAddress, ownerChain } from "./owner-id";
 import { desiredPolicy, NotOwnerError, setFrozen } from "./owner-actions";
 import { readEnv } from "./env";
 import { formatUsd, rescale, USD_DECIMALS } from "./money";
-import { fundWithFriendbot, prepareCall, prepareGetTestUsdc, prepareDeployVault, sc, submit, txFromXdr, usdcBalance, waitForTx, StellarSimulationError } from "./stellar";
-import { payeeDiff, refusalForVaultError, STELLAR_USDC_CONTRACT, vaultLimits } from "./stellar-vault";
+import { entriesFor, feeKeypair, prepareFeePaid, rpcServer, startAccount, submitFeePaid, fundWithFriendbot, stellarConfig, prepareCall, prepareGetTestUsdc, prepareDeployVault, sc, submit, txFromXdr, usdcBalance, waitForTx, StellarSimulationError } from "./stellar";
+import { payeeDiff, refusalForVaultError, vaultLimits } from "./stellar-vault";
 import { getAccountRecord, getBusiness } from "./store";
 import { trustSignedPayees } from "./trust";
 
 // Owner actions in the Stellar edition. Same four steps as the NEAR edition's
-// owner intents: Bursr's server builds the transaction, the owner's Stellar
-// wallet signs it in the browser, the server checks it is the very
-// transaction it built and sends it, then follows it to the end. The server
-// never holds the owner's key; the agent's key can't do any of these.
+// owner intents: Bursr's server builds the transaction, the owner signs it in
+// the browser, the server checks it is the very transaction it built and
+// sends it, then follows it to the end. The server never holds the owner's
+// key; the agent's key can't do any of these.
+// - Wallet owner (G…): their Stellar wallet signs and pays for the whole transaction.
+// - Passkey owner (C…, a passkey account): Bursr's fee account is the source and
+//   pays; the owner's passkey signs only their own approval (auth entry).
 
 export type StellarOwnerKind = "agent_create" | "policy_update" | "agent_freeze" | "agent_unfreeze" | "fund" | "withdraw" | "test_usdc";
 
@@ -48,7 +51,9 @@ export interface PreparedStellarTx {
   expiresAt: string;
   summary: string;
   policy?: Policy;
-  intent: { standard: "stellar-xdr"; payload: { xdr: string; networkPassphrase: string; address: string } };
+  intent:
+    | { standard: "stellar-xdr"; payload: { xdr: string; networkPassphrase: string; address: string } }
+    | { standard: "stellar-auth"; payload: { entries: string[]; networkPassphrase: string; address: string; expiration: number; credentialId?: string } };
 }
 
 interface Pending {
@@ -56,7 +61,14 @@ interface Pending {
   ownerId: string;
   policy?: Policy;
   agentSecret?: string;
+  /** Passkey owners: the fee-paid transaction whose entries the passkey signs. */
+  txXdr?: string;
   expiresAt: number;
+}
+
+/** A passkey owner's ID holds their passkey account (a contract, C…), not a wallet (G…). */
+export function isPasskeyOwnerAddress(address: string): boolean {
+  return address.startsWith("C");
 }
 
 // What each prepared transaction is for, by its hash, for the few minutes it is
@@ -77,19 +89,27 @@ async function assertStellarOwner(db: PrismaClient, owner: OwnerSession) {
   return { business, address: ownerAddress(owner.accountId) };
 }
 
-function prepared(kind: StellarOwnerKind, tx: Transaction, agentId: string, address: string, entry: Omit<Pending, "kind" | "expiresAt">): PreparedStellarTx {
+// About 10 minutes of ledgers for a passkey approval to be used.
+const APPROVAL_LEDGERS = 120;
+
+async function prepared(kind: StellarOwnerKind, tx: Transaction, agentId: string, address: string, entry: Omit<Pending, "kind" | "expiresAt" | "txXdr">): Promise<PreparedStellarTx> {
   const correlationId = Buffer.from(tx.hash()).toString("hex");
   const expiresAt = Date.now() + 4 * 60 * 1000;
+  const networkPassphrase = stellarConfig().passphrase;
+  const base = { kind, correlationId, agentId, expiresAt: new Date(expiresAt).toISOString(), summary: SUMMARY[kind], policy: entry.policy };
+  if (isPasskeyOwnerAddress(address)) {
+    pending.set(correlationId, { kind, expiresAt, ...entry, txXdr: tx.toXDR() });
+    const expiration = (await rpcServer().getLatestLedger()).sequence + APPROVAL_LEDGERS;
+    return { ...base, intent: { standard: "stellar-auth", payload: { entries: entriesFor(tx, address), networkPassphrase, address, expiration } } };
+  }
   pending.set(correlationId, { kind, expiresAt, ...entry });
-  return {
-    kind,
-    correlationId,
-    agentId,
-    expiresAt: new Date(expiresAt).toISOString(),
-    summary: SUMMARY[kind],
-    policy: entry.policy,
-    intent: { standard: "stellar-xdr", payload: { xdr: tx.toXDR(), networkPassphrase: readEnv().STELLAR_NETWORK_PASSPHRASE, address } },
-  };
+  return { ...base, intent: { standard: "stellar-xdr", payload: { xdr: tx.toXDR(), networkPassphrase, address } } };
+}
+
+/** A vault call from the owner: their wallet sends it, or Bursr's fee account does for a passkey owner. */
+function ownerCall(address: string, contractId: string, method: string, args: xdr.ScVal[]): Promise<Transaction> {
+  if (isPasskeyOwnerAddress(address)) return prepareFeePaid(new Contract(contractId).call(method, ...args));
+  return prepareCall(address, contractId, method, args);
 }
 
 /** Turns a refusal from simulation into the owner's words (e.g. withdrawing more than the vault holds). */
@@ -98,7 +118,22 @@ function ownerError(e: unknown): never {
   throw e;
 }
 
+/** Prepares an owner action; a passkey owner's request also names their passkey, so the device asks for it straight away. */
 export async function prepareStellarOwnerTx(
+  db: PrismaClient,
+  owner: OwnerSession,
+  kind: StellarOwnerKind,
+  opts: { amount?: bigint } = {},
+): Promise<PreparedStellarTx> {
+  const out = await prepareOwnerTx(db, owner, kind, opts);
+  if (out.intent.standard === "stellar-auth") {
+    const pk = await db.stellarPasskey.findFirst({ where: { contractId: out.intent.payload.address, status: "ready" }, orderBy: { lastUsedAt: "desc" } });
+    if (pk) out.intent.payload.credentialId = pk.credentialId;
+  }
+  return out;
+}
+
+async function prepareOwnerTx(
   db: PrismaClient,
   owner: OwnerSession,
   kind: StellarOwnerKind,
@@ -106,7 +141,8 @@ export async function prepareStellarOwnerTx(
 ): Promise<PreparedStellarTx> {
   const { address } = await assertStellarOwner(db, owner);
   const record = await getAccountRecord(db);
-  await fundWithFriendbot(address);
+  const passkey = isPasskeyOwnerAddress(address);
+  if (!passkey) await fundWithFriendbot(address);
 
   if (kind === "agent_create") {
     if (record) throw new Error("This business already has a Bursr wallet.");
@@ -114,16 +150,18 @@ export async function prepareStellarOwnerTx(
     const policy = (await desiredPolicy(db))!;
     const limits = vaultLimits(policy);
     const agent = Keypair.random();
-    await fundWithFriendbot(agent.publicKey()); // the agent pays its own network fees
-    const tx = await prepareDeployVault({ owner: address, agent: agent.publicKey(), perPaymentCap: limits.perPaymentCap, weeklyCap: limits.weeklyCap, payees: limits.payees });
-    return prepared(kind, tx, "new", address, { ownerId: owner.accountId, policy, agentSecret: agent.secret() });
+    await startAccount(agent.publicKey()); // the agent pays its own network fees
+    const deployer = passkey ? feeKeypair().publicKey() : undefined;
+    const tx = await prepareDeployVault({ owner: address, agent: agent.publicKey(), perPaymentCap: limits.perPaymentCap, weeklyCap: limits.weeklyCap, payees: limits.payees, deployer });
+    return await prepared(kind, tx, "new", address, { ownerId: owner.accountId, policy, agentSecret: agent.secret() });
   }
 
   if (kind === "test_usdc") {
+    if (stellarConfig().network.name !== "testnet" || passkey) throw new Error("Test USDC is only for practice with a Stellar test wallet.");
     const amount = opts.amount ?? 0n;
     if (amount <= 0n || amount > 500_0000000n) throw new Error("Ask for between $1 and $500 of test USDC.");
     const { tx, usdcExpected } = await prepareGetTestUsdc(address, amount);
-    const p = prepared(kind, tx, record?.agentId ?? "new", address, { ownerId: owner.accountId });
+    const p = await prepared(kind, tx, record?.agentId ?? "new", address, { ownerId: owner.accountId });
     return { ...p, summary: `Get about ${formatUsd(rescale(usdcExpected, 7, USD_DECIMALS))} of test USDC in your own wallet, paid for with its free test XLM` };
   }
 
@@ -135,25 +173,26 @@ export async function prepareStellarOwnerTx(
       const want = vaultLimits(policy);
       // Adding a payee twice is harmless, so every wanted payee is (re)added; only the gone are removed.
       const { remove } = payeeDiff(want.payees, vaultLimits(record.policy).payees);
-      const tx = await prepareCall(address, vault, "update", [sc.i128(want.perPaymentCap), sc.i128(want.weeklyCap), sc.bool(want.frozen), sc.addresses(want.payees), sc.addresses(remove)]);
-      return prepared(kind, tx, vault, address, { ownerId: owner.accountId, policy });
+      const tx = await ownerCall(address, vault, "update", [sc.i128(want.perPaymentCap), sc.i128(want.weeklyCap), sc.bool(want.frozen), sc.addresses(want.payees), sc.addresses(remove)]);
+      return await prepared(kind, tx, vault, address, { ownerId: owner.accountId, policy });
     }
     if (kind === "agent_freeze" || kind === "agent_unfreeze") {
       // Only the pause changes: the limits and payees stay as last signed.
       const now = vaultLimits(record.policy);
-      const tx = await prepareCall(address, vault, "update", [sc.i128(now.perPaymentCap), sc.i128(now.weeklyCap), sc.bool(kind === "agent_freeze"), sc.addresses([]), sc.addresses([])]);
-      return prepared(kind, tx, vault, address, { ownerId: owner.accountId, policy: { ...record.policy, frozen: kind === "agent_freeze" } });
+      const tx = await ownerCall(address, vault, "update", [sc.i128(now.perPaymentCap), sc.i128(now.weeklyCap), sc.bool(kind === "agent_freeze"), sc.addresses([]), sc.addresses([])]);
+      return await prepared(kind, tx, vault, address, { ownerId: owner.accountId, policy: { ...record.policy, frozen: kind === "agent_freeze" } });
     }
     const amount = opts.amount ?? 0n;
     if (amount <= 0n) throw new Error("Enter an amount more than zero.");
     if (kind === "fund") {
       const held = await usdcBalance(address);
-      if (held < amount) throw new Error("Your Stellar wallet doesn't hold that much USDC. Get test USDC from Circle's faucet, or add less.");
-      const tx = await prepareCall(address, STELLAR_USDC_CONTRACT, "transfer", [sc.address(address), sc.address(vault), sc.i128(amount)]);
-      return prepared(kind, tx, vault, address, { ownerId: owner.accountId });
+      if (held < amount) throw new Error(passkey ? "Your passkey account doesn't hold that much USDC. Add less." : "Your Stellar wallet doesn't hold that much USDC. Get test USDC from Circle's faucet, or add less.");
+      // Through the vault's deposit, so its balance cap applies.
+      const tx = await ownerCall(address, vault, "deposit", [sc.address(address), sc.i128(amount)]);
+      return await prepared(kind, tx, vault, address, { ownerId: owner.accountId });
     }
-    const tx = await prepareCall(address, vault, "withdraw", [sc.address(address), sc.i128(amount)]);
-    return prepared(kind, tx, vault, address, { ownerId: owner.accountId });
+    const tx = await ownerCall(address, vault, "withdraw", [sc.address(address), sc.i128(amount)]);
+    return await prepared(kind, tx, vault, address, { ownerId: owner.accountId });
   } catch (e) {
     ownerError(e);
   }
@@ -168,24 +207,35 @@ export interface StellarSubmitResult {
 export async function submitStellarOwnerTx(
   db: PrismaClient,
   owner: OwnerSession,
-  p: { correlationId: string; signedXdr: string },
+  p: { correlationId: string; signedXdr?: string; signedEntries?: string[] },
 ): Promise<StellarSubmitResult> {
-  await assertStellarOwner(db, owner);
+  const { address } = await assertStellarOwner(db, owner);
   const entry = pending.get(p.correlationId);
   if (!entry || entry.expiresAt < Date.now() || entry.ownerId !== owner.accountId) {
     return { status: "FAILED", failureCode: "This confirmation ran out of time. Please press the button again." };
   }
-  let tx: Transaction;
-  try {
-    tx = txFromXdr(p.signedXdr);
-  } catch {
-    return { status: "REFUSED", failureCode: "Your wallet sent back something Bursr didn't ask for." };
+  let hash: string;
+  if (entry.txXdr) {
+    // Passkey owner: only their approvals come back; Bursr's fee account sends.
+    if (!p.signedEntries) return { status: "REFUSED", failureCode: "Your passkey didn't send back its approval." };
+    pending.delete(p.correlationId);
+    try {
+      hash = await submitFeePaid(txFromXdr(entry.txXdr), address, p.signedEntries);
+    } catch (e) {
+      return { status: "REFUSED", failureCode: e instanceof Error ? e.message : "Your passkey's approval wasn't accepted." };
+    }
+  } else {
+    let tx: Transaction;
+    try {
+      tx = txFromXdr(p.signedXdr ?? "");
+    } catch {
+      return { status: "REFUSED", failureCode: "Your wallet sent back something Bursr didn't ask for." };
+    }
+    // Only the exact transaction Bursr built (signatures aside) may be sent.
+    if (Buffer.from(tx.hash()).toString("hex") !== p.correlationId) return { status: "REFUSED", failureCode: "Your wallet signed a different transaction than the one Bursr prepared." };
+    pending.delete(p.correlationId);
+    hash = await submit(tx);
   }
-  // Only the exact transaction Bursr built (signatures aside) may be sent.
-  if (Buffer.from(tx.hash()).toString("hex") !== p.correlationId) return { status: "REFUSED", failureCode: "Your wallet signed a different transaction than the one Bursr prepared." };
-  pending.delete(p.correlationId);
-
-  const hash = await submit(tx);
   const r = await waitForTx(hash, 40);
   if (r.state !== "done") return { status: "FAILED", failureCode: r.state === "failed" ? r.reason : "Stellar is slow to confirm. Check again in a minute.", txHash: hash };
 

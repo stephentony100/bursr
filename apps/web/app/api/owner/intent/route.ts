@@ -29,7 +29,12 @@ const StellarBody = z.discriminatedUnion("step", [
     /** fund / withdraw: USDC in its smallest units (7 decimals), as a string. */
     amount: z.string().regex(/^\d{1,20}$/).optional(),
   }),
-  z.object({ step: z.literal("submit"), correlationId: z.string().regex(/^[0-9a-f]{64}$/), signedData: z.object({ signedXdr: z.string().min(1).max(100_000) }) }),
+  z.object({
+    step: z.literal("submit"),
+    correlationId: z.string().regex(/^[0-9a-f]{64}$/),
+    // A wallet owner sends the signed transaction; a passkey owner sends their signed approvals.
+    signedData: z.union([z.object({ signedXdr: z.string().min(1).max(100_000) }), z.object({ signedEntries: z.array(z.string().min(1).max(20_000)).min(1).max(4) })]),
+  }),
 ]);
 
 export async function POST(req: Request) {
@@ -44,7 +49,7 @@ export async function POST(req: Request) {
         const { kind, amount } = body.data;
         return NextResponse.json(await prepareStellarOwnerTx(await appDb(), owner, kind, { amount: amount ? BigInt(amount) : undefined }));
       }
-      return NextResponse.json(await submitStellarOwnerTx(await appDb(), owner, { correlationId: body.data.correlationId, signedXdr: body.data.signedData.signedXdr }));
+      return NextResponse.json(await submitStellarOwnerTx(await appDb(), owner, { correlationId: body.data.correlationId, ...body.data.signedData }));
     }
     const body = Body.safeParse(raw);
     if (!body.success) return NextResponse.json({ error: "Bad request." }, { status: 400 });

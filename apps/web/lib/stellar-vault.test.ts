@@ -58,6 +58,12 @@ describe("refusalForVaultError", () => {
     expect(refusalForVaultError(VAULT_ERRORS.LowBalance).code).toBe("insufficient_balance");
     expect(refusalForVaultError(VAULT_ERRORS.BadAmount).code).toBe("unsupported_token");
   });
+
+  it("explains the vault's balance cap in plain words", () => {
+    const r = refusalForVaultError(VAULT_ERRORS.OverMaxBalance);
+    expect(r.layer).toBe("balance");
+    expect(r.message).toBe("Your Bursr wallet can hold up to $500.00 while its safety contract is being reviewed. Add less.");
+  });
 });
 
 describe("paymentKey and vaultErrorCode", () => {

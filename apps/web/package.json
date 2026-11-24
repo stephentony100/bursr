@@ -26,7 +26,8 @@
     "fund": "tsx scripts/fund.ts",
     "verify:ai": "tsx scripts/verify-ai.ts",
     "bot": "tsx scripts/bot.ts",
-    "stellar:e2e": "tsx scripts/stellar-e2e.ts"
+    "stellar:e2e": "tsx scripts/stellar-e2e.ts",
+    "stellar:fee-e2e": "tsx scripts/stellar-fee-e2e.ts"
   },
   "dependencies": {
     "@albedo-link/intent": "0.12.0",
@@ -54,6 +55,7 @@
     "qrcode": "^1.5.4",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "smart-account-kit": "0.10.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {

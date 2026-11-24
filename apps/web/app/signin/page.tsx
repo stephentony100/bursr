@@ -11,13 +11,15 @@ export const metadata = { title: "Sign in to Bursr" };
 
 export default async function SignIn() {
   await connection();
-  if (readEnv().BURSAR_MODE === "dry-run") redirect("/this-week");
+  const env = readEnv();
+  if (env.BURSAR_MODE === "dry-run") redirect("/this-week");
   if (await getOwner()) redirect("/this-week");
+  const stellar = env.BURSR_CHAIN === "stellar";
   return (
     <div className="grid min-h-[100dvh] place-items-center bg-paper px-5">
       <main id="main" className="w-full max-w-md rounded-2xl border border-line bg-card p-8">
         <Logo />
-        <h1 className="display mt-6 text-3xl">Continue with your wallet</h1>
+        <h1 className="display mt-6 text-3xl">{stellar ? "Welcome to Bursr" : "Continue with your wallet"}</h1>
         <p className="mt-2 text-muted">
           Already use Bursr? You&apos;ll go straight to your business. New here? We&apos;ll set your business up together, step by step.
         </p>
@@ -25,9 +27,11 @@ export default async function SignIn() {
           <ConnectWallet />
         </div>
         <p className="mt-6 text-sm text-muted">
-          Only you can see your business, your people and your payments. Connecting is free and moves no money.{" "}
-          {readEnv().BURSR_CHAIN === "stellar"
-            ? "No Stellar wallet yet? Install Freighter (freighter.app), or choose Albedo, which needs no install. Bursr runs on the Stellar test network."
+          Only you can see your business, your people and your payments. {stellar ? "Signing up is free and moves no money." : "Connecting is free and moves no money."}{" "}
+          {stellar
+            ? env.STELLAR_NETWORK === "testnet"
+              ? "This is Bursr on the Stellar test network: practice money only."
+              : ""
             : "No wallet yet? Install HOT Wallet (NEAR) or Slush (Sui), create an account, then come back here."}
         </p>
       </main>

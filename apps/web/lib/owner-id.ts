@@ -16,10 +16,12 @@ export function ownerAddress(accountId: string): string {
   return chain === "near" ? accountId : accountId.slice(chain.length + 1);
 }
 
-/** How the owner is shown on screen: a NEAR account as is, other addresses shortened. */
+/** How the owner is shown on screen: a NEAR account as is, other addresses shortened, a passkey owner in words. */
 export function ownerLabel(accountId: string): string {
   const chain = ownerChain(accountId);
   if (chain === "near") return accountId;
   const a = ownerAddress(accountId);
+  // A passkey owner (Stellar passkey account, C…) never sees an address.
+  if (chain === "stellar" && a.startsWith("C")) return "Your passkey";
   return `${chain === "sui" ? "Sui" : "Stellar"} · ${a.slice(0, 6)}…${a.slice(-4)}`;
 }

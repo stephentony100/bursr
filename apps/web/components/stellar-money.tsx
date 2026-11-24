@@ -1,5 +1,6 @@
 "use client";
 
+import { stellarNetwork } from "@/lib/stellar-network";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { friendlyError } from "@/lib/errors";
@@ -41,7 +42,7 @@ function Result({ msg }: { msg: { ok: boolean; text: string; tx?: string } | nul
     <p role={msg.ok ? "status" : "alert"} className={`mt-3 text-sm ${msg.ok ? "text-ok" : "text-refuse"}`}>
       {msg.text}{" "}
       {msg.tx && (
-        <a className="underline" href={`https://stellar.expert/explorer/testnet/tx/${msg.tx}`} target="_blank" rel="noreferrer">
+        <a className="underline" href={`${stellarNetwork().explorer}/tx/${msg.tx}`} target="_blank" rel="noreferrer">
           See it on Stellar
         </a>
       )}
@@ -83,7 +84,7 @@ export function StellarAddMoney({ suggestedUsd, vaultId }: { suggestedUsd: strin
       {vaultId && (
         <p className="mt-2 break-all text-xs text-muted">
           Your Bursr wallet on Stellar:{" "}
-          <a className="underline" href={`https://stellar.expert/explorer/testnet/contract/${vaultId}`} target="_blank" rel="noreferrer">
+          <a className="underline" href={`${stellarNetwork().explorer}/contract/${vaultId}`} target="_blank" rel="noreferrer">
             {vaultId}
           </a>
         </p>

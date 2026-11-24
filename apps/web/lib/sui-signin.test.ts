@@ -57,6 +57,8 @@ describe("owner IDs across wallet families", () => {
     expect(ownerChain("alice.near")).toBe("near");
     expect(ownerLabel(id)).toMatch(/^Sui · 0x[0-9a-f]{4}…[0-9a-f]{4}$/);
     expect(ownerLabel("alice.near")).toBe("alice.near");
+    expect(ownerLabel("stellar:CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75")).toBe("Your passkey");
+    expect(ownerLabel("stellar:GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN")).toBe("Stellar · GA5ZSE…KZVN");
   });
 
   it("a Sui session has its chain and no NEAR key", () => {
