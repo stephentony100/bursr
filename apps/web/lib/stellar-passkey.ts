@@ -10,12 +10,13 @@ import {
   type RegistrationResponseJSON,
 } from "@simplewebauthn/server";
 import { convertCOSEtoPKCS } from "@simplewebauthn/server/helpers";
-import { Address, Keypair, Operation, StrKey, xdr } from "@stellar/stellar-sdk";
+import { Address, Keypair, Operation, rpc, scValToNative, StrKey, xdr } from "@stellar/stellar-sdk";
 import { z } from "zod";
 import type { PrismaClient } from "./generated/prisma/client";
 import { openPayload, sealPayload } from "./owner";
 import { passkeyConfig } from "./passkey";
-import { sendFeePaid, stellarConfig, waitForTx } from "./stellar";
+import { fetchJson } from "./http";
+import { feeKeypair, rpcServer, sendFeePaid, stellarConfig, waitForTx } from "./stellar";
 
 // Stellar edition: an owner signs up with a passkey instead of a wallet.
 // The browser's Smart Account Kit creates the passkey and a passkey account
@@ -58,9 +59,10 @@ export function passkeyAccountAddress(credentialId: Uint8Array, networkPassphras
 
 /** What the browser's kit needs. Public values only; RPC goes through Bursr (app/api/stellar/rpc). */
 export function kitSettings() {
-  const { network, passphrase } = stellarConfig();
+  const { network, passphrase, horizonUrl } = stellarConfig();
   const { rpId } = passkeyConfig();
-  return { networkPassphrase: passphrase, accountWasmHash: network.accountWasmHash, webauthnVerifier: network.webauthnVerifier, rpId };
+  // Horizon (public, full history): the kit reads each passkey account's creation transaction from it.
+  return { networkPassphrase: passphrase, accountWasmHash: network.accountWasmHash, webauthnVerifier: network.webauthnVerifier, rpId, horizonUrl };
 }
 
 // --- Sign-up ---
@@ -130,7 +132,10 @@ export async function completeSignUp(db: PrismaClient, body: SignUpBody, sealed:
   );
   const r = await waitForTx(hash, 40);
   if (r.state !== "done") throw new StellarPasskeyError("Stellar didn't confirm your passkey account yet. Please try again in a minute.");
-  await db.stellarPasskey.update({ where: { credentialId: cred.id }, data: { status: "ready", lastUsedAt: new Date() } });
+  await db.stellarPasskey.update({
+    where: { credentialId: cred.id },
+    data: { status: "ready", lastUsedAt: new Date(), creationTxHash: r.hash, creationLedger: r.ledger },
+  });
   return `stellar:${body.contractId}`;
 }
 
@@ -177,4 +182,71 @@ export async function completeSignIn(db: PrismaClient, response: AuthenticationR
   if (!result.verified) throw new StellarPasskeyError("Your passkey couldn't be checked. Please try again.");
   await db.stellarPasskey.update({ where: { credentialId: row.credentialId }, data: { counter: result.authenticationInfo.newCounter, lastUsedAt: new Date() } });
   return `stellar:${row.contractId}`;
+}
+
+// --- Birth records for Smart Account Kit ---
+// Before it signs, the kit checks how a passkey account was born (its
+// creation transaction, which it reads from Stellar's history itself). It
+// learns which transaction from an "indexer"; Bursr answers that lookup for
+// the accounts it sent (app/api/stellar/indexer). The kit re-checks the
+// transaction on chain, so this can't vouch for an account that isn't real.
+
+const HorizonTxs = z.object({ _embedded: z.object({ records: z.array(z.object({ hash: z.string(), ledger: z.number(), successful: z.boolean() })) }) });
+
+/** The passkey account's creation transaction and ledger; found once in the fee account's recent history for accounts saved before Bursr kept them. */
+export async function passkeyBirth(db: PrismaClient, credentialId: string): Promise<{ contractId: string; hash: string; ledger: number } | null> {
+  const row = await db.stellarPasskey.findUnique({ where: { credentialId } });
+  if (!row || row.status !== "ready") return null;
+  if (row.creationTxHash && row.creationLedger) return { contractId: row.contractId, hash: row.creationTxHash, ledger: row.creationLedger };
+  const { horizonUrl } = stellarConfig();
+  const list = await fetchJson(`${horizonUrl}/accounts/${feeKeypair().publicKey()}/transactions?order=desc&limit=100`, HorizonTxs);
+  for (const t of list._embedded.records) {
+    if (!t.successful) continue;
+    const r = await rpcServer().getTransaction(t.hash);
+    if (r.status !== rpc.Api.GetTransactionStatus.SUCCESS || !r.returnValue) continue;
+    let made: unknown;
+    try {
+      made = scValToNative(r.returnValue);
+    } catch {
+      continue;
+    }
+    if (made !== row.contractId) continue;
+    await db.stellarPasskey.update({ where: { credentialId }, data: { creationTxHash: t.hash, creationLedger: t.ledger } });
+    return { contractId: row.contractId, hash: t.hash, ledger: t.ledger };
+  }
+  return null;
+}
+
+/** Smart Account Kit's schema-2 credential lookup (indexer.d.ts CredentialLookupResponse) for one passkey, by its hex ID. */
+export async function kitLookup(db: PrismaClient, credentialHex: string) {
+  const id = credentialHex.toLowerCase();
+  const latest = (await rpcServer().getLatestLedger()).sequence;
+  const birth = /^[0-9a-f]+$/.test(id) ? await passkeyBirth(db, Buffer.from(id, "hex").toString("base64url")) : null;
+  return kitLookupResponse(id, birth, latest, stellarConfig().network.accountWasmHash);
+}
+
+/** Pure part of kitLookup. */
+export function kitLookupResponse(id: string, birth: { contractId: string; hash: string; ledger: number } | null, latest: number, wasm: string) {
+  const contracts = birth
+    ? [
+        {
+          contract_id: birth.contractId,
+          context_rule_count: 1,
+          external_signer_count: 1,
+          delegated_signer_count: 0,
+          native_signer_count: 0,
+          first_seen_ledger: birth.ledger,
+          last_seen_ledger: birth.ledger,
+          context_rule_ids: [0],
+          birth_wasm_hash: wasm,
+          creation_transaction_hash: birth.hash.toLowerCase(),
+          creation_ledger: birth.ledger,
+          current_wasm_hash: wasm,
+          derived_address: true,
+          collision: false,
+          incomplete: false,
+        },
+      ]
+    : [];
+  return { credentialId: id, contracts, count: contracts.length, schema: 2 as const, complete: true, indexed_through_ledger: latest };
 }

@@ -280,6 +280,9 @@ model StellarPasskey {
   backedUp     Boolean
   /// "pending" until the smart account is on chain, then "ready".
   status       String   @default("pending")
+  /// The transaction and ledger that created the passkey account (Smart Account Kit checks the account's birth from them).
+  creationTxHash String?
+  creationLedger Int?
   createdAt    DateTime @default(now())
   lastUsedAt   DateTime?
 

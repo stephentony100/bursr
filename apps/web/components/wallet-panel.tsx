@@ -6,6 +6,7 @@ import { ConnectWallet } from "./connect-wallet";
 import { createPasskey, prepareIntent, signAndSubmitIntent, STELLAR_EDITION, signOut as walletSignOut, type OwnerIntentKind, type PreparedIntent } from "./wallet";
 import { friendlyError } from "@/lib/errors";
 import { ownerLabel } from "@/lib/owner-id";
+import { stellarNetwork } from "@/lib/stellar-network";
 
 // Live mode only. The owner signs everything: with the passkey that owns the
 // agent's wallet (new businesses), or with their NEAR wallet (agent wallets
@@ -88,7 +89,9 @@ export function WalletPanel(props: {
     });
 
   // Passkey owners confirm with the device's Face ID, fingerprint or PIN; older agent wallets with the NEAR wallet app.
-  const withPasskey = !STELLAR_EDITION && (Boolean(props.passkey) || !props.agentId);
+  // Stellar edition: a passkey owner (passkey account, `stellar:C…`) confirms with the passkey and Bursr pays the fee.
+  const stellarPasskey = STELLAR_EDITION && (props.ownerAccountId ?? "").startsWith("stellar:C");
+  const withPasskey = stellarPasskey || (!STELLAR_EDITION && (Boolean(props.passkey) || !props.agentId));
   const needsPasskey = !STELLAR_EDITION && !props.agentId && !props.passkey;
   const next: Kind | null = !props.agentId
     ? "agent_create"
@@ -194,7 +197,7 @@ export function WalletPanel(props: {
                 )}
               </details>
               <p className="mt-2 text-muted">
-                {withPasskey ? "Your device will ask for your Face ID, fingerprint or PIN." : "Your wallet app will ask you to confirm."} {STELLAR_EDITION ? "The network fee is a fraction of a cent in test XLM." : "It costs you nothing."} Please confirm before{" "}
+                {withPasskey ? "Your device will ask for your Face ID, fingerprint or PIN." : "Your wallet app will ask you to confirm."} {stellarPasskey ? "Bursr pays the network fee." : STELLAR_EDITION ? `The network fee is a fraction of a cent in ${stellarNetwork().name === "testnet" ? "test " : ""}XLM.` : "It costs you nothing."} Please confirm before{" "}
                 {new Date(prepared.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.
               </p>
               <div className="mt-3 flex gap-2">

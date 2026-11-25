@@ -8,13 +8,15 @@ import { friendlyError } from "@/lib/errors";
 // passkey account, and signs the owner's approvals with the passkey. Bursr's
 // server checks and sends everything (app/api/auth/passkey/*,
 // lib/stellar-passkey.ts) and pays the network fees; the kit reads the chain
-// through Bursr's read-only RPC (app/api/stellar/rpc).
+// through Bursr's read-only RPC (app/api/stellar/rpc), Bursr's birth lookup
+// (app/api/stellar/indexer) and Stellar's public Horizon.
 
 interface KitSettings {
   networkPassphrase: string;
   accountWasmHash: string;
   webauthnVerifier: string;
   rpId: string;
+  horizonUrl: string;
 }
 
 async function getJson<T>(url: string): Promise<T> {
@@ -44,8 +46,9 @@ async function kit(settings: KitSettings, registrationChallenge?: string): Promi
       webauthnVerifierAddress: settings.webauthnVerifier,
       rpId: settings.rpId,
       rpName: "Bursr",
-      horizonUrl: false,
-      indexerUrl: false,
+      // The kit checks each passkey account's birth: Bursr's own lookup says which transaction, Horizon has it.
+      horizonUrl: settings.horizonUrl,
+      indexerUrl: `${window.location.origin}/api/stellar/indexer`,
       storage: new IndexedDBStorage(),
       // The kit ships @simplewebauthn/browser 13 and Bursr 14: same JSON, slightly different types, hence the casts.
       webAuthn: {

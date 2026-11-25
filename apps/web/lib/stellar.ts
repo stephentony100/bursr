@@ -169,7 +169,7 @@ export function txFromXdr(xdrText: string): Transaction {
   return tx;
 }
 
-export type TxResult = { state: "done"; hash: string; returnValue: unknown } | { state: "failed"; hash: string; reason: string } | { state: "pending"; hash: string };
+export type TxResult = { state: "done"; hash: string; returnValue: unknown; ledger: number } | { state: "failed"; hash: string; reason: string } | { state: "pending"; hash: string };
 
 /** Sends a signed transaction. Doesn't wait for it to land; see waitForTx. */
 export async function submit(tx: Transaction): Promise<string> {
@@ -182,7 +182,7 @@ export async function submit(tx: Transaction): Promise<string> {
 export async function waitForTx(hash: string, attempts = 30): Promise<TxResult> {
   const r = await rpcServer().pollTransaction(hash, { attempts, sleepStrategy: () => 1000 });
   if (r.status === rpc.Api.GetTransactionStatus.SUCCESS) {
-    return { state: "done", hash, returnValue: r.returnValue ? scValToNative(r.returnValue) : null };
+    return { state: "done", hash, returnValue: r.returnValue ? scValToNative(r.returnValue) : null, ledger: r.ledger };
   }
   if (r.status === rpc.Api.GetTransactionStatus.FAILED) return { state: "failed", hash, reason: "The transaction failed on Stellar." };
   return { state: "pending", hash };

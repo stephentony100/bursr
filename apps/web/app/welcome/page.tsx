@@ -244,7 +244,7 @@ async function StepBody({ step, live, businessName, signedInAs }: { step: Step; 
         <div className="space-y-4">
           <p className="text-muted">
             {stellar
-              ? "Your agent gets its own wallet on Stellar, separate from yours: a contract that holds your USDC, with your limits and the people you pay written into it. Your Stellar wallet confirms it once. No money moves."
+              ? `Your agent gets its own wallet on Stellar, separate from yours: a contract that holds your USDC, with your limits and the people you pay written into it. ${owner?.accountId.startsWith("stellar:C") ? "You confirm it once with your passkey, and Bursr pays the network fee." : "Your Stellar wallet confirms it once."} No money moves.`
               : "Your agent gets its own wallet, separate from yours, with your limits and the people you pay locked into it. You create a passkey that controls it, then confirm twice with Face ID, fingerprint or PIN. All free; no money moves."}
           </p>
           <WalletPanel
