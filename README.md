@@ -24,9 +24,10 @@ Done: owner rules and payees, the agent account (live on NEAR mainnet, with real
 2. Press "Create my Bursr account" and confirm with your device (Face ID, fingerprint or PIN) → Bursr sets up your passkey account and you land on business setup. With a wallet instead: pick it and sign the sign-in text; a new wallet is given test XLM by friendbot for network fees.
 3. Name your business, keep the starter limits ($20 per payment, $50 a week) and add the people you pay (Stellar G-addresses).
 4. Press "Set up my Bursr wallet with these limits…", then confirm with your passkey (or wallet) → one transaction creates your vault with your limits and people written into it. The Wallet page links to it on stellar.expert.
-5. Wallet owners: on Wallet, press "Get $50 of test USDC" and confirm → your own wallet now holds test USDC, bought with test XLM on the testnet exchange. Then "Add money" moves it into the vault. (Adding money for passkey owners, from naira, comes with the Linq step below.)
+5. On Wallet, "Add money from naira" (marked PRACTICE): enter $20 → "Show me where to send it" shows a naira amount at the practice rate (₦1,600 per $1) and practice bank details → "I've sent it" → $20 of test USDC lands in your vault on the Stellar test network, with a stellar.expert link. Wallet owners can also press "Get $50 of test USDC" and "Add money" from their own wallet.
 6. When a payment is due and approved (Payments), the agent pays it from the vault. Each payment on Records links to its transaction on stellar.expert. A person must have USDC added to their Stellar wallet (a trustline) before they can be paid; Bursr tells you if not.
 7. "Pause all payments…" on Limits → the vault refuses every payment until you turn them back on. "Move money back to my wallet" still works while paused.
+8. "Cash out to my bank" on Wallet: enter $5, pick "Practice Bank" and any 10-digit account number → Continue shows "₦8,000.00 to Practice account holder" → "Confirm with my passkey" → the vault pays $5 once (a second tap can't pay it again). No naira moves in practice.
 
 Check the contract and the money path without a browser:
 
@@ -38,7 +39,7 @@ npm run stellar:fee-e2e                             # testnet: Bursr's fee accou
 
 `npm run stellar:e2e` prints each step with a stellar.expert link. It ends with "All checks passed on Stellar testnet." `npm run stellar:fee-e2e` ends with "All fee-paid checks passed." (A throwaway key stands in for the passkey there, since a passkey needs a person at a device.)
 
-Coming next: naira in and out through Linq, so an owner can top up from naira and cash out to their bank, and staff can be paid in naira.
+Coming next: the same naira steps through Linq for real (LINQ_MODE=live), and paying staff in naira.
 
 ## Try it (practice mode: no keys, no funds)
 

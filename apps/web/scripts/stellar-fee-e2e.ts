@@ -12,7 +12,7 @@ process.env.STELLAR_NETWORK = "testnet";
 const fee = Keypair.random();
 process.env.STELLAR_FEE_SECRET = fee.secret();
 
-const { entriesFor, fundWithFriendbot, prepareDeployVault, prepareFeePaid, readContract, rpcServer, sc, sendFeePaid, startAccount, stellarConfig, submitFeePaid, waitForTx } = await import("../lib/stellar");
+const { entriesFor, fundWithFriendbot, prepareCall, prepareDeployVault, prepareFeePaid, prepareGetTestUsdc, readContract, rpcServer, sc, sendFeePaid, startAccount, stellarConfig, submit, submitFeePaid, waitForTx } = await import("../lib/stellar");
 const { stellarExpertContract, stellarExpertTx } = await import("../lib/stellar-vault");
 
 const USDC = (dollars: number) => BigInt(Math.round(dollars * 1e7));
@@ -81,6 +81,26 @@ async function main() {
   const op = pre.operations[0] as unknown as { func: xdr.HostFunction };
   const preHash = await sendFeePaid(Operation.invokeHostFunction({ func: op.func, auth: signedAuth }));
   check((await waitForTx(preHash, 40)).state === "done", `an already-signed call is sent and paid by the fee account  ${stellarExpertTx(preHash)}`);
+
+  // 5. Practice naira in: the fee account buys test USDC and puts it in through the capped deposit.
+  const { tx: buy } = await prepareGetTestUsdc(fee.publicKey(), USDC(12));
+  buy.sign(fee);
+  check((await waitForTx(await submit(buy), 40)).state === "done", "the practice provider bought test USDC");
+  const dep = await prepareCall(fee.publicKey(), vault, "deposit", [sc.address(fee.publicKey()), sc.i128(USDC(10))]);
+  dep.sign(fee);
+  const depHash = await submit(dep);
+  check((await waitForTx(depHash, 40)).state === "done", `$10 added to the vault through deposit  ${stellarExpertTx(depHash)}`);
+
+  // 6. Practice naira out: one owner-approved owner_pay to the provider's address, paid once. In practice that is
+  // the fee account (it has a USDC trustline from step 5; an address without one is refused by USDC itself).
+  const sink = fee.publicKey();
+  await new Promise((r) => setTimeout(r, 1000));
+  const key = Buffer.alloc(32, 7);
+  const cash = await prepareFeePaid(new Contract(vault).call("owner_pay", sc.payouts([{ key, to: sink, amount: USDC(4) }])));
+  const cashHash = await submitFeePaid(cash, owner.publicKey(), await sign(entriesFor(cash, owner.publicKey()), owner));
+  check((await waitForTx(cashHash, 40)).state === "done", `owner_pay sent $4 to the cash-out address  ${stellarExpertTx(cashHash)}`);
+  check((await readContract<boolean>(vault, "paid", [sc.bytes32(key)])) === true, "the cash-out's payment key is marked paid");
+  check(await refused(prepareFeePaid(new Contract(vault).call("owner_pay", sc.payouts([{ key, to: sink, amount: USDC(4) }])))), "the same cash-out can't be paid twice");
 
   console.log("All fee-paid checks passed.");
 }

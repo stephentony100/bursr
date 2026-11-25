@@ -57,6 +57,17 @@ export const sc = {
   bool: (v: boolean) => xdr.ScVal.scvBool(v),
   bytes32: (b: Buffer) => xdr.ScVal.scvBytes(b),
   addresses: (list: string[]) => xdr.ScVal.scvVec(list.map((a) => new Address(a).toScVal())),
+  /** The vault's `Vec<Payout>` for owner_pay: each a struct { key, to, amount }, a map with its keys in sorted order. */
+  payouts: (items: { key: Buffer; to: string; amount: bigint }[]) =>
+    xdr.ScVal.scvVec(
+      items.map((it) =>
+        xdr.ScVal.scvMap([
+          new xdr.ScMapEntry({ key: xdr.ScVal.scvSymbol("amount"), val: nativeToScVal(it.amount, { type: "i128" }) }),
+          new xdr.ScMapEntry({ key: xdr.ScVal.scvSymbol("key"), val: xdr.ScVal.scvBytes(it.key) }),
+          new xdr.ScMapEntry({ key: xdr.ScVal.scvSymbol("to"), val: new Address(it.to).toScVal() }),
+        ]),
+      ),
+    ),
 };
 
 export async function accountExists(address: string): Promise<boolean> {

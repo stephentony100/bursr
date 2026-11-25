@@ -242,6 +242,12 @@ export async function signStellarXdr(xdr: string, address: string, networkPassph
   return r.signedTxXdr;
 }
 
+/** Cash-out: the owner confirms the vault's payment for a naira order (one passkey or wallet prompt). */
+export async function confirmCashOut(orderId: string): Promise<{ txHash?: string }> {
+  const prepared = await post<PreparedIntent>("/api/owner/intent", { step: "prepare", kind: "cash_out", orderId });
+  return submitStellar(prepared);
+}
+
 /** Adds USDC to the Bursr wallet, or moves it back to the owner's wallet: prepared by Bursr, signed in the owner's wallet. Amount in USDC's smallest units. */
 export async function stellarMoney(kind: "fund" | "withdraw" | "test_usdc", amount: bigint): Promise<{ txHash?: string }> {
   const prepared = await post<PreparedIntent>("/api/owner/intent", { step: "prepare", kind, amount: amount.toString() });

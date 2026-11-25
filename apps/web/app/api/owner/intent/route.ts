@@ -25,9 +25,11 @@ const Body = z.discriminatedUnion("step", [
 const StellarBody = z.discriminatedUnion("step", [
   z.object({
     step: z.literal("prepare"),
-    kind: z.enum(["agent_create", "policy_update", "agent_freeze", "agent_unfreeze", "fund", "withdraw", "test_usdc"]),
+    kind: z.enum(["agent_create", "policy_update", "agent_freeze", "agent_unfreeze", "fund", "withdraw", "test_usdc", "cash_out"]),
     /** fund / withdraw: USDC in its smallest units (7 decimals), as a string. */
     amount: z.string().regex(/^\d{1,20}$/).optional(),
+    /** cash_out: the naira order (lib/ramp-orders.ts). */
+    orderId: z.string().min(1).max(64).optional(),
   }),
   z.object({
     step: z.literal("submit"),
@@ -46,8 +48,8 @@ export async function POST(req: Request) {
       const body = StellarBody.safeParse(raw);
       if (!body.success) return NextResponse.json({ error: "Bad request." }, { status: 400 });
       if (body.data.step === "prepare") {
-        const { kind, amount } = body.data;
-        return NextResponse.json(await prepareStellarOwnerTx(await appDb(), owner, kind, { amount: amount ? BigInt(amount) : undefined }));
+        const { kind, amount, orderId } = body.data;
+        return NextResponse.json(await prepareStellarOwnerTx(await appDb(), owner, kind, { amount: amount ? BigInt(amount) : undefined, orderId }));
       }
       return NextResponse.json(await submitStellarOwnerTx(await appDb(), owner, { correlationId: body.data.correlationId, ...body.data.signedData }));
     }

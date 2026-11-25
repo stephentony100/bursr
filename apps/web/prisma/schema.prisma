@@ -288,3 +288,36 @@ model StellarPasskey {
 
   @@index([contractId])
 }
+
+/// Naira in and out (lib/ramp.ts): one order to add money from naira ("on")
+/// or cash out to a bank ("off"). Amounts are integers: USD in micro-dollars,
+/// naira in kobo.
+model RampOrder {
+  id             String    @id @default(cuid())
+  /// The business this belongs to (lib/tenant.ts).
+  businessId     String    @default("main")
+  /// "on": naira → USDC into the vault. "off": USDC from the vault → naira to a bank.
+  kind           String
+  /// "practice" (no real money) or "linq".
+  provider       String
+  /// quoted → awaiting_payment (on) / paying (off) → done, or failed / expired.
+  status         String
+  usdMicros      String
+  ngnKobo        String
+  koboPerUsd     String
+  /// The bank the owner pays into (on) or is paid to (off).
+  bankName       String?
+  accountNumber  String?
+  accountName    String?
+  /// On-ramp: the transfer reference the owner must use.
+  reference      String?
+  /// Off-ramp: the provider's one-time address the vault pays.
+  depositAddress String?
+  /// The Stellar transaction that moved the USDC.
+  txHash         String?
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([businessId])
+}

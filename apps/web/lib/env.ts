@@ -85,6 +85,12 @@ const EnvSchema = z.object({
   // Secret key of Bursr's fee account: it pays the network fees of passkey owners' transactions
   // and starts each agent's account. Holds a little XLM only, never business money.
   STELLAR_FEE_SECRET: optional,
+
+  // Naira in and out (lib/ramp.ts). "practice": no real money, Stellar testnet only. "live": Linq's business API.
+  LINQ_MODE: z.enum(["practice", "live"]).default("practice"),
+  LINQ_BASE_URL: optional,
+  LINQ_API_KEY: optional,
+  LINQ_WEBHOOK_SECRET: optional,
   // The uploaded vault wasm (public, not a secret). Each business deploys its own vault from it.
   STELLAR_VAULT_WASM_HASH: z.string().default("947b22793dfd1a660bd486f9b3aec2448f892d10f4950064e880b02d76b363d4"),
 });

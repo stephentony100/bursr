@@ -21,7 +21,7 @@ import { trustSignedPayees } from "./trust";
 // - Passkey owner (C…, a passkey account): Bursr's fee account is the source and
 //   pays; the owner's passkey signs only their own approval (auth entry).
 
-export type StellarOwnerKind = "agent_create" | "policy_update" | "agent_freeze" | "agent_unfreeze" | "fund" | "withdraw" | "test_usdc";
+export type StellarOwnerKind = "agent_create" | "policy_update" | "agent_freeze" | "agent_unfreeze" | "fund" | "withdraw" | "test_usdc" | "cash_out";
 
 const WORDS: Record<StellarOwnerKind, string> = {
   agent_create: "You set up your Bursr wallet on Stellar with your spending rules",
@@ -31,6 +31,7 @@ const WORDS: Record<StellarOwnerKind, string> = {
   fund: "You added money to your Bursr wallet",
   withdraw: "You moved money back to your own wallet",
   test_usdc: "You got test USDC for your own wallet",
+  cash_out: "You sent USDC from your Bursr wallet to cash out to your bank",
 };
 
 const SUMMARY: Record<StellarOwnerKind, string> = {
@@ -41,6 +42,7 @@ const SUMMARY: Record<StellarOwnerKind, string> = {
   fund: "Add USDC to your Bursr wallet",
   withdraw: "Move USDC from your Bursr wallet back to your own wallet",
   test_usdc: "Get test USDC in your own wallet, paid for with free test XLM",
+  cash_out: "Send USDC from your Bursr wallet to be paid out to your bank",
 };
 
 /** The browser-facing shape (components/wallet.ts PreparedIntent), with the transaction to sign. */
@@ -63,6 +65,8 @@ interface Pending {
   agentSecret?: string;
   /** Passkey owners: the fee-paid transaction whose entries the passkey signs. */
   txXdr?: string;
+  /** cash_out: the naira order this pays (lib/ramp-orders.ts). */
+  orderId?: string;
   expiresAt: number;
 }
 
@@ -81,7 +85,7 @@ export function isStellarEdition(): boolean {
   return env.BURSAR_MODE === "live" && env.BURSR_CHAIN === "stellar";
 }
 
-async function assertStellarOwner(db: PrismaClient, owner: OwnerSession) {
+export async function assertStellarOwner(db: PrismaClient, owner: OwnerSession) {
   if (!isOwnerSession(owner) || owner.demo) throw new NotOwnerError("Sign in with your wallet first.");
   if (ownerChain(owner.accountId) !== "stellar") throw new NotOwnerError("Sign in with a Stellar wallet.");
   const business = await getBusiness(db);
@@ -123,7 +127,7 @@ export async function prepareStellarOwnerTx(
   db: PrismaClient,
   owner: OwnerSession,
   kind: StellarOwnerKind,
-  opts: { amount?: bigint } = {},
+  opts: { amount?: bigint; orderId?: string } = {},
 ): Promise<PreparedStellarTx> {
   const out = await prepareOwnerTx(db, owner, kind, opts);
   if (out.intent.standard === "stellar-auth") {
@@ -137,7 +141,7 @@ async function prepareOwnerTx(
   db: PrismaClient,
   owner: OwnerSession,
   kind: StellarOwnerKind,
-  opts: { amount?: bigint } = {},
+  opts: { amount?: bigint; orderId?: string } = {},
 ): Promise<PreparedStellarTx> {
   const { address } = await assertStellarOwner(db, owner);
   const record = await getAccountRecord(db);
@@ -181,6 +185,14 @@ async function prepareOwnerTx(
       const now = vaultLimits(record.policy);
       const tx = await ownerCall(address, vault, "update", [sc.i128(now.perPaymentCap), sc.i128(now.weeklyCap), sc.bool(kind === "agent_freeze"), sc.addresses([]), sc.addresses([])]);
       return await prepared(kind, tx, vault, address, { ownerId: owner.accountId, policy: { ...record.policy, frozen: kind === "agent_freeze" } });
+    }
+    if (kind === "cash_out") {
+      // One vault payment to the naira provider's one-time address, paid once (its key comes from the order).
+      const { cashOutPayment } = await import("./ramp-orders");
+      const pay = await cashOutPayment(db, opts.orderId ?? "");
+      const tx = await ownerCall(address, vault, "owner_pay", [sc.payouts([pay])]);
+      const p = await prepared(kind, tx, vault, address, { ownerId: owner.accountId, orderId: opts.orderId });
+      return p;
     }
     const amount = opts.amount ?? 0n;
     if (amount <= 0n) throw new Error("Enter an amount more than zero.");
@@ -261,6 +273,7 @@ export async function submitStellarOwnerTx(
   }
   // The owner's wallet just signed the payee list: that is their OK for each person's first payment too.
   if (kind === "agent_create" || kind === "policy_update") await trustSignedPayees(db);
+  if (kind === "cash_out" && entry.orderId) await (await import("./ramp-orders")).cashOutSent(db, owner, entry.orderId, hash);
   await db.auditEvent.create({
     data: { kind: `owner_${kind}`, actor: owner.accountId, message: WORDS[kind], data: JSON.stringify({ txHash: hash }) },
   });

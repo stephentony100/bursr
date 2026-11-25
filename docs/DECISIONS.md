@@ -169,6 +169,14 @@ Record each decision with date, reason and the doc line relied on.
 - 25 Nov 2026 (phone test on test.bursr.xyz): sign-up worked, but the first owner approval failed with the kit's "Wallet C… has unverified birth provenance. The indexer did not return one complete schema-2 birth claim." Before signing, `connectWallet` checks the account's birth. It takes the creation transaction from its local record (only filled when the kit submits itself) or from an indexer (`lookupWalletCandidates`, kit/wallet-ops.js), then reads that transaction from Horizon (`history`). Bursr now answers the indexer lookup itself (`GET /api/stellar/indexer/api/lookup/<credential hex>`, schema 2, kit indexer.d.ts) for accounts it sent, from `StellarPasskey.creationTxHash/creationLedger`. Accounts made before this are found once in the fee account's Horizon history. The kit gets `horizonUrl` and `indexerUrl`. The kit re-verifies the birth transaction on chain, so the lookup can't vouch for a fake account. A test feeds the lookup into the kit's own `IndexerClient.lookupWalletCandidates`, which returns `complete: true`.
 - 25 Nov 2026: the first phone sign-up failed with "cannot set authMode to 'record_allow_nonroot' with an auth footprint": the kit's deploy arrives with signed auth, so it is simulated without an auth mode (`sendFeePaid`).
 
+- 25 Nov 2026: naira in and out (`lib/ramp.ts`, `lib/ramp-orders.ts`, `RampOrder`, `/api/ramp`) runs behind one `RampProvider`. `LINQ_MODE=practice` (default) works on Stellar testnet only: ₦1,600 per $1, practice bank details, up to $100 an order.
+  - Naira in: the test fee account buys test USDC with test XLM and puts it into the vault through the capped `deposit`.
+  - Naira out: the owner confirms one `owner_pay` (key = sha256("ramp:" + order id)) to the fee account, with one passkey tap (owner kind `cash_out`).
+  - `LINQ_MODE=live` is a stub until Linq's docs arrive. On mainnet without it, the Wallet page says "coming soon".
+  - Linq (25 Nov): they offer on-ramps; KYB is done once for Bursr, and they advise Bursr to KYB its businesses.
+  - USDC refuses a payment to an account without a USDC trustline (`Error(Contract, #13)`), so practice opens the fee account's trustline first.
+  - `stellar:fee-e2e` now also runs practice naira in and out and the paid-once check; it passed on testnet.
+
 ## Still open
 
 - [x] Human: Agent API demo key in `.env` (checked 5 Nov: quota 100 agents/day); OK to create one unfunded mainnet agent owned by `stephentony.near` (HOT Wallet) for the M1 rule-rejection test

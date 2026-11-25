@@ -3,6 +3,8 @@ import { practiceMoneyAction } from "@/app/actions";
 import { AddMoney } from "@/components/add-money";
 import { MoveHome } from "@/components/move-home";
 import { StellarAddMoney, StellarMoveHome } from "@/components/stellar-money";
+import { NairaIn, NairaOut } from "@/components/naira-ramp";
+import { rampProvider } from "@/lib/ramp-orders";
 import { isStellarEdition } from "@/lib/stellar-owner";
 import { homeView, type HomeView } from "@/lib/move-home";
 import { ActionForm } from "@/components/forms";
@@ -21,6 +23,9 @@ export default async function AddMoneyPage() {
   const dryRun = readEnv().BURSAR_MODE === "dry-run";
   const stellar = isStellarEdition();
   const vaultId = stellar ? ((await getAccountRecord(await appDb()))?.agentId ?? null) : null;
+  // A passkey owner (passkey account, `stellar:C…`) has no Stellar wallet to send from or back to: naira in and out instead.
+  const passkeyOwner = stellar && Boolean((await getOwner())?.accountId.startsWith("stellar:C"));
+  const ramp = stellar ? rampProvider() : null;
   const t = business.rules.treasury;
   let balance: bigint | null = null;
   let home: HomeView | null = null;
@@ -57,8 +62,17 @@ export default async function AddMoneyPage() {
         </div>
       </section>
 
+      {stellar && vaultId && ramp && (
+        <NairaIn suggestedUsd={short > 0n ? formatUnits(short, USD_DECIMALS).replace(/\.?0+$/, "") : null} practice={ramp.name === "practice"} />
+      )}
+      {stellar && vaultId && passkeyOwner && !ramp && (
+        <section className="rounded-2xl border border-line bg-card p-5">
+          <h2 className="text-base font-bold">Add money from naira</h2>
+          <p className="mt-1 text-sm text-muted">Coming soon: send naira by bank transfer and it arrives here as dollars.</p>
+        </section>
+      )}
       {stellar ? (
-        <StellarAddMoney suggestedUsd={short > 0n ? formatUnits(short, USD_DECIMALS).replace(/.?0+$/, "") : null} vaultId={vaultId} />
+        !passkeyOwner && <StellarAddMoney suggestedUsd={short > 0n ? formatUnits(short, USD_DECIMALS).replace(/\.?0+$/, "") : null} vaultId={vaultId} />
       ) : dryRun ? (
         <section className="rounded-2xl border border-line bg-card p-5">
           <h2 className="text-base font-bold">Practice money</h2>
@@ -71,7 +85,8 @@ export default async function AddMoneyPage() {
         <AddMoney suggestedUsd={short > 0n ? formatUnits(short, USD_DECIMALS).replace(/\.?0+$/, "") : null} from={(await getOwner())?.chain === "sui" ? "sui" : "near"} />
       )}
 
-      {stellar && vaultId && <StellarMoveHome balance={balance === null ? "…" : formatUsd(balance)} />}
+      {stellar && vaultId && ramp && <NairaOut balance={balance === null ? "…" : formatUsd(balance)} practice={ramp.name === "practice"} withPasskey={passkeyOwner} />}
+      {stellar && vaultId && !passkeyOwner && <StellarMoveHome balance={balance === null ? "…" : formatUsd(balance)} />}
 
       {home && (
         <section className="rounded-2xl border border-line bg-card p-5">
