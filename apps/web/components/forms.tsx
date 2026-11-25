@@ -1,8 +1,10 @@
 "use client";
 
 import { CheckCircle, ShieldCheck } from "@phosphor-icons/react";
+import { useRouter } from "next/navigation";
 import { useActionState } from "react";
 import type { FormResult, RuleTestResult } from "@/app/actions";
+import { friendlyError } from "@/lib/errors";
 
 type Action = (prev: FormResult, f: FormData) => Promise<FormResult>;
 
@@ -23,7 +25,23 @@ export function ActionForm({
   /** A button in a row (only hidden fields): no gap above it. */
   inline?: boolean;
 }) {
-  const [result, formAction, pending] = useActionState(action, null);
+  const router = useRouter();
+  // A saved change the owner's wallet or passkey must confirm is confirmed here, in the same tap:
+  // save → one prompt → in force. If the prompt is dismissed, the change stays saved and the
+  // bar at the top of the page still offers to confirm it.
+  const [result, formAction, pending] = useActionState(async (prev: FormResult, f: FormData): Promise<FormResult> => {
+    const saved = await action(prev, f);
+    if (!saved?.ok || !saved.confirm) return saved;
+    try {
+      const { prepareIntent, signAndSubmitIntent } = await import("./wallet");
+      await signAndSubmitIntent(await prepareIntent(saved.confirm));
+      router.refresh();
+      return { ok: true, message: "Saved and confirmed. It's in force now." };
+    } catch (e) {
+      router.refresh();
+      return { ok: false, message: `Saved, but not confirmed yet: ${friendlyError(e)} You can confirm it from the bar at the top of the page.` };
+    }
+  }, null);
   const btn =
     tone === "danger"
       ? "bg-refuse text-card hover:bg-refuse/90"

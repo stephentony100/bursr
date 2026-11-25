@@ -34,7 +34,8 @@ export default async function SetupPage() {
   }
   const needsSigning = !dryRun && (await policyNeedsSigning((await appDb())));
   const passkey = dryRun ? null : await getOwnerPasskey(await appDb());
-  const signWith = passkey || !record ? "your passkey" : "your wallet";
+  // A Stellar passkey owner (passkey account, `stellar:C…`) confirms with the passkey too.
+  const signWith = passkey || !record || owner?.accountId.startsWith("stellar:C") ? "your passkey" : "your wallet";
   const telegram = env.TELEGRAM_BOT_TOKEN ? await linkedChat((await appDb())) : null;
   const r = business?.rules;
   const usd = (micros: string) => formatUnits(BigInt(micros), USD_DECIMALS);
@@ -63,7 +64,7 @@ export default async function SetupPage() {
       {r && (
         <section className="rounded-2xl border border-line bg-card p-5 sm:p-6">
           <h2 className="text-lg font-bold">Your limits</h2>
-          <ActionForm action={saveRules} submit={dryRun ? "Save my limits" : `Save my limits (then confirm with ${signWith})`}>
+          <ActionForm action={saveRules} submit={dryRun ? "Save my limits" : `Save and confirm with ${signWith}`}>
             <div className="mt-4 grid gap-5 sm:grid-cols-3">
               <Money name="weeklyCap" label="Weekly limit" hint={dryRun ? "The most that can go out in any 7 days." : "The most that can go out in any 7 days. A payment in another currency or network counts twice (the exchange, then the payment)."} value={usd(r.weeklyCapUsd)} />
               <Money name="perPaymentCap" label="Largest single payment" hint="Anything bigger is stopped, always." value={usd(r.perPaymentCapUsd)} />

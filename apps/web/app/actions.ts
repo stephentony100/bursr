@@ -53,7 +53,11 @@ import { trustSignedPayees } from "@/lib/trust";
 // the session itself and validates its input. Owner-only changes go through
 // lib/owner-actions.ts, which checks the owner again.
 
-export type FormResult = { ok: boolean; message: string } | null;
+/** `confirm`: saved, and the owner's wallet or passkey must now confirm it; the form asks straight away (components/forms.tsx). */
+export type FormResult = { ok: boolean; message: string; confirm?: "policy_update" } | null;
+
+/** A saved change the owner confirms right where they made it (one tap, one wallet or passkey prompt). */
+type NeedsConfirm = { message: string; confirm: "policy_update" };
 
 const text = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 
@@ -66,11 +70,11 @@ function dollars(f: FormData, k: string, label: string): string {
   }
 }
 
-async function run(fn: () => Promise<string>): Promise<FormResult> {
+async function run(fn: () => Promise<string | NeedsConfirm>): Promise<FormResult> {
   try {
-    const message = await fn();
+    const out = await fn();
     revalidatePath("/", "layout");
-    return { ok: true, message };
+    return typeof out === "string" ? { ok: true, message: out } : { ok: true, ...out };
   } catch (e) {
     console.error("[bursar]", e);
     return { ok: false, message: friendlyError(e, "Something went wrong.") };
@@ -108,9 +112,7 @@ export async function saveRules(_prev: FormResult, f: FormData): Promise<FormRes
     });
     kickAgent();
     if (readEnv().BURSAR_MODE === "dry-run") return "Saved. Your new limits apply straight away.";
-    return (await walletMustConfirm())
-      ? "Saved. Lower limits apply right away; to make higher limits count, confirm them from the bar at the top of the page."
-      : "Saved. Your agent follows the new limits now.";
+    return (await walletMustConfirm()) ? { message: "Saved. Confirm to put them in force.", confirm: "policy_update" } : "Saved. Your agent follows the new limits now.";
   });
 }
 
@@ -182,7 +184,7 @@ export async function addPayeeAction(_prev: FormResult, f: FormData): Promise<Fo
       recurring: recurringFrom(f),
     });
     revalidatePath("/", "layout");
-    if (await walletMustConfirm()) return `${name} added. Confirm with your wallet from the bar at the top, and then they can be paid.`;
+    if (await walletMustConfirm()) return { message: `${name} added. Confirm, and then they can be paid.`, confirm: "policy_update" };
     kickAgent();
     return readEnv().BURSAR_MODE === "dry-run" ? `${name} added. Their first payment will ask for your OK.` : `${name} added. Your wallet already allows this address, so they can be paid now.`;
   });
@@ -650,7 +652,7 @@ export async function approveInviteAction(_prev: FormResult, f: FormData): Promi
     await approveInvite((await appDb()), await requireOwner(), text(f, "inviteId"));
     revalidatePath("/", "layout");
     if (readEnv().BURSAR_MODE === "dry-run") return "Added. Their first payment will still ask for your OK.";
-    if (await walletMustConfirm()) return "Added. Confirm with your wallet from the bar at the top of the page, and then they can be paid.";
+    if (await walletMustConfirm()) return { message: "Added. Confirm, and then they can be paid.", confirm: "policy_update" };
     kickAgent();
     return "Added. Your wallet already allows this address, so they can be paid now.";
   });
