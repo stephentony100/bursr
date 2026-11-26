@@ -4,7 +4,11 @@ import { AddMoney } from "@/components/add-money";
 import { MoveHome } from "@/components/move-home";
 import { StellarAddMoney, StellarMoveHome } from "@/components/stellar-money";
 import { NairaIn, NairaOut } from "@/components/naira-ramp";
-import { rampProvider } from "@/lib/ramp-orders";
+import { UsdcDeposit } from "@/components/usdc-deposit";
+import { rampPerson, rampProvider, refreshLinqOrders } from "@/lib/ramp-orders";
+import { stellarConfig } from "@/lib/stellar";
+import { VAULT_MAX_BALANCE } from "@/lib/stellar-vault";
+import QRCode from "qrcode";
 import { isStellarEdition } from "@/lib/stellar-owner";
 import { homeView, type HomeView } from "@/lib/move-home";
 import { ActionForm } from "@/components/forms";
@@ -26,6 +30,9 @@ export default async function AddMoneyPage() {
   // A passkey owner (passkey account, `stellar:C…`) has no Stellar wallet to send from or back to: naira in and out instead.
   const passkeyOwner = stellar && Boolean((await getOwner())?.accountId.startsWith("stellar:C"));
   const ramp = stellar ? rampProvider() : null;
+  // Linq tries each webhook once: check cash-outs still on their way, and return any refunds.
+  if (ramp?.name === "linq") await refreshLinqOrders(await appDb()).catch((e) => console.error("[bursar] Linq refresh", e));
+  const vaultQr = stellar && vaultId ? await QRCode.toString(vaultId, { type: "svg", margin: 1, width: 192 }) : null;
   const t = business.rules.treasury;
   let balance: bigint | null = null;
   let home: HomeView | null = null;
@@ -63,12 +70,19 @@ export default async function AddMoneyPage() {
       </section>
 
       {stellar && vaultId && ramp && (
-        <NairaIn suggestedUsd={short > 0n ? formatUnits(short, USD_DECIMALS).replace(/\.?0+$/, "") : null} practice={ramp.name === "practice"} />
+        <NairaIn
+          suggestedUsd={short > 0n ? formatUnits(short, USD_DECIMALS).replace(/\.?0+$/, "") : null}
+          practice={ramp.name === "practice"}
+          needsVerify={ramp.name === "linq" && !(await rampPerson(await appDb()))?.verified}
+        />
       )}
-      {stellar && vaultId && passkeyOwner && !ramp && (
+      {stellar && vaultId && vaultQr && (
+        <UsdcDeposit address={vaultId} qrSvg={vaultQr} cap={formatUsd(rescale(VAULT_MAX_BALANCE, 7, USD_DECIMALS))} testnet={stellarConfig().network.name === "testnet"} />
+      )}
+      {stellar && vaultId && !ramp && (
         <section className="rounded-2xl border border-line bg-card p-5">
           <h2 className="text-base font-bold">Add money from naira</h2>
-          <p className="mt-1 text-sm text-muted">Coming soon: send naira by bank transfer and it arrives here as dollars.</p>
+          <p className="mt-1 text-sm text-muted">Coming soon: send naira by bank transfer and it arrives here as dollars. For now, send USDC to the address above.</p>
         </section>
       )}
       {stellar ? (

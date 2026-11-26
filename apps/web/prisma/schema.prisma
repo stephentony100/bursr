@@ -313,6 +313,14 @@ model RampOrder {
   reference      String?
   /// Off-ramp: the provider's one-time address the vault pays.
   depositAddress String?
+  /// The provider's own order id (Linq), for its webhooks and status checks.
+  providerOrderId String? @unique
+  /// Off-ramp: the bank's code (Linq's list).
+  bankCode       String?
+  /// On-ramp: the provider's fee, in kobo, on top of the naira amount.
+  feeKobo        String?
+  /// On-ramp: where the provider sends the USDC (the vault, or Bursr's fee account, which deposits it into the vault).
+  deliverTo      String?
   /// The Stellar transaction that moved the USDC.
   txHash         String?
   expiresAt      DateTime
@@ -320,4 +328,22 @@ model RampOrder {
   updatedAt      DateTime  @updatedAt
 
   @@index([businessId])
+}
+
+/// Naira in through Linq: the person behind a business, registered and
+/// verified with Linq (POST /b2b/customers, /b2b/customers/kyc). The NIN goes
+/// to Linq once and is never stored here.
+model RampCustomer {
+  id         String    @id @default(cuid())
+  /// The business this belongs to (lib/tenant.ts); one person per business.
+  businessId String    @unique @default("main")
+  provider   String
+  firstName  String
+  lastName   String
+  email      String
+  phone      String
+  verified   Boolean   @default(false)
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 }

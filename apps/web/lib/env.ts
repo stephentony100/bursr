@@ -91,6 +91,12 @@ const EnvSchema = z.object({
   LINQ_BASE_URL: optional,
   LINQ_API_KEY: optional,
   LINQ_WEBHOOK_SECRET: optional,
+  // From Linq's signup; not used by the offramp today (kept for Linq's future auth extensions).
+  // Where Linq sends naira-in USDC: "fee_account" (default; Bursr then deposits it into the
+  // business's vault) or "vault" (straight to the vault, once Linq confirms it can pay a contract address).
+  LINQ_ONRAMP_DELIVER_TO: z.enum(["fee_account", "vault"]).default("fee_account"),
+  LINQ_BUSINESS_ID: optional,
+  LINQ_API_SECRET: optional,
   // The uploaded vault wasm (public, not a secret). Each business deploys its own vault from it.
   STELLAR_VAULT_WASM_HASH: z.string().default("947b22793dfd1a660bd486f9b3aec2448f892d10f4950064e880b02d76b363d4"),
 });

@@ -177,6 +177,25 @@ Record each decision with date, reason and the doc line relied on.
   - USDC refuses a payment to an account without a USDC trustline (`Error(Contract, #13)`), so practice opens the fee account's trustline first.
   - `stellar:fee-e2e` now also runs practice naira in and out and the paid-once check; it passed on testnet.
 
+- 25 Nov 2026: Linq cash-out is live code behind `LINQ_MODE=live`, used only when `STELLAR_NETWORK=mainnet` ("Mainnet only: there is no sandbox, and every order moves real money", Linq docs).
+  - `lib/linq.ts`: rate, verifybank, offramp, status, trustline; `X-API-Key`; 20 s timeouts; Linq's `message` as the error.
+  - Orders are `chain: "stellar"`, `coin: "usdc"`, `amountStableCoin` in whole cents, `manualDeposit: false`, `idempotencyKey` = Bursr's order id, `customerRef` = business id. False is right because Bursr's vault sends the exact amount ("Your app constructs the transfer … this is the case where leaving manualDeposit at its default false is appropriate").
+  - The answer is refused unless `chain` is `stellar`, `coinType` is `USDC:GA5ZSE…KZVN` and the address is a G… account ("funds sent to an address on the wrong chain are unrecoverable").
+  - `refundAddress` is Bursr's fee account, given a USDC trustline first: Linq requires a G… with a trustline ("Muxed (M…) and contract (C…) addresses are rejected"). Bursr then deposits a refund back into that business's vault (`returnRefunds`, status `refund_pending` → `refunded`). This is the one moment Bursr holds a business's money.
+  - Webhook `/api/linq/webhook`: HMAC-SHA256 over the raw body, `sha256=` hex in `X-Linq-Signature`, timing-safe compare. Linq "attempted once", so the Wallet page polls `GET /b2b/status` for orders still on their way.
+  - Bank codes come from the docs' "Common banks" table (`lib/banks.ts`, 15 banks); the full `nigerian-banks.json` is not in the repo yet.
+  - Naira in (`/b2b/onramp`) waits until Bursr is registered as a business; it needs `/b2b/customers` plus NIN KYC per business.
+- 25 Nov 2026: businesses add USDC by sending it straight to their vault: its C… address and a QR code on Wallet (owner's choice over a custodial G… deposit account per business). The card warns that some exchanges can't send to contract addresses yet.
+- 25 Nov 2026: Stellar mainnet RPC: Stellar's provider list has no SDF mainnet endpoint, but lists public no-key ones (e.g. `https://mainnet.sorobanrpc.com`, `https://rpc.lightsail.network/`, `https://stellar-soroban-public.nodies.app`), developers.stellar.org/docs/data/apis/rpc/providers.
+
+- 26 Nov 2026: naira in through Linq (B2B onramp) is built, mainnet only.
+  - The owner verifies once: first and last name, email, phone and NIN → `POST /b2b/customers` (customerRef = business id) then `POST /b2b/customers/kyc`. The NIN goes to Linq only and is never stored (`RampCustomer` keeps name, email, phone, verified). Per the owner (26 Nov, from a builder already on Linq): Bursr registers once with Linq and businesses fill in a form, with no CAC needed.
+  - The order is `POST /b2b/onramp` with `coin: {stellar: true}`, `rate` = `GET /onramprate` (NGN per USD, passed straight through for USDC per the docs), and `amountStableCoin` in whole cents. It must fit under the vault's $500 cap.
+  - Linq returns a bank account (e.g. Wema) and `amountNgn`, `fee` and `expiresAt`.
+  - Completion comes by webhook `order.completed` or by polling `GET /b2b/onramp/status`. Only `completed` counts as success, per the docs.
+  - Delivery: `LINQ_ONRAMP_DELIVER_TO=fee_account` (default) sends the USDC to Bursr's fee account (a G… with a USDC trustline), and Bursr deposits it into the vault (`deliverNairaIn`: claim → deposit → `done`, retried on the next check). `vault` would pay the vault directly once Linq confirms it can send to a contract address (C…). Its docs reject C… for refund addresses, and this is not documented for onramp.
+  - Practice (testnet) is unchanged.
+
 ## Still open
 
 - [x] Human: Agent API demo key in `.env` (checked 5 Nov: quota 100 agents/day); OK to create one unfunded mainnet agent owned by `stephentony.near` (HOT Wallet) for the M1 rule-rejection test

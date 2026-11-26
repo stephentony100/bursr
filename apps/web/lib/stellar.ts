@@ -341,8 +341,22 @@ export async function submitFeePaid(prepared: Transaction, signer: string, signe
   return submit(ready);
 }
 
-/** Starts a new account (the agent's) with a little XLM for its own fees: friendbot on testnet, the fee account on mainnet. */
-export async function startAccount(address: string, xlm = "3"): Promise<void> {
+/**
+ * The fee account can hold USDC (a trustline): practice cash-outs land there,
+ * and Linq refunds a failed payout there ("On Stellar it must already hold a
+ * USDC trustline"), since a business's vault is a contract Linq can't refund to.
+ */
+export async function ensureFeeUsdcTrustline(): Promise<string> {
+  const fee = feeKeypair();
+  if (await hasUsdcTrustline(fee.publicKey())) return fee.publicKey();
+  const tx = (await builder(fee.publicKey())).addOperation(Operation.changeTrust({ asset: USDC_ASSET() })).build();
+  const r = await waitForTx(await signAndSend(tx, fee), 40);
+  if (r.state !== "done") throw new Error("Bursr's fee account couldn't open its USDC trustline. Please try again in a minute.");
+  return fee.publicKey();
+}
+
+/** Starts a new account (the agent's) with a little XLM for its own fees: friendbot on testnet, 2 XLM from the fee account on mainnet (1 is the account's locked minimum). */
+export async function startAccount(address: string, xlm = "2"): Promise<void> {
   if (await accountExists(address)) return;
   if (stellarConfig().friendbotUrl) return fundWithFriendbot(address);
   const tx = (await builder(feeKeypair().publicKey())).addOperation(Operation.createAccount({ destination: address, startingBalance: xlm })).build();
